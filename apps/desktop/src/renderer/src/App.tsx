@@ -12,9 +12,7 @@ import CodexIcon from "@lobehub/icons/es/Codex/components/Color";
 import OpenAIIcon from "@lobehub/icons/es/OpenAI/components/Mono";
 import tasteMediaUrlMap from "./data/taste-media.json";
 import tastePreviewImageUrlMap from "./data/taste-preview-images.json";
-import feishuIconSrc from "./assets/feedback/feishu.svg";
-import feishuGroupQrSrc from "./assets/feedback/feishu-group-qr.png";
-import xLogoSrc from "./assets/feedback/x-logo.png";
+import { SkillryMotionHub } from "./components/SkillryMotionHub";
 import {
   AlertTriangle,
   Archive,
@@ -54,6 +52,7 @@ import {
   FileText,
   FileVideo,
   FolderOpen,
+  Globe,
   Grid2X2,
   GripVertical,
   Hash,
@@ -263,7 +262,7 @@ type ConfirmationDialogStatus = "default" | "accent" | "success" | "warning" | "
 type ConfirmationDialogConfirmVariant = "primary" | "danger";
 type SelectOption = { value: string; label: string; icon?: React.ReactNode };
 type ProjectMarkOptionDefinition = { value: string; labelKey: I18nKey; Icon: React.ComponentType<{ className?: string }> };
-type SettingsSectionId = "runtime" | "profile" | "preferences" | "voice" | "feedback" | "about";
+type SettingsSectionId = "runtime" | "profile" | "preferences" | "voice" | "about";
 type AppearanceMode = "system" | "light" | "dark";
 type AssetDropNotice = { kind: "default" } | { kind: "imported"; count: number } | { kind: "missing-local-path" } | { kind: "duplicates-skipped" } | { kind: "import-failed" };
 type CliTestResult = {
@@ -552,7 +551,6 @@ const settingsSections: Array<{ id: SettingsSectionId; labelKey: I18nKey; icon: 
   { id: "profile", labelKey: "settings.section.profile", icon: <KeyRound aria-hidden="true" /> },
   { id: "preferences", labelKey: "settings.section.preferences", icon: <Eye aria-hidden="true" /> },
   { id: "voice", labelKey: "settings.section.voice", icon: <AudioLines aria-hidden="true" /> },
-  { id: "feedback", labelKey: "settings.section.feedback", icon: <MessageCircle aria-hidden="true" /> },
   { id: "about", labelKey: "settings.section.about", icon: <HelpCircle aria-hidden="true" /> }
 ];
 
@@ -629,10 +627,8 @@ const A_ROLL_SAMPLE_HIDDEN_FIELD = "aRollSampleHidden";
 const TEMPLATE_PREVIEW_PLACEHOLDER_IMAGE_SRC = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180"><rect width="320" height="180" rx="18" fill="#f5f6f8"/><rect x="72" y="42" width="176" height="96" rx="14" fill="#ffffff" stroke="#d9dde3" stroke-dasharray="8 8"/><path d="M129 106l25-30 22 24 12-14 31 38H101l28-18z" fill="#d4dae2"/><circle cx="203" cy="67" r="12" fill="#c3cad4"/></svg>')}`;
 const TEMPLATE_PREVIEW_ERROR_IMAGE_SRC = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180"><rect width="320" height="180" rx="18" fill="#fff7ed"/><rect x="72" y="42" width="176" height="96" rx="14" fill="#fffbeb" stroke="#f59e0b" stroke-width="2"/><path d="M160 63l48 82H112l48-82z" fill="#f97316"/><rect x="156" y="92" width="8" height="28" rx="4" fill="#fff7ed"/><circle cx="160" cy="130" r="5" fill="#fff7ed"/></svg>')}`;
 const TEMPLATE_PREVIEW_IMAGE_STATE_FIELD = "__templatePreviewImageState";
-const X_DIRECT_MESSAGE_URL = "https://x.com/messages/compose?recipient_id=1718896922277314560";
-const X_LOGO_SRC = xLogoSrc;
-const FEISHU_ICON_SRC = feishuIconSrc;
-const FEISHU_GROUP_QR_SRC = feishuGroupQrSrc;
+const GITHUB_REPO_URL = "https://github.com/yihui-dev/mkboard.app";
+const GITHUB_ISSUES_URL = "https://github.com/yihui-dev/mkboard.app/issues";
 const DEFAULT_ROUTE_STATE: AppRouteState = { screen: "projects", projectId: SAMPLE_PROJECT_ID, tab: "script" };
 const DEFAULT_TEMPLATE_ID = "default-template";
 const DEFAULT_STORYBOARD_SKILL_ID = "storyboard-split";
@@ -2636,11 +2632,11 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
     }
   }
 
-  async function refreshSkillryCatalog(): Promise<SkillryCatalogStatus | null> {
+  async function refreshSkillryCatalog(forceRefresh = false): Promise<SkillryCatalogStatus | null> {
     if (!window.mkboard?.getSkillryCatalogStatus) return null;
     setSkillryCatalogLoading(true);
     try {
-      const status = await window.mkboard.getSkillryCatalogStatus();
+      const status = await window.mkboard.getSkillryCatalogStatus(forceRefresh);
       setSkillryCatalog(status);
       return status;
     } catch {
@@ -3187,6 +3183,7 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
 
   async function openTaste() {
     applyRoute({ screen: "taste", projectId: "", tab });
+    void refreshSkillryCatalog();
     try {
       await refreshTastes();
     } catch {
@@ -3301,7 +3298,7 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
     return res;
   }
 
-  async function handleSyncSkillryPack(slug: SkillryPackId): Promise<SkillryInstallResult> {
+  async function handleSyncSkillryPack(slug: string): Promise<SkillryInstallResult> {
     const res = await window.mkboard.syncSkillryPackToMkboard(slug);
     if (res.catalog) setSkillryCatalog(res.catalog);
     else void refreshSkillryCatalog();
@@ -5420,7 +5417,7 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
             onImportSkill={(input) => importSkillFromExternal(input)}
             onInstallSkillryPack={(input) => handleInstallSkillryPack(input)}
             onSyncSkillryPack={(slug) => handleSyncSkillryPack(slug)}
-            onRefreshSkillryCatalog={() => refreshSkillryCatalog()}
+            onRefreshSkillryCatalog={(force) => refreshSkillryCatalog(force)}
             onOpenExternal={(url) => void window.mkboard.openExternal(url)}
             onReloadSkills={async () => {
               void refreshSkillryCatalog();
@@ -5438,6 +5435,11 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
             error={tastesError}
             loading={tastesLoading}
             tastes={tastes.length > 0 ? tastes : [getFallbackDefaultTaste()]}
+            selectedCliId={selectedCliId}
+            skillryCatalog={skillryCatalog}
+            skillryCatalogLoading={skillryCatalogLoading}
+            onRefreshSkillryCatalog={(force) => refreshSkillryCatalog(force)}
+            onSkillsChanged={() => refreshSkills().catch(() => [])}
             onSetDefaultTaste={saveDefaultTaste}
             onCreateTaste={(input) => createCustomTaste(input)}
             onUpdateTaste={(input) => updateCustomTaste(input)}
@@ -7990,14 +7992,15 @@ function SkillsScreen({
   onDeleteSkill: (skillId: string) => Promise<Skill[]>;
   onImportSkill: (input: ExternalSourceImportInput) => Promise<Skill>;
   onInstallSkillryPack: (input: SkillryInstallInput) => Promise<SkillryInstallResult>;
-  onSyncSkillryPack: (slug: SkillryPackId) => Promise<SkillryInstallResult>;
-  onRefreshSkillryCatalog: () => Promise<SkillryCatalogStatus | null>;
+  onSyncSkillryPack: (slug: string) => Promise<SkillryInstallResult>;
+  onRefreshSkillryCatalog: (forceRefresh?: boolean) => Promise<SkillryCatalogStatus | null>;
   onOpenExternal: (url: string) => void;
   onReloadSkills: () => Promise<Skill[]>;
   onUpdateSkill: (input: UpdateSkillInput) => Promise<Skill>;
 }) {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
   const [skillView, setSkillView] = useState<"list" | "editor">("list");
+  const [hubDrilledDown, setHubDrilledDown] = useState(false);
   const [selectedSkillId, setSelectedSkillId] = useState("");
   const [activeFilter, setActiveFilter] = useState<SkillFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -8010,8 +8013,6 @@ function SkillsScreen({
   const [saving, setSaving] = useState(false);
   const [pendingDeleteSkill, setPendingDeleteSkill] = useState<Skill | null>(null);
   const [importModalOpen, setImportModalOpen] = useState(false);
-  const [activeSkillryPackSlug, setActiveSkillryPackSlug] = useState<SkillryPackId | null>(null);
-  const [syncingPackSlug, setSyncingPackSlug] = useState<SkillryPackId | null>(null);
 
   const isCreating = selectedSkillId === "new";
   const selectedSkill = isCreating ? null : skills.find((skill) => skill.id === selectedSkillId) ?? null;
@@ -8027,51 +8028,6 @@ function SkillsScreen({
       return `${skill.name} ${skill.description}`.toLocaleLowerCase().includes(normalizedQuery);
     });
   }, [activeFilter, searchQuery, skills]);
-
-  const fallbackSkillryPacks: SkillryPackStatus[] = useMemo(
-    () => [
-      {
-        slug: "bs-creatormotion",
-        mkboardSkillId: "skill-skillry-bs-creatormotion",
-        title: "CreatorMotion",
-        subtitle: "口播 / 知识讲解动态图形 B-Roll 母技能（122+ 可编辑动效）",
-        pricingTier: "freemium_pro",
-        totalEffectsCount: 122,
-        installedLocally: false,
-        installedSubSkillCount: 0,
-        installedPaths: [],
-        syncedToMkboard: skills.some((s) => s.id === "skill-skillry-bs-creatormotion"),
-        landingUrl: "https://skillry.dev/ai-videos/ai-motion-graphics",
-        skillPageUrl: "https://skillry.dev/skills/bs-creatormotion",
-        installDocUrl: "https://skillry.dev/skills/bs-creatormotion/install.md",
-        pricingUrl: "https://skillry.dev/pricing",
-        aiInstallPrompt: "Read https://skillry.dev/skills/bs-creatormotion/install.md and follow the instructions to install the skill.",
-        cliInstallCommand: "npx --yes skillry-cli@latest install bs-creatormotion --force"
-      },
-      {
-        slug: "bs-launchmotion",
-        mkboardSkillId: "skill-skillry-bs-launchmotion",
-        title: "LaunchMotion",
-        subtitle: "产品发布片 / SaaS 宣传片代码级动效套件（208 个场景）",
-        pricingTier: "paid_pro",
-        totalEffectsCount: 208,
-        installedLocally: false,
-        installedSubSkillCount: 0,
-        installedPaths: [],
-        syncedToMkboard: skills.some((s) => s.id === "skill-skillry-bs-launchmotion"),
-        landingUrl: "https://skillry.dev/ai-videos/product-launch-video",
-        skillPageUrl: "https://skillry.dev/skills/bs-launchmotion",
-        installDocUrl: "https://skillry.dev/skills/bs-launchmotion/install.md",
-        pricingUrl: "https://skillry.dev/pricing",
-        aiInstallPrompt: "Read https://skillry.dev/skills/bs-launchmotion/install.md and follow the instructions to install the skill.",
-        cliInstallCommand: "npx --yes skillry-cli@latest install bs-launchmotion --force"
-      }
-    ],
-    [skills]
-  );
-
-  const displaySkillryPacks = skillryCatalog?.packs ?? fallbackSkillryPacks;
-  const activeSkillryPack = activeSkillryPackSlug ? displaySkillryPacks.find((p) => p.slug === activeSkillryPackSlug) ?? null : null;
 
   useEffect(() => {
     if (homeRequestId === 0) return;
@@ -8168,20 +8124,6 @@ function SkillsScreen({
       window.alert(err instanceof Error ? err.message : String(err));
     } finally {
       setSaving(false);
-    }
-  }
-
-  async function quickEnableLocalSkillryPack(pack: SkillryPackStatus) {
-    setSyncingPackSlug(pack.slug);
-    try {
-      const res = await onSyncSkillryPack(pack.slug);
-      if (res.status !== "installed") {
-        setActiveSkillryPackSlug(pack.slug);
-      }
-    } catch {
-      setActiveSkillryPackSlug(pack.slug);
-    } finally {
-      setSyncingPackSlug(null);
     }
   }
 
@@ -8366,205 +8308,124 @@ function SkillsScreen({
         <div>
           <h1>{t("skills.title")}</h1>
         </div>
-        <div className="library-header-actions">
-          <Button className="topbar-action-button" variant="outline" isDisabled={loading} onPress={() => setImportModalOpen(true)}>
+        <div className="library-page-header-actions">
+          <button
+            type="button"
+            className="hub-btn hub-btn-outline"
+            disabled={loading}
+            onClick={() => setImportModalOpen(true)}
+          >
             <UploadCloud aria-hidden="true" />
-            {t("skills.importButton")}
-          </Button>
-          <Button className="topbar-action-button skills-new-action" variant="primary" isDisabled={loading} onPress={startCreateSkill}>
+            <span>{t("skills.importButton")}</span>
+          </button>
+          <button
+            type="button"
+            className="hub-btn hub-btn-dark"
+            disabled={loading}
+            onClick={startCreateSkill}
+          >
             <Plus aria-hidden="true" />
-            {t("skills.new")}
-          </Button>
+            <span>{t("skills.new")}</span>
+          </button>
         </div>
       </header>
 
       <div className="skills-library">
-        <section className="skillry-featured-hub" aria-label={t("skills.skillrySectionTitle")}>
-          <div className="skillry-featured-hub-header">
-            <div className="skillry-featured-hub-copy">
-              <span className="skillry-featured-kicker">
-                <Sparkles aria-hidden="true" />
-                {t("skills.skillrySectionBadge")}
-              </span>
-              <h2>{t("skills.skillrySectionTitle")}</h2>
-              <p>{t("skills.skillrySectionSubtitle")}</p>
+        <SkillryMotionHub
+          surface="skills"
+          locale={locale}
+          catalog={skillryCatalog}
+          catalogLoading={skillryCatalogLoading}
+          selectedCliId={selectedCliId}
+          onRefreshCatalog={onRefreshSkillryCatalog}
+          onSkillsChanged={onReloadSkills}
+          onOpenSkillInEditor={openSkill}
+          onOpenExternal={onOpenExternal}
+          onDrillDownChange={setHubDrilledDown}
+        />
+
+        {!hubDrilledDown ? (
+          <section className="sry-local-section">
+            <div className="sry-section-divider">
+              <div>
+                <h2>{locale === "en" ? "Local & Custom Skills" : "本机与自定义分镜技能"}</h2>
+                <p>
+                  {locale === "en"
+                    ? "Skills pulled from Skillry, imported from GitHub, or authored locally."
+                    : "已从 Skillry 拉取、从 GitHub 导入或在本地创建的分镜技能。"}
+                </p>
+              </div>
             </div>
-            <div className="skillry-featured-hub-links">
-              <button
-                type="button"
-                className="skillry-pro-link-pill"
-                onClick={() => onOpenExternal("https://skillry.dev/pricing")}
-              >
-                <Coins aria-hidden="true" />
-                <span>{t("skills.skillryViewPricing")}</span>
-                <ExternalLink aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                className="skillry-refresh-icon-btn"
-                title={t("skills.retry")}
-                disabled={skillryCatalogLoading}
-                onClick={() => void onRefreshSkillryCatalog()}
-              >
-                <RefreshCw className={cn(skillryCatalogLoading && "spinning")} aria-hidden="true" />
-              </button>
+
+            <div className="skills-toolbar">
+              <div className="skills-filter-tabs" role="tablist" aria-label={t("skills.filterLabel")}>
+                {([
+                  ["all", t("skills.filter.all")],
+                  ["system", t("skills.filter.system")],
+                  ["user", t("skills.filter.user")]
+                ] as Array<[SkillFilter, string]>).map(([filter, label]) => (
+                  <button
+                    className={cn("skills-filter-tab", activeFilter === filter && "active")}
+                    key={filter}
+                    type="button"
+                    role="tab"
+                    aria-selected={activeFilter === filter}
+                    onClick={() => setActiveFilter(filter)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <label className="skills-search-field">
+                <Search aria-hidden="true" />
+                <input
+                  type="search"
+                  value={searchQuery}
+                  placeholder={t("skills.searchPlaceholder")}
+                  aria-label={t("skills.searchPlaceholder")}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                />
+              </label>
             </div>
-          </div>
 
-          <div className="skillry-pack-grid">
-            {displaySkillryPacks.map((pack) => {
-              const isCreator = pack.slug === "bs-creatormotion";
-              const PackIcon = isCreator ? WandSparkles : Rocket;
-              const isSyncing = syncingPackSlug === pack.slug;
-              const statusClass = pack.syncedToMkboard ? "synced" : pack.installedLocally ? "local" : "available";
-              const statusLabel = pack.syncedToMkboard
-                ? t("skills.skillryStatusSynced")
-                : pack.installedLocally
-                  ? t("skills.skillryStatusLocalOnly")
-                  : t("skills.skillryStatusNotInstalled");
+            {loading ? (
+              <div className="skills-loading-note">
+                <LoaderCircle className="spinning" aria-hidden="true" />
+                <span>{t("skills.loading")}</span>
+              </div>
+            ) : null}
 
-              return (
-                <article key={pack.slug} className={cn("skillry-pack-card", isCreator ? "creator" : "launch")}>
-                  <div className="skillry-pack-card-top">
-                    <div className="skillry-pack-brand">
-                      <span className={cn("skillry-pack-icon", isCreator ? "creator" : "launch")}>
-                        <PackIcon aria-hidden="true" />
-                      </span>
-                      <div>
-                        <div className="skillry-pack-title-row">
-                          <h3>{pack.title}</h3>
-                          <span className={cn("skillry-pricing-badge", pack.pricingTier)}>
-                            {isCreator ? t("skills.skillryCreatorBadge") : t("skills.skillryLaunchBadge")}
-                          </span>
-                        </div>
-                        <span className={cn("skillry-status-pill", statusClass)}>
-                          {pack.syncedToMkboard ? <CircleCheck aria-hidden="true" /> : null}
-                          {statusLabel}
-                        </span>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      className="skillry-demo-link"
-                      onClick={() => onOpenExternal(pack.landingUrl)}
-                    >
-                      <span>{t("skills.skillryViewWebsite")}</span>
-                      <ExternalLink aria-hidden="true" />
-                    </button>
-                  </div>
-
-                  <p className="skillry-pack-desc">{pack.subtitle}</p>
-
-                  <div className="skillry-pack-card-footer">
-                    {pack.installedLocally && !pack.syncedToMkboard ? (
-                      <>
-                        <Button
-                          variant="primary"
-                          className="skillry-pack-primary-btn"
-                          isDisabled={isSyncing}
-                          onPress={() => void quickEnableLocalSkillryPack(pack)}
-                        >
-                          {isSyncing ? <LoaderCircle className="spinning" aria-hidden="true" /> : <Check aria-hidden="true" />}
-                          {t("skills.skillryPrimaryEnable")}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          className="skillry-pack-secondary-btn"
-                          onPress={() => setActiveSkillryPackSlug(pack.slug)}
-                        >
-                          {t("skills.skillryPrimaryManage")}
-                        </Button>
-                      </>
-                    ) : pack.syncedToMkboard ? (
-                      <>
-                        <Button
-                          variant="outline"
-                          className="skillry-pack-secondary-btn"
-                          onPress={() => openSkill(pack.mkboardSkillId)}
-                        >
-                          <FileText aria-hidden="true" />
-                          {t("skills.skillryOpenSkill")}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          className="skillry-pack-secondary-btn"
-                          onPress={() => setActiveSkillryPackSlug(pack.slug)}
-                        >
-                          <RefreshCw aria-hidden="true" />
-                          {t("skills.skillryPrimaryManage")}
-                        </Button>
-                      </>
-                    ) : (
-                      <Button
-                        variant="primary"
-                        className="skillry-pack-primary-btn"
-                        onPress={() => setActiveSkillryPackSlug(pack.slug)}
-                      >
-                        <Sparkles aria-hidden="true" />
-                        {t("skills.skillryPrimaryImport")}
-                      </Button>
-                    )}
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        </section>
-
-        <div className="skills-toolbar">
-          <div className="skills-filter-tabs" role="tablist" aria-label={t("skills.filterLabel")}>
-            {([
-              ["all", t("skills.filter.all")],
-              ["system", t("skills.filter.system")],
-              ["user", t("skills.filter.user")]
-            ] as Array<[SkillFilter, string]>).map(([filter, label]) => (
-              <button className={cn("skills-filter-tab", activeFilter === filter && "active")} key={filter} type="button" role="tab" aria-selected={activeFilter === filter} onClick={() => setActiveFilter(filter)}>
-                {label}
-              </button>
-            ))}
-          </div>
-          <label className="skills-search-field">
-            <Search aria-hidden="true" />
-            <input type="search" value={searchQuery} placeholder={t("skills.searchPlaceholder")} aria-label={t("skills.searchPlaceholder")} onChange={(event) => setSearchQuery(event.target.value)} />
-          </label>
-        </div>
-
-        {loading ? (
-          <div className="skills-loading-note">
-            <LoaderCircle className="spinning" aria-hidden="true" />
-            <span>{t("skills.loading")}</span>
-          </div>
+            {error ? (
+              <div className="skill-editor-empty-state skills-library-message">
+                <AlertTriangle aria-hidden="true" />
+                <strong>{t("skills.loadFailed")}</strong>
+                <p>{error}</p>
+                <button type="button" className="hub-btn hub-btn-outline" disabled={loading} onClick={() => void onReloadSkills()}>
+                  {loading ? <LoaderCircle className="spinning" aria-hidden="true" /> : <RefreshCw aria-hidden="true" />}
+                  <span>{t("skills.retry")}</span>
+                </button>
+              </div>
+            ) : !loading && skills.length === 0 ? (
+              <div className="skill-editor-empty-state skills-library-message">
+                <Lightbulb aria-hidden="true" />
+                <strong>{t("skills.noSkillsTitle")}</strong>
+                <p>{t("skills.noSkillsDescription")}</p>
+              </div>
+            ) : filteredSkills.length === 0 ? (
+              <div className="skill-editor-empty-state skills-library-message">
+                <Search aria-hidden="true" />
+                <strong>{t("skills.emptyFilteredTitle")}</strong>
+                {searchQuery.trim() ? <p>{t("skills.emptyFilteredDescription", { query: searchQuery.trim() })}</p> : null}
+              </div>
+            ) : (
+              <div className="skills-card-grid" aria-label={t("skills.cardGridLabel")}>
+                {filteredSkills.map((skill) => (
+                  <SkillCard key={skill.id} skill={skill} onSelect={openSkill} />
+                ))}
+              </div>
+            )}
+          </section>
         ) : null}
-
-        {error ? (
-          <div className="skill-editor-empty-state skills-library-message">
-            <AlertTriangle aria-hidden="true" />
-            <strong>{t("skills.loadFailed")}</strong>
-            <p>{error}</p>
-            <Button className="skill-save-action" isDisabled={loading} variant="outline" onPress={() => void onReloadSkills()}>
-              {loading ? <LoaderCircle className="spinning" aria-hidden="true" /> : <RefreshCw aria-hidden="true" />}
-              {t("skills.retry")}
-            </Button>
-          </div>
-        ) : !loading && skills.length === 0 ? (
-          <div className="skill-editor-empty-state skills-library-message">
-            <Lightbulb aria-hidden="true" />
-            <strong>{t("skills.noSkillsTitle")}</strong>
-            <p>{t("skills.noSkillsDescription")}</p>
-          </div>
-        ) : filteredSkills.length === 0 ? (
-          <div className="skill-editor-empty-state skills-library-message">
-            <Search aria-hidden="true" />
-            <strong>{t("skills.emptyFilteredTitle")}</strong>
-            {searchQuery.trim() ? <p>{t("skills.emptyFilteredDescription", { query: searchQuery.trim() })}</p> : null}
-          </div>
-        ) : (
-          <div className="skills-card-grid" aria-label={t("skills.cardGridLabel")}>
-            {filteredSkills.map((skill) => (
-              <SkillCard key={skill.id} skill={skill} onSelect={openSkill} />
-            ))}
-          </div>
-        )}
       </div>
 
       <SourceImportModal
@@ -8575,27 +8436,6 @@ function SkillsScreen({
           const imported = await onImportSkill(input);
           setImportModalOpen(false);
           openSkill(imported.id);
-        }}
-      />
-
-      <SkillryImportModal
-        pack={activeSkillryPack}
-        selectedCliId={selectedCliId}
-        onClose={() => setActiveSkillryPackSlug(null)}
-        onInstall={onInstallSkillryPack}
-        onImportZip={async (zipPath) => {
-          const imported = await onImportSkill({
-            sourceType: "zip",
-            urlOrPath: zipPath,
-            installToAgentSkills: true
-          });
-          setActiveSkillryPackSlug(null);
-          openSkill(imported.id);
-        }}
-        onOpenExternal={onOpenExternal}
-        onOpenSkill={(skillId) => {
-          setActiveSkillryPackSlug(null);
-          openSkill(skillId);
         }}
       />
 
@@ -8616,242 +8456,6 @@ function SkillsScreen({
         onConfirm={() => void confirmDeleteSkill()}
       />
     </section>
-  );
-}
-
-function SkillryImportModal({
-  pack,
-  selectedCliId,
-  onClose,
-  onInstall,
-  onImportZip,
-  onOpenExternal,
-  onOpenSkill
-}: {
-  pack: SkillryPackStatus | null;
-  selectedCliId: AgentCliId;
-  onClose: () => void;
-  onInstall: (input: SkillryInstallInput) => Promise<SkillryInstallResult>;
-  onImportZip: (zipPath: string) => Promise<void>;
-  onOpenExternal: (url: string) => void;
-  onOpenSkill: (skillId: string) => void;
-}) {
-  const { t } = useI18n();
-  const [installMode, setInstallMode] = useState<"ai-agent" | "cli">("ai-agent");
-  const [installing, setInstalling] = useState(false);
-  const [result, setResult] = useState<SkillryInstallResult | null>(null);
-  const [copiedPrompt, setCopiedPrompt] = useState(false);
-
-  useEffect(() => {
-    setResult(null);
-    setInstalling(false);
-    setCopiedPrompt(false);
-  }, [pack?.slug]);
-
-  if (!pack || typeof document === "undefined") return null;
-
-  const isCreator = pack.slug === "bs-creatormotion";
-
-  async function runInstall() {
-    if (!pack || installing) return;
-    setInstalling(true);
-    setResult(null);
-    try {
-      const res = await onInstall({
-        slug: pack.slug,
-        mode: installMode,
-        agentCliId: selectedCliId
-      });
-      setResult(res);
-    } catch (err) {
-      setResult({
-        status: "failed",
-        slug: pack.slug,
-        message: err instanceof Error ? err.message : String(err)
-      });
-    } finally {
-      setInstalling(false);
-    }
-  }
-
-  async function handleChooseZip() {
-    const currentPack = pack;
-    if (!currentPack || installing) return;
-    const picked = await window.mkboard.chooseImportArchiveOrFilePath();
-    if (!picked) return;
-    setInstalling(true);
-    try {
-      await onImportZip(picked);
-    } catch (err) {
-      setResult({
-        status: "failed",
-        slug: currentPack.slug,
-        message: err instanceof Error ? err.message : String(err)
-      });
-    } finally {
-      setInstalling(false);
-    }
-  }
-
-  async function handleCopyPrompt() {
-    if (!pack) return;
-    try {
-      await navigator.clipboard.writeText(pack.aiInstallPrompt);
-      setCopiedPrompt(true);
-      window.setTimeout(() => setCopiedPrompt(false), 2000);
-    } catch {
-      // Ignore clipboard failure
-    }
-  }
-
-  return createPortal(
-    <div
-      className="taste-preview-dialog-layer"
-      onMouseDown={(event) => {
-        if (!installing && event.target === event.currentTarget) onClose();
-      }}
-    >
-      <section className="hub-modal-dialog skillry-modal-dialog" role="dialog" aria-modal="true" aria-label={t("skills.skillryModalTitle", { name: pack.title })}>
-        <header className="hub-modal-header">
-          <div>
-            <span className="skillry-featured-kicker">Skillry Official Suite</span>
-            <h2>{t("skills.skillryModalTitle", { name: pack.title })}</h2>
-          </div>
-          <button type="button" className="hub-modal-close" disabled={installing} onClick={onClose} aria-label={t("common.close")}>
-            <X aria-hidden="true" />
-          </button>
-        </header>
-
-        <div className="hub-modal-body">
-          <div className="skillry-pricing-info-card">
-            <div className="skillry-pricing-info-head">
-              <strong>
-                <Coins aria-hidden="true" />
-                {t("skills.skillryPricingCardTitle")}
-              </strong>
-              <span className={cn("skillry-pricing-badge", pack.pricingTier)}>
-                {isCreator ? t("skills.skillryCreatorBadge") : t("skills.skillryLaunchBadge")}
-              </span>
-            </div>
-            <p>{isCreator ? t("skills.skillryCreatorPricingDesc") : t("skills.skillryLaunchPricingDesc")}</p>
-            <div className="skillry-pricing-info-links">
-              <button type="button" className="skillry-inline-link primary" onClick={() => onOpenExternal(pack.pricingUrl)}>
-                <span>{t("skills.skillryViewPricing")}</span>
-                <ExternalLink aria-hidden="true" />
-              </button>
-              <button type="button" className="skillry-inline-link" onClick={() => onOpenExternal(pack.landingUrl)}>
-                <span>{t("skills.skillryViewPackPage")}</span>
-                <ExternalLink aria-hidden="true" />
-              </button>
-            </div>
-          </div>
-
-          <div className="hub-field-group">
-            <span className="hub-field-label">{t("skills.skillryAgentModeLabel")}</span>
-            <div className="skillry-mode-options">
-              <button
-                type="button"
-                className={cn("skillry-mode-option", installMode === "ai-agent" && "active")}
-                disabled={installing}
-                onClick={() => setInstallMode("ai-agent")}
-              >
-                <Bot aria-hidden="true" />
-                <div>
-                  <strong>{t("skills.skillryModeAi")}</strong>
-                  <small>{pack.aiInstallPrompt}</small>
-                </div>
-              </button>
-              <button
-                type="button"
-                className={cn("skillry-mode-option", installMode === "cli" && "active")}
-                disabled={installing}
-                onClick={() => setInstallMode("cli")}
-              >
-                <Terminal aria-hidden="true" />
-                <div>
-                  <strong>{t("skills.skillryModeCli")}</strong>
-                  <small>{pack.cliInstallCommand}</small>
-                </div>
-              </button>
-            </div>
-          </div>
-
-          {installing ? (
-            <div className="skillry-status-banner running" role="status">
-              <LoaderCircle className="spinning" aria-hidden="true" />
-              <span>{t("skills.skillryInstalling")}</span>
-            </div>
-          ) : null}
-
-          {result?.status === "needs_entitlement" ? (
-            <div className="skillry-entitlement-callout" role="alert">
-              <div className="skillry-entitlement-head">
-                <KeyRound aria-hidden="true" />
-                <strong>{t("skills.skillryEntitlementTitle")}</strong>
-              </div>
-              <p>{result.message}</p>
-              <div className="skillry-entitlement-actions">
-                <Button
-                  variant="primary"
-                  onPress={() => onOpenExternal(result.pricingUrl || pack.pricingUrl)}
-                >
-                  <ExternalLink aria-hidden="true" />
-                  {t("skills.skillryUnlockButton")}
-                </Button>
-                <Button variant="outline" onPress={() => void runInstall()}>
-                  <RefreshCw aria-hidden="true" />
-                  {t("skills.skillryRetryAfterUnlock")}
-                </Button>
-              </div>
-            </div>
-          ) : result?.status === "installed" ? (
-            <div className="skillry-status-banner success" role="status">
-              <CircleCheck aria-hidden="true" />
-              <div className="skillry-status-banner-copy">
-                <span>{result.message}</span>
-                {result.skill ? (
-                  <button type="button" className="skillry-inline-link primary" onClick={() => onOpenSkill(result.skill!.id)}>
-                    {t("skills.skillryOpenSkill")}
-                  </button>
-                ) : null}
-              </div>
-            </div>
-          ) : result ? (
-            <div className="skillry-status-banner error" role="alert">
-              <AlertTriangle aria-hidden="true" />
-              <span>{result.message}</span>
-            </div>
-          ) : null}
-
-          {result?.logs ? (
-            <pre className="skillry-install-logs">{result.logs}</pre>
-          ) : null}
-        </div>
-
-        <footer className="hub-modal-footer skillry-modal-footer">
-          <div className="skillry-modal-aux-actions">
-            <button type="button" className="hub-text-btn" disabled={installing} onClick={() => void handleChooseZip()}>
-              <FileArchive aria-hidden="true" />
-              <span>{t("skills.skillryImportZipFallback")}</span>
-            </button>
-            <button type="button" className="hub-text-btn" onClick={() => void handleCopyPrompt()}>
-              {copiedPrompt ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
-              <span>{copiedPrompt ? t("skills.skillryCopied") : t("skills.skillryCopyAiPrompt")}</span>
-            </button>
-          </div>
-          <div className="hub-modal-main-actions">
-            <Button variant="outline" isDisabled={installing} onPress={onClose}>
-              {t("common.close")}
-            </Button>
-            <Button variant="primary" isDisabled={installing} onPress={() => void runInstall()}>
-              {installing ? <LoaderCircle className="spinning" aria-hidden="true" /> : <Sparkles aria-hidden="true" />}
-              {t("skills.skillryStartInstall")}
-            </Button>
-          </div>
-        </footer>
-      </section>
-    </div>,
-    document.body
   );
 }
 
@@ -8886,11 +8490,12 @@ function SourceImportModal({
     setCustomDesc("");
     setErrMsg(null);
     setBusy(false);
-  }, [initialSourceType, initialUrlOrPath, isOpen]);
+  }, [isOpen, initialSourceType, initialUrlOrPath]);
 
   if (!isOpen || typeof document === "undefined") return null;
 
-  async function pickLocalPath() {
+  async function handleBrowse() {
+    if (busy) return;
     const picked =
       sourceType === "local"
         ? await window.mkboard.chooseImportDirectoryPath()
@@ -8917,21 +8522,18 @@ function SourceImportModal({
     }
   }
 
-  const title = kind === "taste" ? t("taste.importModalTitle") : t("skills.importModalTitle");
-  const subtitle = kind === "taste" ? t("taste.importModalSubtitle") : t("skills.importModalSubtitle");
-
   return createPortal(
     <div
       className="taste-preview-dialog-layer"
-      onMouseDown={(event) => {
-        if (!busy && event.target === event.currentTarget) onClose();
+      onMouseDown={(e) => {
+        if (!busy && e.target === e.currentTarget) onClose();
       }}
     >
-      <section className="hub-modal-dialog" role="dialog" aria-modal="true" aria-label={title}>
+      <section className="hub-modal-dialog" role="dialog" aria-modal="true" aria-label={kind === "taste" ? t("taste.importModalTitle") : t("skills.importModalTitle")}>
         <header className="hub-modal-header">
           <div>
-            <h2>{title}</h2>
-            <p>{subtitle}</p>
+            <h2>{kind === "taste" ? t("taste.importModalTitle") : t("skills.importModalTitle")}</h2>
+            <p>{kind === "taste" ? t("taste.importModalSubtitle") : t("skills.importModalSubtitle")}</p>
           </div>
           <button type="button" className="hub-modal-close" disabled={busy} onClick={onClose} aria-label={t("common.close")}>
             <X aria-hidden="true" />
@@ -8941,18 +8543,20 @@ function SourceImportModal({
         <div className="hub-modal-body">
           <div className="hub-source-tabs" role="tablist">
             {([
-              ["github", t("taste.sourceTabGithub")],
-              ["local", t("taste.sourceTabLocal")],
-              ["zip", t("taste.sourceTabZip")]
-            ] as const).map(([tabId, label]) => (
+              ["github", t("taste.sourceGithub")],
+              ["local", t("taste.sourceLocal")],
+              ["zip", t("taste.sourceZip")]
+            ] as const).map(([key, label]) => (
               <button
-                key={tabId}
+                key={key}
                 type="button"
                 role="tab"
-                aria-selected={sourceType === tabId}
-                className={cn("hub-source-tab", sourceType === tabId && "active")}
+                aria-selected={sourceType === key}
+                disabled={busy}
+                className={cn("hub-source-tab", sourceType === key && "active")}
                 onClick={() => {
-                  setSourceType(tabId);
+                  setSourceType(key);
+                  setUrlOrPath("");
                   setErrMsg(null);
                 }}
               >
@@ -8962,23 +8566,29 @@ function SourceImportModal({
           </div>
 
           <div className="hub-field-group">
+            <span className="hub-field-label">
+              {sourceType === "github" ? t("taste.githubUrlLabel") : t("taste.localPathLabel")}
+            </span>
             <div className="hub-path-input-row">
-              <Input
+              <input
+                type="text"
                 className="hub-input"
                 value={urlOrPath}
                 readOnly={busy}
                 placeholder={
                   sourceType === "github"
-                    ? "https://github.com/owner/repo 或 https://github.com/owner/repo/tree/main/..."
-                    : "/path/to/template-or-skill"
+                    ? kind === "taste"
+                      ? t("taste.githubUrlPlaceholder")
+                      : t("skills.githubUrlPlaceholder")
+                    : "/path/to/folder-or-archive"
                 }
                 onChange={(e) => setUrlOrPath(e.target.value)}
               />
               {sourceType !== "github" ? (
-                <Button variant="outline" isDisabled={busy} onPress={() => void pickLocalPath()}>
+                <button type="button" className="hub-btn hub-btn-outline" disabled={busy} onClick={() => void handleBrowse()}>
                   <FolderOpen aria-hidden="true" />
-                  {sourceType === "local" ? t("taste.pickDirectory") : t("taste.pickArchive")}
-                </Button>
+                  <span>{t("taste.choosePath")}</span>
+                </button>
               ) : null}
             </div>
           </div>
@@ -8986,7 +8596,8 @@ function SourceImportModal({
           <div className="hub-two-col-fields">
             <div className="hub-field-group">
               <span className="hub-field-label">{t("taste.optionalName")}</span>
-              <Input
+              <input
+                type="text"
                 className="hub-input"
                 value={customName}
                 readOnly={busy}
@@ -8997,7 +8608,8 @@ function SourceImportModal({
             </div>
             <div className="hub-field-group">
               <span className="hub-field-label">{t("taste.optionalDescription")}</span>
-              <Input
+              <input
+                type="text"
                 className="hub-input"
                 value={customDesc}
                 readOnly={busy}
@@ -9019,13 +8631,13 @@ function SourceImportModal({
         <footer className="hub-modal-footer">
           <div />
           <div className="hub-modal-main-actions">
-            <Button variant="outline" isDisabled={busy} onPress={onClose}>
-              {t("common.cancel")}
-            </Button>
-            <Button variant="primary" isDisabled={busy || !urlOrPath.trim()} onPress={() => void handleConfirm()}>
+            <button type="button" className="hub-btn hub-btn-outline" disabled={busy} onClick={onClose}>
+              <span>{t("common.cancel")}</span>
+            </button>
+            <button type="button" className="hub-btn hub-btn-dark" disabled={busy || !urlOrPath.trim()} onClick={() => void handleConfirm()}>
               {busy ? <LoaderCircle className="spinning" aria-hidden="true" /> : <Download aria-hidden="true" />}
-              {busy ? t("taste.importing") : kind === "taste" ? t("taste.confirmImport") : t("skills.confirmImport")}
-            </Button>
+              <span>{busy ? t("taste.importing") : kind === "taste" ? t("taste.confirmImport") : t("skills.confirmImport")}</span>
+            </button>
           </div>
         </footer>
       </section>
@@ -9084,12 +8696,16 @@ function TasteScreen({
   error,
   loading,
   tastes,
+  selectedCliId,
+  skillryCatalog,
+  skillryCatalogLoading,
+  onRefreshSkillryCatalog,
+  onSkillsChanged,
   onSetDefaultTaste,
   onCreateTaste,
   onUpdateTaste,
   onDeleteTaste,
   onImportTaste,
-  onNavigateToSkills,
   onOpenExternal,
   onReload
 }: {
@@ -9097,6 +8713,11 @@ function TasteScreen({
   error: string | null;
   loading: boolean;
   tastes: Taste[];
+  selectedCliId: AgentCliId;
+  skillryCatalog: SkillryCatalogStatus | null;
+  skillryCatalogLoading: boolean;
+  onRefreshSkillryCatalog: (forceRefresh?: boolean) => Promise<SkillryCatalogStatus | null>;
+  onSkillsChanged: () => Promise<unknown>;
   onSetDefaultTaste: (tasteId: string) => void;
   onCreateTaste: (input: CreateTasteInput) => Promise<Taste>;
   onUpdateTaste: (input: UpdateTasteInput) => Promise<Taste>;
@@ -9107,6 +8728,7 @@ function TasteScreen({
   onReload: () => void;
 }) {
   const { locale, t } = useI18n();
+  const isEn = locale === "en";
   const customTastes = useMemo(
     () => orderTastesWithPinnedDefault(tastes.filter((taste) => taste.id !== DEFAULT_TASTE_ID), defaultTasteId),
     [defaultTasteId, tastes]
@@ -9122,6 +8744,7 @@ function TasteScreen({
   const [quickImportError, setQuickImportError] = useState<string | null>(null);
   const [defaultNoticeTasteId, setDefaultNoticeTasteId] = useState<string | null>(null);
   const [pendingDeleteTaste, setPendingDeleteTaste] = useState<Taste | null>(null);
+  const [hubDrilledDown, setHubDrilledDown] = useState(false);
 
   useEffect(() => {
     if (!defaultNoticeTasteId) return undefined;
@@ -9134,15 +8757,16 @@ function TasteScreen({
     setDefaultNoticeTasteId(tasteId);
   }
 
-  async function handleQuickGithubImport(e?: React.FormEvent) {
-    e?.preventDefault();
-    if (!quickGithubUrl.trim() || quickImporting) return;
+  async function runGithubImportUrl(targetUrl: string) {
+    const trimmed = targetUrl.trim();
+    if (!trimmed || quickImporting) return;
+    setQuickGithubUrl(trimmed);
     setQuickImporting(true);
     setQuickImportError(null);
     try {
       const created = await onImportTaste({
         sourceType: "github",
-        urlOrPath: quickGithubUrl.trim()
+        urlOrPath: trimmed
       });
       setQuickGithubUrl("");
       setEditingTaste(created);
@@ -9153,6 +8777,11 @@ function TasteScreen({
     }
   }
 
+  async function handleQuickGithubImport(e?: React.FormEvent) {
+    e?.preventDefault();
+    await runGithubImportUrl(quickGithubUrl);
+  }
+
   const defaultNoticeTaste = defaultNoticeTasteId ? tastes.find((taste) => taste.id === defaultNoticeTasteId) : null;
 
   return (
@@ -9161,25 +8790,25 @@ function TasteScreen({
         <div>
           <h1>{t("taste.libraryTitle")}</h1>
         </div>
-        <div className="library-header-actions">
-          <Button
-            className="topbar-action-button"
-            variant="outline"
-            isDisabled={loading}
-            onPress={() => setEditingTaste("new")}
-          >
-            <Plus aria-hidden="true" />
-            {t("taste.createCustomButton")}
-          </Button>
-          <Button
-            className="topbar-action-button"
-            variant="primary"
-            isDisabled={loading}
-            onPress={() => setImportModalState({ open: true, sourceType: "github", url: "" })}
+        <div className="library-page-header-actions">
+          <button
+            type="button"
+            className="hub-btn hub-btn-outline"
+            disabled={loading}
+            onClick={() => setImportModalState({ open: true, sourceType: "github", url: "" })}
           >
             <Download aria-hidden="true" />
-            {t("taste.importSourceButton")}
-          </Button>
+            <span>{t("taste.importSourceButton")}</span>
+          </button>
+          <button
+            type="button"
+            className="hub-btn hub-btn-dark"
+            disabled={loading}
+            onClick={() => setEditingTaste("new")}
+          >
+            <Plus aria-hidden="true" />
+            <span>{t("taste.createCustomButton")}</span>
+          </button>
         </div>
       </header>
 
@@ -9196,13 +8825,13 @@ function TasteScreen({
             <AlertTriangle aria-hidden="true" />
             <strong>{t("skills.loadFailed")}</strong>
             <p>{error}</p>
-            <Button className="skill-save-action" isDisabled={loading} variant="outline" onPress={onReload}>
+            <button type="button" className="hub-btn hub-btn-outline" disabled={loading} onClick={onReload}>
               {loading ? <LoaderCircle className="spinning" aria-hidden="true" /> : <RefreshCw aria-hidden="true" />}
-              {t("taste.reload")}
-            </Button>
+              <span>{t("taste.reload")}</span>
+            </button>
           </div>
         ) : (
-          <>
+          <div className="taste-studio-layout">
             {defaultNoticeTaste ? (
               <div className="taste-default-notice" role="status" aria-live="polite">
                 <CircleCheck aria-hidden="true" />
@@ -9210,77 +8839,126 @@ function TasteScreen({
               </div>
             ) : null}
 
-            {customTastes.length === 0 ? (
-              <div className="taste-open-empty-hero">
-                <div className="taste-open-empty-main">
-                  <span className="taste-open-empty-icon">
-                    <Palette aria-hidden="true" />
-                  </span>
-                  <h2>{t("taste.emptyTitle")}</h2>
-                  <p>{t("taste.emptyDescription")}</p>
+            {/* Collection Showcase + Drill-down Sub-Effects & Visual Themes Gallery */}
+            <SkillryMotionHub
+              surface="taste"
+              locale={locale}
+              catalog={skillryCatalog}
+              catalogLoading={skillryCatalogLoading}
+              selectedCliId={selectedCliId}
+              onRefreshCatalog={onRefreshSkillryCatalog}
+              onSkillsChanged={onSkillsChanged}
+              onApplyVisualThemeAsTaste={onCreateTaste}
+              onOpenExternal={onOpenExternal}
+              onDrillDownChange={setHubDrilledDown}
+            />
 
-                  <form className="taste-quick-github-bar" onSubmit={(e) => void handleQuickGithubImport(e)}>
-                    <Input
-                      className="taste-quick-github-input"
+            {/* Custom & Open-Source GitHub Visual Styles Section */}
+            {!hubDrilledDown ? (
+              <section className="sry-local-section" aria-label={isEn ? "Custom & Open-Source Styles" : "开源模板与自定义风格"}>
+                <div className="sry-section-divider">
+                  <div>
+                    <h2>{isEn ? "Open-Source & Custom Styles" : "导入开源设计系统 / 我的自定义风格"}</h2>
+                    <p>
+                      {isEn
+                        ? "Import color tokens & design rules from any GitHub repo, local directory, or build your own visual style."
+                        : "支持粘贴任意 GitHub 开源仓库或本地目录自动提取配色与排版规范，也可手动新建专属视觉风格。"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="sry-github-import-strip">
+                  <form className="taste-github-bar" onSubmit={(e) => void handleQuickGithubImport(e)}>
+                    <span className="taste-github-bar-icon" aria-hidden="true">
+                      <Globe />
+                    </span>
+                    <input
+                      type="text"
+                      className="taste-github-bar-input"
                       value={quickGithubUrl}
                       readOnly={quickImporting}
                       placeholder={t("taste.emptyGithubPlaceholder")}
                       onChange={(e) => setQuickGithubUrl(e.target.value)}
                     />
-                    <Button type="submit" variant="primary" isDisabled={!quickGithubUrl.trim() || quickImporting}>
+                    <button
+                      type="submit"
+                      className="hub-btn hub-btn-dark taste-github-bar-submit"
+                      disabled={!quickGithubUrl.trim() || quickImporting}
+                    >
                       {quickImporting ? <LoaderCircle className="spinning" aria-hidden="true" /> : <Download aria-hidden="true" />}
-                      {quickImporting ? t("taste.importing") : t("taste.emptyQuickImport")}
-                    </Button>
+                      <span>{quickImporting ? t("taste.importing") : t("taste.emptyQuickImport")}</span>
+                    </button>
                   </form>
 
+                  <div className="taste-preset-chips">
+                    <span className="taste-preset-label">{isEn ? "Quick Try:" : "开源示例："}</span>
+                    <button
+                      type="button"
+                      className="taste-preset-chip"
+                      disabled={quickImporting}
+                      onClick={() => void runGithubImportUrl("https://github.com/nexu-io/open-design")}
+                    >
+                      <span>nexu-io/open-design</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="taste-preset-chip"
+                      disabled={quickImporting}
+                      onClick={() => void runGithubImportUrl("https://github.com/shadcn-ui/ui")}
+                    >
+                      <span>shadcn-ui/ui</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="taste-preset-chip action"
+                      disabled={quickImporting}
+                      onClick={() => setImportModalState({ open: true, sourceType: "local", url: "" })}
+                    >
+                      <FolderOpen aria-hidden="true" />
+                      <span>{t("taste.emptyLocalFolder")}</span>
+                    </button>
+                  </div>
+
                   {quickImportError ? (
-                    <div className="skillry-status-banner error taste-quick-error" role="alert">
+                    <div className="skillry-status-banner error" role="alert">
                       <AlertTriangle aria-hidden="true" />
                       <span>{quickImportError}</span>
                     </div>
                   ) : null}
-
-                  <div className="taste-open-empty-actions">
-                    <Button
-                      variant="outline"
-                      onPress={() => setImportModalState({ open: true, sourceType: "local", url: "" })}
-                    >
-                      <FolderOpen aria-hidden="true" />
-                      {t("taste.emptyLocalFolder")}
-                    </Button>
-                    <Button variant="ghost" onPress={() => setEditingTaste("new")}>
-                      <Plus aria-hidden="true" />
-                      {t("taste.createCustomButton")}
-                    </Button>
-                  </div>
                 </div>
 
-                <div className="taste-skillry-bridge-card">
-                  <div className="taste-skillry-bridge-copy">
-                    <strong>
-                      <Sparkles aria-hidden="true" />
-                      {t("taste.emptySkillryHintTitle")}
-                    </strong>
-                    <p>{t("taste.emptySkillryHintBody")}</p>
-                  </div>
-                  <Button variant="outline" onPress={onNavigateToSkills}>
-                    <WandSparkles aria-hidden="true" />
-                    {t("taste.emptyGoToSkills")}
-                  </Button>
+                <div className="taste-card-grid taste-card-grid-library taste-studio-grid">
+                  {customTastes.map((taste) => (
+                    <TastePreviewCard
+                      key={taste.id}
+                      taste={taste}
+                      defaultTaste={taste.id === defaultTasteId}
+                      onPreview={(id) => {
+                        const found = customTastes.find((item) => item.id === id);
+                        if (found) setEditingTaste(found);
+                      }}
+                    />
+                  ))}
+
+                  <button
+                    type="button"
+                    className="taste-studio-action-card create"
+                    onClick={() => setEditingTaste("new")}
+                  >
+                    <div className="taste-studio-canvas dot-matrix">
+                      <span className="taste-studio-plus-badge" aria-hidden="true">
+                        <Plus />
+                      </span>
+                    </div>
+                    <div className="taste-studio-card-meta">
+                      <strong>{t("taste.createCustomButton")}</strong>
+                      <span>{t("taste.rulesPlaceholder")}</span>
+                    </div>
+                  </button>
                 </div>
-              </div>
-            ) : (
-              <TasteCardGrid
-                className="taste-card-grid-library"
-                defaultTasteId={defaultTasteId}
-                tastes={customTastes}
-                onPreview={(id) => {
-                  const found = customTastes.find((item) => item.id === id);
-                  if (found) setEditingTaste(found);
-                }}
-              />
-            )}
-          </>
+              </section>
+            ) : null}
+          </div>
         )}
       </section>
 
@@ -9338,10 +9016,11 @@ function TasteScreen({
         isOpen={Boolean(pendingDeleteTaste)}
         title={t("taste.deleteConfirmTitle", { name: pendingDeleteTaste?.name ?? "" })}
         onClose={() => setPendingDeleteTaste(null)}
-        onConfirm={async () => {
+        onConfirm={() => {
           if (!pendingDeleteTaste) return;
-          await onDeleteTaste(pendingDeleteTaste.id);
+          const targetId = pendingDeleteTaste.id;
           setPendingDeleteTaste(null);
+          void onDeleteTaste(targetId);
         }}
       />
     </section>
@@ -9468,8 +9147,8 @@ function CustomTasteEditorModal({
         <div className="hub-modal-body">
           <div className="taste-live-specimen" style={{ background: bg, color: fg }}>
             <div className="taste-live-specimen-bar">
-              <span className="taste-card-accent" style={{ background: accent }} />
-              <span style={{ opacity: 0.72, fontSize: 12 }}>SPECIMEN PREVIEW</span>
+              <span className="taste-live-specimen-chip" style={{ background: accent }} />
+              <span className="taste-live-specimen-label">SPECIMEN PREVIEW</span>
             </div>
             <strong>{name.trim() || "Untitled Visual Style"}</strong>
             <p style={{ opacity: 0.82 }}>{description.trim() || "Typography, surface hierarchy & motion tokens"}</p>
@@ -9478,11 +9157,11 @@ function CustomTasteEditorModal({
           <div className="hub-two-col-fields">
             <div className="hub-field-group">
               <span className="hub-field-label">{t("skills.name")}</span>
-              <Input className="hub-input" value={name} maxLength={60} readOnly={busy} onChange={(e) => setName(e.target.value)} />
+              <input type="text" className="hub-input" value={name} maxLength={60} readOnly={busy} onChange={(e) => setName(e.target.value)} />
             </div>
             <div className="hub-field-group">
               <span className="hub-field-label">{t("skills.description")}</span>
-              <Input className="hub-input" value={description} maxLength={180} readOnly={busy} onChange={(e) => setDescription(e.target.value)} />
+              <input type="text" className="hub-input" value={description} maxLength={180} readOnly={busy} onChange={(e) => setDescription(e.target.value)} />
             </div>
           </div>
 
@@ -9504,7 +9183,7 @@ function CustomTasteEditorModal({
 
           <div className="hub-field-group">
             <span className="hub-field-label">{t("taste.rulesLabel")}</span>
-            <TextArea
+            <textarea
               className="taste-rules-textarea"
               value={content}
               readOnly={busy}
@@ -9525,28 +9204,28 @@ function CustomTasteEditorModal({
         <footer className="hub-modal-footer">
           <div className="skillry-modal-aux-actions">
             {existing ? (
-              <Button variant="outline" className="skill-delete-action" isDisabled={busy} onPress={() => onRequestDelete(existing)}>
+              <button type="button" className="hub-btn hub-btn-danger" disabled={busy} onClick={() => onRequestDelete(existing)}>
                 <Trash2 aria-hidden="true" />
-                {t("taste.delete")}
-              </Button>
+                <span>{t("taste.delete")}</span>
+              </button>
             ) : null}
             {canResync && existing ? (
-              <Button variant="ghost" isDisabled={busy} onPress={() => void handleResyncClick()}>
+              <button type="button" className="hub-btn hub-btn-ghost" disabled={busy} onClick={() => void handleResyncClick()}>
                 <RefreshCw aria-hidden="true" />
-                {t("taste.resyncSource")}
-              </Button>
+                <span>{t("taste.resyncSource")}</span>
+              </button>
             ) : null}
           </div>
           <div className="hub-modal-main-actions">
             {existing ? (
-              <Button variant="outline" isDisabled={busy || isDefault} onPress={() => onSetDefault(existing.id)}>
-                {isDefault ? t("taste.defaultCurrent") : t("taste.setDefault")}
-              </Button>
+              <button type="button" className="hub-btn hub-btn-outline" disabled={busy || isDefault} onClick={() => onSetDefault(existing.id)}>
+                <span>{isDefault ? t("taste.defaultCurrent") : t("taste.setDefault")}</span>
+              </button>
             ) : null}
-            <Button variant="primary" isDisabled={busy || !name.trim() || !content.trim()} onPress={() => void handleSave()}>
+            <button type="button" className="hub-btn hub-btn-dark" disabled={busy || !name.trim() || !content.trim()} onClick={() => void handleSave()}>
               {busy ? <LoaderCircle className="spinning" aria-hidden="true" /> : null}
-              {t("common.save")}
-            </Button>
+              <span>{t("common.save")}</span>
+            </button>
           </div>
         </footer>
       </section>
@@ -10491,8 +10170,6 @@ function CodexAuthorizationDialog({
               />
             ) : null}
 
-            {activeSection === "feedback" ? <FeedbackSettingsPanel onOpenXDirectMessage={() => onOpenExternal(X_DIRECT_MESSAGE_URL)} /> : null}
-
             {activeSection === "about" ? (
               <section className="settings-static-section" aria-labelledby="account-auth-title">
                 <header className="execution-settings-header">
@@ -10516,6 +10193,23 @@ function CodexAuthorizationDialog({
                     icon={<MkboardBrandIcon className="settings-brand-icon" decorative />}
                     title={t("settings.about.version")}
                     value={appVersion || t("common.loading")}
+                  />
+
+                  <SettingsStaticCard
+                    action={
+                      <button
+                        className="settings-static-action"
+                        type="button"
+                        onClick={() => onOpenExternal(GITHUB_ISSUES_URL)}
+                      >
+                        <ExternalLink aria-hidden="true" />
+                        <span>GitHub Issues</span>
+                      </button>
+                    }
+                    detail="遇到问题或有功能建议？欢迎直接在 GitHub 仓库提交 Issue。"
+                    icon={<Globe aria-hidden="true" />}
+                    title="开源仓库与问题反馈"
+                    value="yihui-dev/mkboard.app"
                   />
                 </div>
               </section>
@@ -11607,44 +11301,6 @@ function VoiceSettingsPanel({
           ) : null}
         </div>
       ) : null}
-    </section>
-  );
-}
-
-function FeedbackSettingsPanel({ onOpenXDirectMessage }: { onOpenXDirectMessage: () => void }) {
-  const { t } = useI18n();
-
-  return (
-    <section className="settings-feedback-section" aria-labelledby="settings-feedback-title">
-      <header className="execution-settings-header">
-        <h1 id="settings-feedback-title">{t("settings.feedback.title")}</h1>
-      </header>
-
-      <div className="settings-feedback-stack">
-        <article className="settings-feedback-card settings-feedback-x-card">
-          <div className="settings-feedback-brand-icon settings-feedback-x-icon" aria-hidden="true">
-            <img src={X_LOGO_SRC} alt="" />
-          </div>
-          <div className="settings-feedback-copy">
-            <strong>{t("settings.feedback.problemTitle")}</strong>
-            <small>{t("settings.feedback.xNote")}</small>
-          </div>
-          <button className="settings-feedback-x-button" type="button" aria-label={t("settings.feedback.openXDm")} onClick={onOpenXDirectMessage}>
-            <ExternalLink aria-hidden="true" />
-          </button>
-        </article>
-
-        <article className="settings-feedback-card settings-feedback-feishu-card">
-          <div className="settings-feedback-brand-icon" aria-hidden="true">
-            <img src={FEISHU_ICON_SRC} alt="" />
-          </div>
-          <div className="settings-feedback-copy">
-            <strong>{t("settings.feedback.feishuValue")}</strong>
-            <small>{t("settings.feedback.feishuDescription")}</small>
-          </div>
-          <img className="settings-feedback-qr" src={FEISHU_GROUP_QR_SRC} alt={t("settings.feedback.feishuQrAlt")} />
-        </article>
-      </div>
     </section>
   );
 }

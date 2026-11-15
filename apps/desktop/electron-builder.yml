@@ -19,6 +19,7 @@ extraResources:
 asar: true
 asarUnpack:
   - "**/*.node"
+  - "**/node_modules/skillry-cli/**"
 
 npmRebuild: false
 afterPack: scripts/after-pack.cjs

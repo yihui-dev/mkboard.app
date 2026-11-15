@@ -13,9 +13,13 @@ import {
   classifySkillryInstallFailure,
   extractPaletteFromSources,
   getSkillryCatalogStatus,
+  getSkillryCollectionDetail,
+  checkSkillrySkillAccess,
   importSkillFromSource,
   importTasteFromSource,
-  parseGitHubUrl
+  parseGitHubUrl,
+  resolveBundledSkillryCliEntry,
+  resolveNpmBinary
 } from "../src/main/style-skill-hub.ts";
 
 test("ByokStore persists keys locally, masks previews, honors env overrides, and prevents blank-key wipes", () => {
@@ -329,6 +333,33 @@ test("Skillry CreatorMotion & LaunchMotion hub status, paid entitlement classifi
     );
     assert.equal(catalog.packs[0].pricingTier, "freemium_pro");
     assert.equal(catalog.packs[1].pricingTier, "paid_pro");
+    assert.equal(
+      catalog.packs[0].cliInstallCommand,
+      "npm exec --yes --package=skillry-cli@latest -- skillry-cli install bs-creatormotion --agent shared --force"
+    );
+    assert.equal(catalog.packs[0].themes.length, 4);
+    assert.equal(catalog.packs[1].themes.length, 6);
+    assert.equal(catalog.bundledCliAvailable, true);
+
+    const creatorDetail = await getSkillryCollectionDetail(store, { slug: "bs-creatormotion", locale: "zh-CN" });
+    assert.equal(creatorDetail.pack.slug, "bs-creatormotion");
+    assert.ok(creatorDetail.items.length >= 12);
+    assert.ok(creatorDetail.categories.length >= 2);
+    assert.ok(creatorDetail.items.every((it) => it.previewVideoUrl.startsWith("https://")));
+
+    const launchDetail = await getSkillryCollectionDetail(store, { slug: "bs-launchmotion", locale: "zh-CN" });
+    assert.equal(launchDetail.pack.slug, "bs-launchmotion");
+    assert.ok(launchDetail.items.length >= 12);
+    assert.ok(launchDetail.categories.length >= 2);
+
+    const accessCheck = await checkSkillrySkillAccess({ slug: "bs-launchmotion", priceUsdCents: 99999 });
+    assert.equal(accessCheck.slug, "bs-launchmotion");
+    assert.equal(accessCheck.isMembersOnlyBundle, true);
+    assert.equal(accessCheck.pricingUrl, "https://skillry.dev/pricing");
+    const npmBin = await resolveNpmBinary();
+    assert.ok(npmBin && npmBin.length > 0);
+    const bundledEntry = resolveBundledSkillryCliEntry();
+    assert.ok(bundledEntry && bundledEntry.entryPath.endsWith("dist/index.js"));
 
     const launchPaidCheck = classifySkillryInstallFailure(
       "SkillryApiError: HTTP 402 Payment Required - Upgrade to Skillry Pro at https://skillry.dev/pricing to unlock bs-launchmotion",

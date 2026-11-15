@@ -20,10 +20,15 @@ import { findCliAgentDefinition } from "./agent-registry";
 import { assertSafeRemoteMediaUrl, ByokStore } from "./byok-store";
 import { CompanionServer } from "./companion-server";
 import {
+  checkSkillrySkillAccess,
+  disconnectSkillryAccount,
   getSkillryCatalogStatus,
+  getSkillryCollectionDetail,
   importSkillFromSource,
   importTasteFromSource,
   installSkillryPack,
+  pollSkillryDeviceAuth,
+  startSkillryDeviceAuth,
   syncSkillryPackToMkboard
 } from "./style-skill-hub";
 import { ElevenLabsService } from "./elevenlabs";
@@ -1428,6 +1433,14 @@ async function dispatchCompanionRpc(method: string, args: unknown[]): Promise<un
       return store.deleteTemplate(String(args[0]));
     case "listTastes":
       return store.listTastes();
+    case "createTaste":
+      return store.createTaste(args[0] as CreateTasteInput);
+    case "updateTaste":
+      return store.updateTaste(args[0] as UpdateTasteInput);
+    case "deleteTaste":
+      return store.deleteTaste(String(args[0]));
+    case "importTasteFromSource":
+      return importTasteFromSource(store, args[0] as ExternalSourceImportInput);
     case "saveProjectTaste":
       return store.saveProjectTaste(String(args[0]), String(args[1]));
     case "updateProject":
@@ -1502,6 +1515,24 @@ async function dispatchCompanionRpc(method: string, args: unknown[]): Promise<un
       return store.updateSkill(args[0] as UpdateSkillInput);
     case "deleteSkill":
       return store.deleteSkill(String(args[0]));
+    case "importSkillFromSource":
+      return importSkillFromSource(store, args[0] as ExternalSourceImportInput);
+    case "getSkillryCatalogStatus":
+      return getSkillryCatalogStatus(store, Boolean(args[0]));
+    case "getSkillryCollectionDetail":
+      return getSkillryCollectionDetail(store, args[0] as { slug: SkillryPackId; locale?: string; forceRefresh?: boolean });
+    case "startSkillryDeviceAuth":
+      return startSkillryDeviceAuth((url) => shell.openExternal(url));
+    case "pollSkillryDeviceAuth":
+      return pollSkillryDeviceAuth();
+    case "disconnectSkillryAccount":
+      return disconnectSkillryAccount(store);
+    case "checkSkillrySkillAccess":
+      return checkSkillrySkillAccess(args[0] as { slug: string; priceUsdCents?: number });
+    case "installSkillryPack":
+      return installSkillryPack(store, args[0] as SkillryInstallInput);
+    case "syncSkillryPackToMkboard":
+      return syncSkillryPackToMkboard(store, String(args[0]));
     case "createAgentConversation":
       return store.createAgentConversation(String(args[0]));
     case "getAgentConversation":
@@ -1810,9 +1841,20 @@ function registerIpc(): void {
   ipcMain.handle("mkboard:update-skill", (_event, input: UpdateSkillInput) => store.updateSkill(input));
   ipcMain.handle("mkboard:delete-skill", (_event, skillId: string) => store.deleteSkill(skillId));
   ipcMain.handle("mkboard:import-skill-from-source", (_event, input: ExternalSourceImportInput) => importSkillFromSource(store, input));
-  ipcMain.handle("mkboard:get-skillry-catalog-status", () => getSkillryCatalogStatus(store));
+  ipcMain.handle("mkboard:get-skillry-catalog-status", (_event, forceRefresh?: boolean) => getSkillryCatalogStatus(store, forceRefresh));
+  ipcMain.handle("mkboard:get-skillry-collection-detail", (_event, input: { slug: SkillryPackId; locale?: string; forceRefresh?: boolean }) =>
+    getSkillryCollectionDetail(store, input)
+  );
+  ipcMain.handle("mkboard:start-skillry-device-auth", () =>
+    startSkillryDeviceAuth((url) => shell.openExternal(url))
+  );
+  ipcMain.handle("mkboard:poll-skillry-device-auth", () => pollSkillryDeviceAuth());
+  ipcMain.handle("mkboard:disconnect-skillry-account", () => disconnectSkillryAccount(store));
+  ipcMain.handle("mkboard:check-skillry-skill-access", (_event, input: { slug: string; priceUsdCents?: number }) =>
+    checkSkillrySkillAccess(input)
+  );
   ipcMain.handle("mkboard:install-skillry-pack", (_event, input: SkillryInstallInput) => installSkillryPack(store, input));
-  ipcMain.handle("mkboard:sync-skillry-pack-to-mkboard", (_event, slug: SkillryPackId) => syncSkillryPackToMkboard(store, slug));
+  ipcMain.handle("mkboard:sync-skillry-pack-to-mkboard", (_event, slug: string) => syncSkillryPackToMkboard(store, slug));
   ipcMain.handle("mkboard:choose-import-directory-path", async (event) => {
     const ownerWindow = BrowserWindow.fromWebContents(event.sender) ?? mainWindow;
     const result = ownerWindow

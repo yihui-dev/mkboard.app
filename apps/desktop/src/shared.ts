@@ -435,6 +435,68 @@ export type ExternalSourceImportInput = {
 export type SkillryPackId = "bs-creatormotion" | "bs-launchmotion";
 export type SkillryPackPricingTier = "freemium_pro" | "paid_pro";
 
+export type SkillryVisualThemeItem = {
+  id: string;
+  packSlug: SkillryPackId;
+  nameZh: string;
+  nameEn: string;
+  descriptionZh: string;
+  descriptionEn: string;
+  swatches: string[];
+  previewVideoUrl: string;
+  posterUrl: string;
+  tasteRules: string;
+};
+
+export type SkillrySubEffectItem = {
+  slug: string;
+  packSlug: SkillryPackId;
+  effectId: string;
+  category: string;
+  name: string;
+  description: string;
+  priceUsdCents: number;
+  posterUrl: string;
+  previewVideoUrl: string;
+  installedLocally: boolean;
+  syncedToMkboard: boolean;
+  skillPageUrl: string;
+};
+
+export type SkillryAccountState = {
+  connected: boolean;
+  email: string | null;
+  name: string | null;
+  entitlement: "free" | "premium" | "unknown";
+  quotaRemaining: number | null;
+  quotaLimit: number | null;
+};
+
+export type SkillryDeviceAuthSession = {
+  status: "pending" | "connected" | "denied" | "expired" | "not_started" | "error";
+  userCode?: string;
+  verificationUrl?: string;
+  pollAfterSeconds?: number;
+  expiresAt?: string;
+  account?: SkillryAccountState;
+  message?: string;
+};
+
+export type SkillryAccessCheckResult = {
+  slug: string;
+  connected: boolean;
+  canDownload: boolean;
+  access: "free" | "member" | "purchased" | "purchase_required" | "unauthenticated" | "error";
+  reason: "purchase_required" | "daily_download_limit" | "unauthenticated" | "network_error" | null;
+  isMembersOnlyBundle: boolean;
+  priceUsdCents: number;
+  purchaseUrl: string | null;
+  pricingUrl: string;
+  installedLocally: boolean;
+  account: SkillryAccountState;
+  message?: string;
+};
+
 export type SkillryPackStatus = {
   slug: SkillryPackId;
   mkboardSkillId: string;
@@ -442,7 +504,9 @@ export type SkillryPackStatus = {
   subtitle: string;
   pricingTier: SkillryPackPricingTier;
   totalEffectsCount: number;
+  freeEffectsCount: number;
   installedLocally: boolean;
+  installedMasterLocally: boolean;
   installedSubSkillCount: number;
   installedPaths: string[];
   syncedToMkboard: boolean;
@@ -450,31 +514,51 @@ export type SkillryPackStatus = {
   skillPageUrl: string;
   installDocUrl: string;
   pricingUrl: string;
+  heroVideoUrl: string;
+  heroPosterUrl: string;
+  featuredPosters: string[];
+  categoryTagsZh: string[];
+  categoryTagsEn: string[];
+  themes: SkillryVisualThemeItem[];
   aiInstallPrompt: string;
   cliInstallCommand: string;
+};
+
+export type SkillryCollectionDetail = {
+  pack: SkillryPackStatus;
+  categories: Array<{ id: string; labelZh: string; labelEn: string; count: number }>;
+  items: SkillrySubEffectItem[];
+  source: "live" | "fallback";
 };
 
 export type SkillryCatalogStatus = {
   cliLoggedIn: boolean;
   cliAccountEmail?: string | null;
   cliAccountHandle?: string | null;
+  account: SkillryAccountState;
+  npmAvailable?: boolean;
+  bundledCliAvailable?: boolean;
   packs: SkillryPackStatus[];
 };
 
 export type SkillryInstallInput = {
-  slug: SkillryPackId;
-  mode?: "ai-agent" | "cli";
+  slug: string;
+  mode?: "npm" | "cli" | "ai-agent";
   agentCliId?: AgentCliId;
+  skipPreflight?: boolean;
 };
 
 export type SkillryInstallResult = {
   status: "installed" | "needs_entitlement" | "needs_login" | "failed";
-  slug: SkillryPackId;
+  slug: string;
   skill?: Skill;
   installedPaths?: string[];
   actionUrl?: string;
+  purchaseUrl?: string | null;
   pricingUrl?: string;
   landingUrl?: string;
+  isMembersOnlyBundle?: boolean;
+  priceUsdCents?: number;
   logs?: string;
   message: string;
   catalog?: SkillryCatalogStatus;
@@ -1203,9 +1287,14 @@ export type MkboardApi = {
   updateSkill(input: UpdateSkillInput): Promise<Skill>;
   deleteSkill(skillId: string): Promise<Skill[]>;
   importSkillFromSource(input: ExternalSourceImportInput): Promise<Skill>;
-  getSkillryCatalogStatus(): Promise<SkillryCatalogStatus>;
+  getSkillryCatalogStatus(forceRefresh?: boolean): Promise<SkillryCatalogStatus>;
+  getSkillryCollectionDetail(input: { slug: SkillryPackId; locale?: string; forceRefresh?: boolean }): Promise<SkillryCollectionDetail>;
+  startSkillryDeviceAuth(): Promise<SkillryDeviceAuthSession>;
+  pollSkillryDeviceAuth(): Promise<SkillryDeviceAuthSession>;
+  disconnectSkillryAccount(): Promise<SkillryCatalogStatus>;
+  checkSkillrySkillAccess(input: { slug: string; priceUsdCents?: number }): Promise<SkillryAccessCheckResult>;
   installSkillryPack(input: SkillryInstallInput): Promise<SkillryInstallResult>;
-  syncSkillryPackToMkboard(slug: SkillryPackId): Promise<SkillryInstallResult>;
+  syncSkillryPackToMkboard(slug: string): Promise<SkillryInstallResult>;
   chooseImportDirectoryPath(): Promise<string | null>;
   chooseImportArchiveOrFilePath(): Promise<string | null>;
   createAgentConversation(projectId: string): Promise<AgentConversationDetail>;

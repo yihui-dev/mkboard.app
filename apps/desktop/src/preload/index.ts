@@ -146,9 +146,16 @@ const api: MkboardApi = {
   updateSkill: (input: UpdateSkillInput) => ipcRenderer.invoke("mkboard:update-skill", input),
   deleteSkill: (skillId: string) => ipcRenderer.invoke("mkboard:delete-skill", skillId),
   importSkillFromSource: (input: ExternalSourceImportInput) => ipcRenderer.invoke("mkboard:import-skill-from-source", input),
-  getSkillryCatalogStatus: () => ipcRenderer.invoke("mkboard:get-skillry-catalog-status"),
+  getSkillryCatalogStatus: (forceRefresh?: boolean) => ipcRenderer.invoke("mkboard:get-skillry-catalog-status", forceRefresh),
+  getSkillryCollectionDetail: (input: { slug: SkillryPackId; locale?: string; forceRefresh?: boolean }) =>
+    ipcRenderer.invoke("mkboard:get-skillry-collection-detail", input),
+  startSkillryDeviceAuth: () => ipcRenderer.invoke("mkboard:start-skillry-device-auth"),
+  pollSkillryDeviceAuth: () => ipcRenderer.invoke("mkboard:poll-skillry-device-auth"),
+  disconnectSkillryAccount: () => ipcRenderer.invoke("mkboard:disconnect-skillry-account"),
+  checkSkillrySkillAccess: (input: { slug: string; priceUsdCents?: number }) =>
+    ipcRenderer.invoke("mkboard:check-skillry-skill-access", input),
   installSkillryPack: (input: SkillryInstallInput) => ipcRenderer.invoke("mkboard:install-skillry-pack", input),
-  syncSkillryPackToMkboard: (slug: SkillryPackId) => ipcRenderer.invoke("mkboard:sync-skillry-pack-to-mkboard", slug),
+  syncSkillryPackToMkboard: (slug: string) => ipcRenderer.invoke("mkboard:sync-skillry-pack-to-mkboard", slug),
   chooseImportDirectoryPath: () => ipcRenderer.invoke("mkboard:choose-import-directory-path"),
   chooseImportArchiveOrFilePath: () => ipcRenderer.invoke("mkboard:choose-import-archive-or-file-path"),
   createAgentConversation: (projectId: string) => ipcRenderer.invoke("mkboard:create-agent-conversation", projectId),

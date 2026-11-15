@@ -53,6 +53,7 @@
     "react-joyride": "^3.1.0",
     "react-markdown": "10.1.0",
     "remark-gfm": "4.0.1",
+    "skillry-cli": "^0.2.2",
     "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
