@@ -4147,22 +4147,8 @@ if (singleInstanceLock) {
       hasActiveWork: hasActiveDesktopWork,
       disabled: isReleaseSmokeTest
     });
-    companionServer = new CompanionServer({
-      dataDir,
-      rendererDistDir: join(__dirname, "../renderer"),
-      resolveAssetPath: async (assetId, poster, firstFrame) => {
-        if (firstFrame) {
-          return (await store.resolveAssetFirstFramePath(assetId)) ?? store.resolveAssetPosterPath(assetId);
-        }
-        return poster ? store.resolveAssetPosterPath(assetId) : store.resolveAssetPreviewPath(assetId);
-      },
-      dispatchRpc: (method, args) => dispatchCompanionRpc(method, args),
-      handleMcpRequest: (msg) => (mcpBridge ? mcpBridge.handleHttpJsonRpc(msg) : Promise.resolve(null)),
-      defaultMode: "off"
-    });
-    if (!isReleaseSmokeTest && !isDesktopUpdateE2eTest) {
-      void companionServer.start();
-    }
+    // Multi-device companion disabled in desktop client per product simplification
+    companionServer = null;
     registerAssetPreviewProtocol();
     registerIpc();
     createWindow();

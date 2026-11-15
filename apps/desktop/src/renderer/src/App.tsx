@@ -15,7 +15,6 @@ import tastePreviewImageUrlMap from "./data/taste-preview-images.json";
 import { AgentBrandGlyph, ByokProviderBrandAvatar, normalizeBrandAgentId } from "./components/BrandIcons";
 import { SkillryMotionHub } from "./components/SkillryMotionHub";
 import {
-  SkillCreateActionCard,
   SkillGalleryCard,
   SkillryPackGalleryCard,
   SkillryTastePackCard,
@@ -8559,15 +8558,7 @@ function SkillsScreen({
                       />
                     ))}
 
-                    {activeFilter !== "packs" && !normalizedQuery ? (
-                      <SkillCreateActionCard
-                        locale={locale}
-                        mode={activeFilter === "presets" ? "preset" : "skill"}
-                        onCreate={startCreateSkill}
-                        onCreatePreset={() => setEditingTaste("new")}
-                        onImportGithub={() => setImportModalMode(activeFilter === "presets" ? "taste" : "skill")}
-                      />
-                    ) : null}
+
                   </div>
                 )}
               </section>
@@ -10634,7 +10625,7 @@ function ByokAndCompanionSection({
   return (
     <div className="byok-companion-section">
       <header className="execution-settings-header">
-        <h1>{isEn ? "Local API Keys (BYOK) & Multi-Device Companion" : "本地 API 密钥 (BYOK) 与多端协同"}</h1>
+        <h1>{isEn ? "Local API Keys (BYOK)" : "本地 API 密钥 (BYOK)"}</h1>
       </header>
 
       <div className="byok-privacy-banner">
@@ -10803,85 +10794,6 @@ function ByokAndCompanionSection({
         })}
       </div>
 
-      <section className="companion-card" aria-label="Multi-Device Web Companion">
-        <div className="byok-provider-head">
-          <div className="byok-provider-title">
-            <Monitor size={16} aria-hidden="true" />
-            <strong>{isEn ? "Web & iPad / Mobile Companion + Remote HTTP MCP" : "多端 Web 协同（浏览器 / iPad 扫码直连）与远程 HTTP MCP"}</strong>
-          </div>
-          {companionStatus?.running ? (
-            <button className="local-cli-action" type="button" disabled={companionBusy} onClick={() => void rotateToken()}>
-              <RotateCcw aria-hidden="true" />
-              {isEn ? "Rotate Token" : "重置配对令牌"}
-            </button>
-          ) : null}
-        </div>
-        <p className="byok-provider-desc">
-          {isEn
-            ? "Open MkBoard in any desktop, iPad, or mobile browser over localhost, LAN, or Tailscale, and expose Streamable HTTP /mcp for remote agents."
-            : "开启后可在任意桌面浏览器、iPad 或手机上通过局域网 / Tailscale 实时访问同一分镜工作台，并同时提供 Streamable HTTP /mcp 远程 Agent 接口。"}
-        </p>
-        <div className="companion-mode-bar" role="tablist">
-          {(
-            [
-              { id: "off", label: isEn ? "Off" : "关闭" },
-              { id: "local-only", label: isEn ? "Localhost Only" : "仅本机 (127.0.0.1)" },
-              { id: "network-accessible", label: isEn ? "LAN / Tailscale (QR)" : "局域网 / Tailscale 扫码" }
-            ] as const
-          ).map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              role="tab"
-              aria-selected={(companionStatus?.mode ?? "off") === item.id}
-              className={cn("companion-mode-btn", (companionStatus?.mode ?? "off") === item.id && "active")}
-              disabled={companionBusy}
-              onClick={() => void changeCompanionMode(item.id)}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-
-        {companionStatus?.running ? (
-          <div className="companion-pair-grid">
-            {companionStatus.qrSvg ? (
-              <div
-                className="companion-qr-box"
-                aria-label="Companion QR Code"
-                dangerouslySetInnerHTML={{ __html: companionStatus.qrSvg }}
-              />
-            ) : null}
-            <div className="companion-url-list">
-              {companionStatus.endpoints.map((ep, idx) => {
-                const copyId = `pair-${idx}`;
-                return (
-                  <div className="companion-url-row" key={ep.url}>
-                    <code>{ep.label}: {ep.pairingUrl}</code>
-                    <button className="local-cli-action" type="button" onClick={() => copyText(copyId, ep.pairingUrl)}>
-                      <Copy aria-hidden="true" />
-                      {copiedKey === copyId ? (isEn ? "Copied" : "已复制") : isEn ? "Copy Link" : "复制配对链接"}
-                    </button>
-                  </div>
-                );
-              })}
-              {companionStatus.mcpHttpUrl ? (
-                <div className="companion-url-row">
-                  <code>MCP HTTP: {companionStatus.mcpHttpUrl} ({companionStatus.tokenPreview})</code>
-                  <button
-                    className="local-cli-action"
-                    type="button"
-                    onClick={() => copyText("mcp-http", companionStatus.mcpHttpUrl || "")}
-                  >
-                    <Copy aria-hidden="true" />
-                    {copiedKey === "mcp-http" ? (isEn ? "Copied" : "已复制") : isEn ? "Copy URL" : "复制 MCP 地址"}
-                  </button>
-                </div>
-              ) : null}
-            </div>
-          </div>
-        ) : null}
-      </section>
     </div>
   );
 }
@@ -11216,9 +11128,11 @@ function ElevenLabsRuntimeSetting({
 }
 
 function McpBridgeRuntimeSetting() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const isEn = locale === "en";
   const [status, setStatus] = useState<McpBridgeStatus | null>(null);
   const [busy, setBusy] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
     let canceled = false;
@@ -11244,6 +11158,14 @@ function McpBridgeRuntimeSetting() {
     }
   }
 
+  function copyCommand(id: string, command: string) {
+    void navigator.clipboard?.writeText(command);
+    setCopiedId(id);
+    window.setTimeout(() => {
+      setCopiedId((curr) => (curr === id ? null : curr));
+    }, 1800);
+  }
+
   const clientNames: Record<McpBridgeStatus["clients"][number]["id"], string> = { claude_code: "Claude Code", codex: "Codex" };
   const detail = !status
     ? t("settings.mcp.serviceOffline")
@@ -11262,44 +11184,219 @@ function McpBridgeRuntimeSetting() {
   const connected = Boolean(status?.enabled && status.clients.some((client) => client.registered));
 
   return (
-    <div className="video-setting-row voice-runtime-row">
-      <span className="video-setting-copy">
-        <span className="video-setting-icon" aria-hidden="true">
-          <Bot />
-        </span>
-        <span>
-          <strong>{t("settings.mcp.title")}</strong>
-          <small>{t("settings.mcp.description")}</small>
-          <small>{detail}</small>
-          {status?.error ? <small className="voice-runtime-error">{status.error}</small> : null}
-          <small>{t("settings.mcp.restartHint")}</small>
-          {status?.snippets && status.snippets.length > 0 ? (
-            <span className="mcp-snippets-box">
-              {status.snippets.slice(0, 4).map((snip) => (
-                <span className="mcp-snippet-item" key={snip.id}>
-                  <AgentBrandGlyph agentId={snip.id} name={snip.label} size={15} variant="inline" />
-                  <code>{snip.label}: {snip.command}</code>
-                  <button
-                    className="local-cli-action"
-                    type="button"
-                    onClick={() => void navigator.clipboard?.writeText(snip.command)}
-                  >
-                    <Copy aria-hidden="true" />
-                  </button>
-                </span>
-              ))}
-            </span>
-          ) : null}
-        </span>
-      </span>
-      <span className="voice-runtime-controls">
-        <button className="local-cli-action" disabled={!status || busy} type="button" onClick={() => void toggle()}>
+    <div className="mcp-bridge-card-body">
+      <div className="mcp-bridge-top-row">
+        <div className="mcp-bridge-lead">
+          <span className="video-setting-icon" aria-hidden="true">
+            <Bot />
+          </span>
+          <div className="mcp-bridge-head-copy">
+            <div className="mcp-bridge-title-line">
+              <strong>{t("settings.mcp.title")}</strong>
+              <span className={cn("mcp-bridge-status-pill", connected && "connected")}>
+                <i />
+                <span>{connected ? (isEn ? "Connected" : "已连接") : isEn ? "Disconnected" : "未连接"}</span>
+              </span>
+            </div>
+            <p className="mcp-bridge-desc">{t("settings.mcp.description")}</p>
+            <div className="mcp-bridge-meta-line">
+              <span>{detail}</span>
+              <span>·</span>
+              <span>{t("settings.mcp.restartHint")}</span>
+            </div>
+            {status?.error ? <small className="voice-runtime-error">{status.error}</small> : null}
+          </div>
+        </div>
+
+        <button className="local-cli-action mcp-bridge-toggle-btn" disabled={!status || busy} type="button" onClick={() => void toggle()}>
           {busy ? <LoaderCircle className="spinning" aria-hidden="true" /> : null}
           {status?.enabled && connected ? t("settings.mcp.disconnect") : t("settings.mcp.connect")}
         </button>
-      </span>
+      </div>
+
+      {status?.snippets && status.snippets.length > 0 ? (
+        <div className="mcp-snippets-list">
+          {status.snippets.slice(0, 4).map((snip) => {
+            const isCopied = copiedId === snip.id;
+            return (
+              <div className="mcp-snippet-row" key={snip.id}>
+                <span className="mcp-snippet-agent">
+                  <AgentBrandGlyph agentId={snip.id} name={snip.label} size={16} variant="inline" />
+                  <strong>{snip.label.replace(/\s*\(stdio\)\s*$/i, "")}</strong>
+                </span>
+                <code className="mcp-snippet-code" title={snip.command}>
+                  {snip.command}
+                </code>
+                <button
+                  className={cn("mcp-snippet-copy-btn", isCopied && "copied")}
+                  type="button"
+                  aria-label={isEn ? `Copy ${snip.label} command` : `复制 ${snip.label} 命令`}
+                  onClick={() => copyCommand(snip.id, snip.command)}
+                >
+                  {isCopied ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
+                  <span>{isCopied ? (isEn ? "Copied" : "已复制") : isEn ? "Copy" : "复制"}</span>
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
     </div>
   );
+}
+
+const VOICE_ORB_PALETTES: Array<[string, string, string]> = [
+  ["#0EA5E9", "#6366F1", "#A855F7"],
+  ["#10B981", "#059669", "#047857"],
+  ["#F97316", "#EA580C", "#BE123C"],
+  ["#8B5CF6", "#EC4899", "#F43F5E"],
+  ["#3B82F6", "#1D4ED8", "#0F172A"],
+  ["#EAB308", "#F59E0B", "#B45309"],
+  ["#14B8A6", "#0EA5E9", "#2563EB"],
+  ["#F43F5E", "#FB7185", "#FDA4AF"]
+];
+
+const VOICE_LANGUAGE_MAP: Record<string, { flag: string; labelEn: string; labelZh: string }> = {
+  zh: { flag: "🇨🇳", labelEn: "Chinese", labelZh: "Chinese" },
+  chinese: { flag: "🇨🇳", labelEn: "Chinese", labelZh: "Chinese" },
+  cmn: { flag: "🇨🇳", labelEn: "Chinese", labelZh: "Chinese" },
+  yue: { flag: "🇭🇰", labelEn: "Cantonese", labelZh: "Cantonese" },
+  en: { flag: "🇺🇸", labelEn: "English", labelZh: "English" },
+  english: { flag: "🇺🇸", labelEn: "English", labelZh: "English" },
+  fr: { flag: "🇫🇷", labelEn: "French", labelZh: "French" },
+  french: { flag: "🇫🇷", labelEn: "French", labelZh: "French" },
+  de: { flag: "🇩🇪", labelEn: "German", labelZh: "German" },
+  german: { flag: "🇩🇪", labelEn: "German", labelZh: "German" },
+  ja: { flag: "🇯🇵", labelEn: "Japanese", labelZh: "Japanese" },
+  japanese: { flag: "🇯🇵", labelEn: "Japanese", labelZh: "Japanese" },
+  ko: { flag: "🇰🇷", labelEn: "Korean", labelZh: "Korean" },
+  korean: { flag: "🇰🇷", labelEn: "Korean", labelZh: "Korean" },
+  es: { flag: "🇪🇸", labelEn: "Spanish", labelZh: "Spanish" },
+  spanish: { flag: "🇪🇸", labelEn: "Spanish", labelZh: "Spanish" },
+  it: { flag: "🇮🇹", labelEn: "Italian", labelZh: "Italian" },
+  italian: { flag: "🇮🇹", labelEn: "Italian", labelZh: "Italian" },
+  pt: { flag: "🇧🇷", labelEn: "Portuguese", labelZh: "Portuguese" },
+  portuguese: { flag: "🇧🇷", labelEn: "Portuguese", labelZh: "Portuguese" },
+  pl: { flag: "🇵🇱", labelEn: "Polish", labelZh: "Polish" },
+  polish: { flag: "🇵🇱", labelEn: "Polish", labelZh: "Polish" },
+  uk: { flag: "🇺🇦", labelEn: "Ukrainian", labelZh: "Ukrainian" },
+  ukrainian: { flag: "🇺🇦", labelEn: "Ukrainian", labelZh: "Ukrainian" },
+  ru: { flag: "🇷🇺", labelEn: "Russian", labelZh: "Russian" },
+  russian: { flag: "🇷🇺", labelEn: "Russian", labelZh: "Russian" },
+  da: { flag: "🇩🇰", labelEn: "Danish", labelZh: "Danish" },
+  danish: { flag: "🇩🇰", labelEn: "Danish", labelZh: "Danish" },
+  tr: { flag: "🇹🇷", labelEn: "Turkish", labelZh: "Turkish" },
+  turkish: { flag: "🇹🇷", labelEn: "Turkish", labelZh: "Turkish" },
+  th: { flag: "🇹🇭", labelEn: "Thai", labelZh: "Thai" },
+  thai: { flag: "🇹🇭", labelEn: "Thai", labelZh: "Thai" },
+  ar: { flag: "🇦🇪", labelEn: "Arabic", labelZh: "Arabic" },
+  arabic: { flag: "🇦🇪", labelEn: "Arabic", labelZh: "Arabic" },
+  he: { flag: "🇮🇱", labelEn: "Hebrew", labelZh: "Hebrew" },
+  hebrew: { flag: "🇮🇱", labelEn: "Hebrew", labelZh: "Hebrew" },
+  vi: { flag: "🇻🇳", labelEn: "Vietnamese", labelZh: "Vietnamese" },
+  vietnamese: { flag: "🇻🇳", labelEn: "Vietnamese", labelZh: "Vietnamese" },
+  id: { flag: "🇮🇩", labelEn: "Indonesian", labelZh: "Indonesian" },
+  indonesian: { flag: "🇮🇩", labelEn: "Indonesian", labelZh: "Indonesian" },
+  ms: { flag: "🇲🇾", labelEn: "Malay", labelZh: "Malay" },
+  malay: { flag: "🇲🇾", labelEn: "Malay", labelZh: "Malay" },
+  hi: { flag: "🇮🇳", labelEn: "Hindi", labelZh: "Hindi" },
+  hindi: { flag: "🇮🇳", labelEn: "Hindi", labelZh: "Hindi" },
+  nl: { flag: "🇳🇱", labelEn: "Dutch", labelZh: "Dutch" },
+  sv: { flag: "🇸🇪", labelEn: "Swedish", labelZh: "Swedish" }
+};
+
+function getVoiceOrbBackground(voiceId: string): string {
+  let h = 2166136261;
+  for (let i = 0; i < voiceId.length; i += 1) {
+    h ^= voiceId.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  const idx = Math.abs(h >>> 0) % VOICE_ORB_PALETTES.length;
+  const [c1, c2, c3] = VOICE_ORB_PALETTES[idx]!;
+  const angle = 115 + (Math.abs(h) % 90);
+  return `radial-gradient(circle at 28% 26%, rgba(255,255,255,0.45), transparent 48%), linear-gradient(${angle}deg, ${c1} 0%, ${c2} 52%, ${c3} 100%)`;
+}
+
+function resolveVoiceLanguageInfo(voice: ElevenLabsVoice, isEn: boolean) {
+  const rawLang = (voice.language || "").trim().toLowerCase();
+  const baseCode = rawLang.split(/[-_]/)[0] || "";
+  const mapped = VOICE_LANGUAGE_MAP[rawLang] || VOICE_LANGUAGE_MAP[baseCode];
+
+  let flag = mapped?.flag || "🌐";
+  let label = mapped ? (isEn ? mapped.labelEn : mapped.labelZh) : voice.language ? voice.language.toUpperCase() : "";
+
+  const accentRaw = (voice.accent || "").trim();
+  const accentLower = accentRaw.toLowerCase();
+  if (!label && accentLower) {
+    if (accentLower.includes("american")) {
+      flag = "🇺🇸";
+      label = "English";
+    } else if (accentLower.includes("british")) {
+      flag = "🇬🇧";
+      label = "English";
+    } else if (accentLower.includes("australian")) {
+      flag = "🇦🇺";
+      label = "English";
+    } else if (accentLower.includes("mandarin") || accentLower.includes("chinese") || accentLower.includes("taiwan")) {
+      flag = "🇨🇳";
+      label = "Chinese";
+    } else {
+      label = accentRaw;
+    }
+  }
+  if (label === "English") {
+    if (accentLower.includes("british")) flag = "🇬🇧";
+    else if (accentLower.includes("australian")) flag = "🇦🇺";
+    else if (accentLower.includes("indian")) flag = "🇮🇳";
+    else if (accentLower.includes("irish")) flag = "🇮🇪";
+    else if (accentLower.includes("canadian")) flag = "🇨🇦";
+  }
+
+  let accentDisplay = isEn ? "Standard" : "标准";
+  if (accentRaw && accentLower !== "standard") {
+    if (!isEn) {
+      if (accentLower === "american") accentDisplay = "美式";
+      else if (accentLower === "british") accentDisplay = "英式";
+      else if (accentLower === "australian") accentDisplay = "澳式";
+      else if (accentLower.includes("mandarin")) accentDisplay = "普通话";
+      else if (accentLower.includes("taiwan")) accentDisplay = "台湾";
+      else accentDisplay = accentRaw;
+    } else {
+      accentDisplay = accentRaw.charAt(0).toUpperCase() + accentRaw.slice(1);
+    }
+  }
+
+  return {
+    code: baseCode || label.toLowerCase() || "other",
+    flag,
+    label: label || (isEn ? "Multilingual" : "多语言"),
+    accent: accentDisplay
+  };
+}
+
+type VoiceUseCaseBucket = "conversational" | "narration" | "social" | "advertisement" | "characters" | "education" | "general";
+
+function resolveVoiceUseCase(voice: ElevenLabsVoice, isEn: boolean): { bucket: VoiceUseCaseBucket; label: string } {
+  const hay = `${voice.useCase || ""} ${voice.name} ${voice.description || ""}`.toLowerCase();
+  if (hay.includes("social") || hay.includes("tiktok") || hay.includes("youtube") || hay.includes("creator")) {
+    return { bucket: "social", label: isEn ? "Social media" : "社交媒体" };
+  }
+  if (hay.includes("conversat") || hay.includes("chat") || hay.includes("casual") || hay.includes("podcast")) {
+    return { bucket: "conversational", label: isEn ? "Conversational" : "对话式" };
+  }
+  if (hay.includes("narrat") || hay.includes("story") || hay.includes("audiobook") || hay.includes("news")) {
+    return { bucket: "narration", label: isEn ? "Narration" : "旁白" };
+  }
+  if (hay.includes("advert") || hay.includes("promo") || hay.includes("commercial")) {
+    return { bucket: "advertisement", label: isEn ? "Advertisement" : "广告" };
+  }
+  if (hay.includes("character") || hay.includes("animation") || hay.includes("game")) {
+    return { bucket: "characters", label: isEn ? "Characters" : "角色" };
+  }
+  if (hay.includes("educat") || hay.includes("informat") || hay.includes("explain") || hay.includes("tutorial")) {
+    return { bucket: "education", label: isEn ? "Education" : "教育类" };
+  }
+  return { bucket: "general", label: isEn ? "Narration" : "旁白" };
 }
 
 function VoiceSettingsPanel({
@@ -11315,7 +11412,8 @@ function VoiceSettingsPanel({
   onDefaultVoiceChange: (voiceId: string, voiceName: string) => void;
   onStatusChange: (status: ElevenLabsStatus | null) => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const isEn = locale === "en";
   const configured = Boolean(status?.configured);
   const [apiKeyInput, setApiKeyInput] = useState("");
   const [keyFormOpen, setKeyFormOpen] = useState(!configured);
@@ -11325,10 +11423,21 @@ function VoiceSettingsPanel({
   const [voicesBusy, setVoicesBusy] = useState(false);
   const [voicesError, setVoicesError] = useState<ElevenLabsErrorCode | null>(null);
   const [previewVoiceId, setPreviewVoiceId] = useState<string | null>(null);
+  const [voiceTab, setVoiceTab] = useState<"personal" | "builtin" | "all">("personal");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [langFilter, setLangFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
 
-  const personalVoices = (voices ?? []).filter((voice) => voice.isPersonal);
-  const builtInVoices = (voices ?? []).filter((voice) => !voice.isPersonal);
+  const allVoices = voices ?? [];
+  const personalVoices = useMemo(() => allVoices.filter((voice) => voice.isPersonal), [allVoices]);
+  const builtInVoices = useMemo(() => allVoices.filter((voice) => !voice.isPersonal), [allVoices]);
+
+  useEffect(() => {
+    if (voices && personalVoices.length === 0 && builtInVoices.length > 0 && voiceTab === "personal") {
+      setVoiceTab("builtin");
+    }
+  }, [voices, personalVoices.length, builtInVoices.length, voiceTab]);
 
   function stopVoicePreview() {
     const audio = previewAudioRef.current;
@@ -11337,7 +11446,7 @@ function VoiceSettingsPanel({
       try {
         audio.pause();
       } catch {
-        // A detached preview element can throw on pause; clearing the ref is enough.
+        // Ignore detached audio errors
       }
     }
     setPreviewVoiceId(null);
@@ -11432,88 +11541,115 @@ function VoiceSettingsPanel({
     });
   }
 
-  function getVoiceMeta(voice: ElevenLabsVoice) {
+  const baseTabVoices = useMemo(() => {
+    if (voiceTab === "personal") return personalVoices;
+    if (voiceTab === "builtin") return builtInVoices;
+    return allVoices;
+  }, [voiceTab, personalVoices, builtInVoices, allVoices]);
+
+  const languageOptionsList = useMemo(() => {
+    const map = new Map<string, { code: string; flag: string; label: string; count: number }>();
+    for (const v of baseTabVoices) {
+      const info = resolveVoiceLanguageInfo(v, isEn);
+      const prev = map.get(info.label);
+      if (prev) prev.count += 1;
+      else map.set(info.label, { code: info.label, flag: info.flag, label: info.label, count: 1 });
+    }
+    return Array.from(map.values()).sort((a, b) => b.count - a.count);
+  }, [baseTabVoices, isEn]);
+
+  const filteredVoices = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return baseTabVoices.filter((voice) => {
+      const langInfo = resolveVoiceLanguageInfo(voice, isEn);
+      const useCaseInfo = resolveVoiceUseCase(voice, isEn);
+
+      if (langFilter !== "all" && langInfo.label !== langFilter) {
+        return false;
+      }
+      if (categoryFilter !== "all") {
+        if (categoryFilter === "female" && voice.gender !== "female") return false;
+        if (categoryFilter === "male" && voice.gender !== "male") return false;
+        if (
+          categoryFilter !== "female" &&
+          categoryFilter !== "male" &&
+          useCaseInfo.bucket !== categoryFilter
+        ) {
+          return false;
+        }
+      }
+      if (!q) return true;
+      const hay = `${voice.name} ${voice.description || ""} ${langInfo.label} ${langInfo.accent} ${useCaseInfo.label}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }, [baseTabVoices, searchQuery, langFilter, categoryFilter, isEn]);
+
+  function getVoiceSubtitle(voice: ElevenLabsVoice) {
+    if (voice.description && voice.description.trim()) {
+      return voice.description.trim();
+    }
     const parts: string[] = [];
-    if (voice.gender === "male") parts.push(t("settings.voice.genderMale"));
     if (voice.gender === "female") parts.push(t("settings.voice.genderFemale"));
-    if (voice.gender === "neutral") parts.push(t("settings.voice.genderNeutral"));
-    if (voice.language) parts.push(voice.language.toUpperCase());
-    else if (voice.accent) parts.push(voice.accent);
+    else if (voice.gender === "male") parts.push(t("settings.voice.genderMale"));
+    else if (voice.gender === "neutral") parts.push(t("settings.voice.genderNeutral"));
     if (voice.isPersonal) parts.push(t("settings.voice.personalTag"));
+    else parts.push(isEn ? "Studio voice" : "标准音色");
     return parts.join(" · ");
   }
 
-  function renderVoiceList(groupVoices: ElevenLabsVoice[]) {
-    return (
-      <div className="voice-settings-list" role="listbox" aria-label={t("settings.voice.voiceListLabel")}>
-        {groupVoices.map((voice) => {
-          const selected = voice.voiceId === defaultVoiceId;
-          return (
-            <div className={cn("voice-settings-item", selected && "selected")} key={voice.voiceId} role="option" aria-selected={selected}>
-              <button
-                className="voice-settings-item-main"
-                type="button"
-                onClick={() => onDefaultVoiceChange(voice.voiceId, voice.name)}
-              >
-                <span className={cn("voice-settings-check", selected && "checked")} aria-hidden="true">
-                  {selected ? <Check aria-hidden="true" /> : null}
-                </span>
-                <span className="voice-settings-item-copy">
-                  <strong>{voice.name}</strong>
-                  <small>{getVoiceMeta(voice) || voice.description || ""}</small>
-                </span>
-              </button>
-              {voice.previewUrl ? (
-                <button
-                  className={cn("voice-settings-preview", previewVoiceId === voice.voiceId && "playing")}
-                  type="button"
-                  aria-label={t("settings.voice.preview", { name: voice.name })}
-                  onClick={() => toggleVoicePreview(voice)}
-                >
-                  {previewVoiceId === voice.voiceId ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}
-                </button>
-              ) : null}
-            </div>
-          );
-        })}
-      </div>
-    );
-  }
+  const categoryChips: Array<{ id: string; label: string; Icon: React.ComponentType<{ "aria-hidden"?: boolean | "true" }> }> = [
+    { id: "conversational", label: isEn ? "Conversational" : "对话式", Icon: MessageCircle },
+    { id: "narration", label: isEn ? "Narration" : "旁白", Icon: BookOpen },
+    { id: "social", label: isEn ? "Social media" : "社交媒体", Icon: Monitor },
+    { id: "education", label: isEn ? "Education" : "教育类", Icon: Lightbulb },
+    { id: "advertisement", label: isEn ? "Ads" : "广告", Icon: Megaphone },
+    { id: "characters", label: isEn ? "Characters" : "角色", Icon: Sparkles },
+    { id: "female", label: t("settings.voice.genderFemale"), Icon: AudioLines },
+    { id: "male", label: t("settings.voice.genderMale"), Icon: AudioLines }
+  ];
 
   return (
-    <section className="voice-settings-section" aria-labelledby="voice-settings-title">
-      <header className="execution-settings-header">
-        <h1 id="voice-settings-title">{t("settings.voice.title")}</h1>
-      </header>
-      <p className="voice-settings-intro">{t("settings.voice.intro")}</p>
-
-      <div className="voice-settings-key-card">
-        <div className="voice-settings-key-row">
-          <span className="voice-settings-key-copy">
-            <span className="voice-settings-key-icon" aria-hidden="true">
-              <KeyRound />
-            </span>
-            <span>
-              <strong>{t("settings.voice.apiKey")}</strong>
-              <small>
-                {configured
-                  ? t("settings.voice.apiKeyConfigured", { maskedKey: status?.maskedKey ?? "" })
-                  : t("settings.voice.apiKeyMissing")}
-              </small>
-            </span>
-          </span>
-          {configured && !keyFormOpen ? (
-            <span className="voice-settings-key-actions">
-              <button className="local-cli-action" type="button" onClick={() => setKeyFormOpen(true)}>
-                {t("settings.voice.replaceKey")}
-              </button>
-              <button className="local-cli-action danger" disabled={keyBusy} type="button" onClick={() => void clearApiKey()}>
-                {t("settings.voice.clearKey")}
-              </button>
-            </span>
-          ) : null}
+    <section className="voice-settings-section el-voice-studio" aria-labelledby="voice-settings-title">
+      <header className="el-voice-topbar">
+        <div className="el-voice-title-group">
+          <h1 id="voice-settings-title">{t("settings.voice.title")}</h1>
+          <p className="el-voice-subtitle">{t("settings.voice.intro")}</p>
         </div>
-        {keyFormOpen || !configured ? (
+
+        {configured && !keyFormOpen ? (
+          <div className="el-key-status-bar">
+            <span className="el-key-badge">
+              <i className="el-key-dot" />
+              <span>ElevenLabs</span>
+              <code>{status?.maskedKey ?? ""}</code>
+            </span>
+            <button className="el-key-link-btn" type="button" onClick={() => setKeyFormOpen(true)}>
+              {t("settings.voice.replaceKey")}
+            </button>
+            <button className="el-key-link-btn danger" disabled={keyBusy} type="button" onClick={() => void clearApiKey()}>
+              {t("settings.voice.clearKey")}
+            </button>
+          </div>
+        ) : null}
+      </header>
+
+      {!configured || keyFormOpen ? (
+        <div className="voice-settings-key-card el-key-drawer">
+          <div className="voice-settings-key-row">
+            <span className="voice-settings-key-copy">
+              <span className="voice-settings-key-icon" aria-hidden="true">
+                <KeyRound />
+              </span>
+              <span>
+                <strong>{t("settings.voice.apiKey")}</strong>
+                <small>
+                  {configured
+                    ? t("settings.voice.apiKeyConfigured", { maskedKey: status?.maskedKey ?? "" })
+                    : t("settings.voice.apiKeyMissing")}
+                </small>
+              </span>
+            </span>
+          </div>
           <div className="voice-settings-key-form">
             <Input
               aria-label={t("settings.voice.apiKey")}
@@ -11545,9 +11681,7 @@ function VoiceSettingsPanel({
               </button>
             ) : null}
           </div>
-        ) : null}
-        {keyError ? <p className="voice-settings-error">{t(getSpeechErrorKey(keyError))}</p> : null}
-        {!configured || keyFormOpen || keyError ? (
+          {keyError ? <p className="voice-settings-error">{t(getSpeechErrorKey(keyError))}</p> : null}
           <div className="voice-settings-tutorial">
             <div className="voice-settings-tutorial-head">
               <strong>{t("settings.voice.tutorialTitle")}</strong>
@@ -11587,44 +11721,249 @@ function VoiceSettingsPanel({
               </div>
             </div>
           </div>
-        ) : (
-          <p className="voice-settings-hint">{t("settings.voice.keyHint")}</p>
-        )}
-      </div>
+        </div>
+      ) : null}
 
       {configured ? (
-        <div className="voice-settings-voices">
-          <div className="voice-settings-voices-head">
-            <strong>{t("settings.voice.defaultVoiceTitle")}</strong>
-            <span>
-              {defaultVoiceId
-                ? t("settings.voice.defaultVoiceCurrent", { name: defaultVoiceName || defaultVoiceId })
-                : t("settings.voice.defaultVoiceEmpty")}
-            </span>
-            <button className="local-cli-action" disabled={voicesBusy} type="button" onClick={() => void loadVoices()}>
-              <RefreshCw aria-hidden="true" />
-              {voicesBusy ? t("common.scanning") : t("settings.voice.refreshVoices")}
-            </button>
+        <div className="el-voice-browser">
+          {/* ElevenLabs-style underline tabs + right default summary */}
+          <div className="el-voice-tabs-row">
+            <div className="el-voice-tabs" role="tablist">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={voiceTab === "personal"}
+                className={cn("el-voice-tab", voiceTab === "personal" && "active")}
+                onClick={() => setVoiceTab("personal")}
+              >
+                <AudioLines aria-hidden="true" />
+                <span>{t("settings.voice.personalGroup")}</span>
+                {voices ? <em>{personalVoices.length}</em> : null}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={voiceTab === "builtin"}
+                className={cn("el-voice-tab", voiceTab === "builtin" && "active")}
+                onClick={() => setVoiceTab("builtin")}
+              >
+                <Globe aria-hidden="true" />
+                <span>{t("settings.voice.builtInGroup")}</span>
+                {voices ? <em>{builtInVoices.length}</em> : null}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={voiceTab === "all"}
+                className={cn("el-voice-tab", voiceTab === "all" && "active")}
+                onClick={() => setVoiceTab("all")}
+              >
+                <span>{isEn ? "All Voices" : "全部"}</span>
+                {voices ? <em>{allVoices.length}</em> : null}
+              </button>
+            </div>
+
+            <div className="el-voice-tabs-right">
+              {defaultVoiceId ? (
+                <span className="el-current-default-pill">
+                  <Check aria-hidden="true" />
+                  <span>
+                    {isEn ? "Default: " : "默认："}
+                    <strong>{defaultVoiceName || defaultVoiceId}</strong>
+                  </span>
+                </span>
+              ) : null}
+              <button className="el-refresh-btn" disabled={voicesBusy} type="button" onClick={() => void loadVoices()}>
+                <RefreshCw className={cn(voicesBusy && "spinning")} aria-hidden="true" />
+                <span>{voicesBusy ? t("common.scanning") : t("settings.voice.refreshVoices")}</span>
+              </button>
+            </div>
           </div>
+
+          {/* Search input row */}
+          <div className="el-search-row">
+            <label className="el-search-box">
+              <Search aria-hidden="true" />
+              <input
+                type="search"
+                value={searchQuery}
+                placeholder={isEn ? "Search my voices by name, language, or style..." : "搜索我的音色、语言或风格描述..."}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery ? (
+                <button type="button" className="el-search-clear" onClick={() => setSearchQuery("")} aria-label="Clear">
+                  <X aria-hidden="true" />
+                </button>
+              ) : null}
+            </label>
+          </div>
+
+          {/* Filter pills row (Language select + Use-case chips) */}
+          <div className="el-filter-pills-row">
+            <label className={cn("el-lang-select-wrap", langFilter !== "all" && "active")}>
+              <Languages aria-hidden="true" />
+              <select value={langFilter} onChange={(e) => setLangFilter(e.target.value)} aria-label="Language filter">
+                <option value="all">{isEn ? "Language" : "语言"}</option>
+                {languageOptionsList.map((opt) => (
+                  <option key={opt.code} value={opt.code}>
+                    {opt.flag} {opt.label} ({opt.count})
+                  </option>
+                ))}
+              </select>
+              <ChevronDown aria-hidden="true" />
+            </label>
+
+            <span className="el-filter-divider" aria-hidden="true" />
+
+            <div className="el-chip-scroll">
+              {categoryChips.map(({ id, label, Icon }) => {
+                const active = categoryFilter === id;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    className={cn("el-filter-chip", active && "active")}
+                    onClick={() => setCategoryFilter(active ? "all" : id)}
+                  >
+                    <Icon aria-hidden="true" />
+                    <span>{label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Count header */}
+          <div className="el-list-meta-header">
+            <span>
+              {isEn ? `${filteredVoices.length} voices` : `${filteredVoices.length} 个音色`}
+            </span>
+            <span>{isEn ? "Default Voice" : "选择默认音色"}</span>
+          </div>
+
           {voicesBusy && !voices ? (
-            <p className="voice-settings-hint">
-              <LoaderCircle className="spinning" aria-hidden="true" /> {t("settings.voice.loadingVoices")}
-            </p>
-          ) : null}
-          {voicesError ? <p className="voice-settings-error">{t(getSpeechErrorKey(voicesError))}</p> : null}
-          {voices && personalVoices.length > 0 ? (
-            <>
-              <h2 className="voice-settings-group-title">{t("settings.voice.personalGroup")}</h2>
-              {renderVoiceList(personalVoices)}
-            </>
-          ) : null}
-          {voices && personalVoices.length === 0 ? <p className="voice-settings-hint">{t("settings.voice.noPersonalVoices")}</p> : null}
-          {voices && builtInVoices.length > 0 ? (
-            <>
-              <h2 className="voice-settings-group-title">{t("settings.voice.builtInGroup")}</h2>
-              {renderVoiceList(builtInVoices)}
-            </>
-          ) : null}
+            <div className="el-voice-empty">
+              <LoaderCircle className="spinning" aria-hidden="true" />
+              <span>{t("settings.voice.loadingVoices")}</span>
+            </div>
+          ) : voicesError ? (
+            <p className="voice-settings-error">{t(getSpeechErrorKey(voicesError))}</p>
+          ) : filteredVoices.length === 0 ? (
+            <div className="el-voice-empty">
+              <AudioLines aria-hidden="true" />
+              <span>
+                {voiceTab === "personal" && personalVoices.length === 0
+                  ? t("settings.voice.noPersonalVoices")
+                  : isEn
+                    ? "No voices match current filters."
+                    : "没有匹配当前筛选条件的音色"}
+              </span>
+            </div>
+          ) : (
+            <div className="el-voice-table" role="listbox" aria-label={t("settings.voice.voiceListLabel")}>
+              {filteredVoices.map((voice) => {
+                const selected = voice.voiceId === defaultVoiceId;
+                const playing = previewVoiceId === voice.voiceId;
+                const langInfo = resolveVoiceLanguageInfo(voice, isEn);
+                const useCaseInfo = resolveVoiceUseCase(voice, isEn);
+                const UseCaseIcon =
+                  useCaseInfo.bucket === "advertisement"
+                    ? Megaphone
+                    : useCaseInfo.bucket === "conversational"
+                      ? MessageCircle
+                      : useCaseInfo.bucket === "narration"
+                        ? BookOpen
+                        : useCaseInfo.bucket === "education"
+                          ? Lightbulb
+                          : useCaseInfo.bucket === "characters"
+                            ? Sparkles
+                            : Monitor;
+
+                return (
+                  <div
+                    key={voice.voiceId}
+                    role="option"
+                    aria-selected={selected}
+                    className={cn("el-voice-row", selected && "selected", playing && "playing")}
+                    onClick={() => onDefaultVoiceChange(voice.voiceId, voice.name)}
+                  >
+                    {/* 1. Orb Avatar + Play Overlay */}
+                    <button
+                      type="button"
+                      className={cn("el-voice-orb-btn", playing && "playing")}
+                      style={{ background: getVoiceOrbBackground(voice.voiceId) }}
+                      disabled={!voice.previewUrl}
+                      aria-label={t("settings.voice.preview", { name: voice.name })}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleVoicePreview(voice);
+                      }}
+                    >
+                      <span className="el-voice-orb-play">
+                        {playing ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}
+                      </span>
+                      {selected || voice.isPersonal ? (
+                        <span className={cn("el-voice-orb-badge", selected && "default")} aria-hidden="true">
+                          <Check />
+                        </span>
+                      ) : null}
+                    </button>
+
+                    {/* 2. Name & Description */}
+                    <div className="el-voice-main-col">
+                      <strong className="el-voice-name">{voice.name}</strong>
+                      <span className="el-voice-desc">{getVoiceSubtitle(voice)}</span>
+                    </div>
+
+                    {/* 3. Flag + Language + Accent */}
+                    <div className="el-voice-lang-col">
+                      <span className="el-voice-flag" aria-hidden="true">
+                        {langInfo.flag}
+                      </span>
+                      <span className="el-voice-lang-name">{langInfo.label}</span>
+                      <span className="el-voice-accent">{langInfo.accent}</span>
+                    </div>
+
+                    {/* 4. Category / Use Case */}
+                    <div className="el-voice-usecase-col">
+                      <UseCaseIcon aria-hidden="true" />
+                      <span>{useCaseInfo.label}</span>
+                    </div>
+
+                    {/* 5. Waveform Preview + Select Action */}
+                    <div className="el-voice-actions-col" onClick={(e) => e.stopPropagation()}>
+                      {voice.previewUrl ? (
+                        <button
+                          type="button"
+                          className={cn("el-voice-wave-btn", playing && "playing")}
+                          aria-label={t("settings.voice.preview", { name: voice.name })}
+                          title={isEn ? "Preview voice" : "试听音色"}
+                          onClick={() => toggleVoicePreview(voice)}
+                        >
+                          <AudioLines aria-hidden="true" />
+                        </button>
+                      ) : null}
+
+                      <button
+                        type="button"
+                        className={cn("el-voice-select-btn", selected && "selected")}
+                        onClick={() => onDefaultVoiceChange(voice.voiceId, voice.name)}
+                      >
+                        {selected ? (
+                          <>
+                            <Check aria-hidden="true" />
+                            <span>{isEn ? "Default" : "默认"}</span>
+                          </>
+                        ) : (
+                          <span>{isEn ? "Select" : "选择"}</span>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       ) : null}
     </section>

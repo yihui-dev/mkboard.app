@@ -278,19 +278,42 @@ function mapUpstreamVoice(raw: Record<string, unknown>): ElevenLabsVoice | null 
   if (!voiceId || !name) return null;
   const category = typeof raw.category === "string" ? raw.category : "premade";
   const labels = raw.labels && typeof raw.labels === "object" ? (raw.labels as Record<string, unknown>) : {};
+  const verifiedLangs = Array.isArray(raw.verified_languages) ? (raw.verified_languages as Array<Record<string, unknown>>) : [];
+  const primaryVerified = verifiedLangs[0] && typeof verifiedLangs[0] === "object" ? verifiedLangs[0] : null;
   const rawGender = typeof labels.gender === "string" ? labels.gender.toLowerCase() : "";
   const gender: ElevenLabsVoice["gender"] =
     rawGender === "male" ? "male" : rawGender === "female" ? "female" : rawGender === "neutral" ? "neutral" : "unknown";
+  const rawDesc = typeof raw.description === "string" ? raw.description.trim() : "";
+  const labelDesc = typeof labels.description === "string" ? labels.description.trim() : "";
+  const description = rawDesc.length >= labelDesc.length && rawDesc ? rawDesc : labelDesc || null;
+  const language =
+    typeof labels.language === "string" && labels.language.trim()
+      ? labels.language.trim()
+      : primaryVerified && typeof primaryVerified.language === "string"
+        ? primaryVerified.language.trim()
+        : null;
+  const accent =
+    typeof labels.accent === "string" && labels.accent.trim()
+      ? labels.accent.trim()
+      : primaryVerified && typeof primaryVerified.accent === "string"
+        ? primaryVerified.accent.trim()
+        : null;
+  const useCase =
+    typeof labels.use_case === "string" && labels.use_case.trim()
+      ? labels.use_case.trim()
+      : typeof labels["use case"] === "string" && (labels["use case"] as string).trim()
+        ? (labels["use case"] as string).trim()
+        : null;
   return {
     voiceId,
     name,
     category,
     isPersonal: category !== "premade" && category !== "default",
     gender,
-    language: typeof labels.language === "string" ? labels.language : null,
-    accent: typeof labels.accent === "string" ? labels.accent : null,
-    description: typeof labels.description === "string" ? labels.description : typeof raw.description === "string" ? raw.description : null,
-    useCase: typeof labels.use_case === "string" ? labels.use_case : typeof labels["use case"] === "string" ? (labels["use case"] as string) : null,
+    language,
+    accent,
+    description,
+    useCase,
     previewUrl: typeof raw.preview_url === "string" ? raw.preview_url : null
   };
 }
