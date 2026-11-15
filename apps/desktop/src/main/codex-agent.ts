@@ -1,6 +1,8 @@
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync, type Dirent } from "node:fs";
 import { homedir, tmpdir } from "node:os";
+import { defaultTasteId } from "./taste-catalog";
+import { findInstalledSkillryPackPaths } from "./style-skill-hub";
 import { join, relative } from "node:path";
 import crossSpawn from "cross-spawn";
 import { buildAgentOutputSchema } from "./agent-output-schema";
@@ -2530,6 +2532,34 @@ function stripAgentHtml(html: string): string {
 }
 
 function buildHyperframesTasteSkillContext(project: ProjectDetail): string {
+  const isAutoAdaptiveTaste = project.taste.id === defaultTasteId || !project.taste.content.trim();
+  const activeSkillId = project.storyboardSkill?.id ?? "";
+  const skillrySlug =
+    activeSkillId === "skill-skillry-bs-creatormotion"
+      ? ("bs-creatormotion" as const)
+      : activeSkillId === "skill-skillry-bs-launchmotion"
+        ? ("bs-launchmotion" as const)
+        : null;
+  const skillryInfo = skillrySlug ? findInstalledSkillryPackPaths(skillrySlug) : null;
+
+  const skillrySection =
+    skillrySlug && skillryInfo?.primarySkillMdPath
+      ? `
+
+## Active Skillry Motion Pack (${skillrySlug})
+
+Local Skill Directory: ${skillryInfo.installedPaths[0] ?? ""}
+Local SKILL.md: ${skillryInfo.primarySkillMdPath}
+Guidance: Prefer reading and following the motion structure, typography, and palette conventions from this installed Skillry pack when building the HyperFrames composition, while ensuring the final returned HyperFrames project is self-contained inside the output JSON / temp directory.`
+      : "";
+
+  if (isAutoAdaptiveTaste) {
+    return `## HyperFrames Adaptive Visual Direction
+
+The project uses Auto-Adaptive style mode (no hardcoded preset style override).
+Design a clean, high-contrast, editorial HyperFrames composition that matches the shot prompt, script context, and active project skill (${project.storyboardSkill?.name || "Default"}).${skillrySection}`;
+  }
+
   return `## HyperFrames Taste Skill Bound to the Current Task
 
 Source: MkBoard built-in Skill
@@ -2540,16 +2570,16 @@ Description: ${hyperframesTasteSkillDescription}
 ${hyperframesTasteSkill}
 </active_hyperframes_taste_skill>
 
-## Current Project Taste
+## Current Project Custom / Imported Style
 
-Source: SQLite tastes.${project.taste.id}
+Source: ${project.taste.sourceUrl || `SQLite tastes.${project.taste.id}`}
 Name: ${project.taste.name}
 Description: ${project.taste.description}
 Preview palette: ${JSON.stringify(project.taste.preview)}
 
 <active_project_taste>
 ${truncateForPrompt(project.taste.content, 30_000)}
-</active_project_taste>`;
+</active_project_taste>${skillrySection}`;
 }
 
 function resolveHyperframesAgentTimeoutMs(): number {

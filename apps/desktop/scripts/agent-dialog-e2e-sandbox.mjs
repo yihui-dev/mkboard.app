@@ -54,7 +54,7 @@ class SqliteCliStore {
     const [settingsRow] = this.query(`SELECT * FROM storyboard_settings WHERE project_id = ${sqlValue(projectId)}`);
     const storyboardSkillId = settingsRow?.storyboard_skill_id || "storyboard-split-zh";
     const [skillRow] = this.query(`SELECT * FROM skills WHERE id = ${sqlValue(storyboardSkillId)}`) || this.query("SELECT * FROM skills LIMIT 1");
-    const [tasteRow] = this.query(`SELECT * FROM tastes WHERE id = ${sqlValue(projectRow.taste_id || "taste-codex-paper-cut-studio")}`) || this.query("SELECT * FROM tastes LIMIT 1");
+    const [tasteRow] = this.query(`SELECT * FROM tastes WHERE id = ${sqlValue(projectRow.taste_id || "taste-auto-adaptive")}`) || this.query("SELECT * FROM tastes LIMIT 1");
     const activeConversation = this.ensureActiveAgentConversation(projectId);
     return {
       project: mapProject(projectRow),
@@ -406,7 +406,7 @@ function mapSkill(row = {}) {
 
 function mapTaste(row = {}) {
   return {
-    id: row.id ?? "taste-codex-paper-cut-studio",
+    id: row.id ?? "taste-auto-adaptive",
     name: row.name ?? "Paper Cut Studio",
     description: row.description ?? "",
     content: row.content ?? "",

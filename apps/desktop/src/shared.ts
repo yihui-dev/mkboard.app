@@ -409,6 +409,77 @@ export type UpdateSkillInput = CreateSkillInput & {
   id: string;
 };
 
+export const DEFAULT_AUTO_TASTE_ID = "taste-auto-adaptive";
+
+export type CreateTasteInput = {
+  name: string;
+  description: string;
+  content: string;
+  sourceUrl?: string;
+  preview?: Partial<TastePreview>;
+};
+
+export type UpdateTasteInput = CreateTasteInput & {
+  id: string;
+};
+
+export type ExternalSourceImportInput = {
+  sourceType: "github" | "local" | "zip";
+  urlOrPath: string;
+  name?: string;
+  description?: string;
+  existingId?: string;
+  installToAgentSkills?: boolean;
+};
+
+export type SkillryPackId = "bs-creatormotion" | "bs-launchmotion";
+export type SkillryPackPricingTier = "freemium_pro" | "paid_pro";
+
+export type SkillryPackStatus = {
+  slug: SkillryPackId;
+  mkboardSkillId: string;
+  title: string;
+  subtitle: string;
+  pricingTier: SkillryPackPricingTier;
+  totalEffectsCount: number;
+  installedLocally: boolean;
+  installedSubSkillCount: number;
+  installedPaths: string[];
+  syncedToMkboard: boolean;
+  landingUrl: string;
+  skillPageUrl: string;
+  installDocUrl: string;
+  pricingUrl: string;
+  aiInstallPrompt: string;
+  cliInstallCommand: string;
+};
+
+export type SkillryCatalogStatus = {
+  cliLoggedIn: boolean;
+  cliAccountEmail?: string | null;
+  cliAccountHandle?: string | null;
+  packs: SkillryPackStatus[];
+};
+
+export type SkillryInstallInput = {
+  slug: SkillryPackId;
+  mode?: "ai-agent" | "cli";
+  agentCliId?: AgentCliId;
+};
+
+export type SkillryInstallResult = {
+  status: "installed" | "needs_entitlement" | "needs_login" | "failed";
+  slug: SkillryPackId;
+  skill?: Skill;
+  installedPaths?: string[];
+  actionUrl?: string;
+  pricingUrl?: string;
+  landingUrl?: string;
+  logs?: string;
+  message: string;
+  catalog?: SkillryCatalogStatus;
+};
+
 export type UpdateShotInput = {
   id: string;
   field:
@@ -1122,11 +1193,21 @@ export type MkboardApi = {
   updateTemplate(input: UpdateProjectTemplateInput): Promise<ProjectTemplate>;
   deleteTemplate(templateId: string): Promise<ProjectTemplate[]>;
   listTastes(): Promise<Taste[]>;
+  createTaste(input: CreateTasteInput): Promise<Taste>;
+  updateTaste(input: UpdateTasteInput): Promise<Taste>;
+  deleteTaste(tasteId: string): Promise<Taste[]>;
+  importTasteFromSource(input: ExternalSourceImportInput): Promise<Taste>;
   saveProjectTaste(projectId: string, tasteId: string): Promise<ProjectTaste>;
   listSkills(interfaceLanguage?: InterfaceLanguage): Promise<Skill[]>;
   createSkill(input: CreateSkillInput): Promise<Skill>;
   updateSkill(input: UpdateSkillInput): Promise<Skill>;
   deleteSkill(skillId: string): Promise<Skill[]>;
+  importSkillFromSource(input: ExternalSourceImportInput): Promise<Skill>;
+  getSkillryCatalogStatus(): Promise<SkillryCatalogStatus>;
+  installSkillryPack(input: SkillryInstallInput): Promise<SkillryInstallResult>;
+  syncSkillryPackToMkboard(slug: SkillryPackId): Promise<SkillryInstallResult>;
+  chooseImportDirectoryPath(): Promise<string | null>;
+  chooseImportArchiveOrFilePath(): Promise<string | null>;
   createAgentConversation(projectId: string): Promise<AgentConversationDetail>;
   getAgentConversation(projectId: string, conversationId: string): Promise<AgentConversationDetail>;
   markAgentConversationCompletionSeen(projectId: string, conversationId: string): Promise<AgentConversationDetail>;

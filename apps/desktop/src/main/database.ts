@@ -56,6 +56,8 @@ import {
   type AssetKind,
   type CreateProjectTemplateInput,
   type CreateSkillInput,
+  type CreateTasteInput,
+  type UpdateTasteInput,
   type CreateProjectInput,
   type ImageRatio,
   type InterfaceLanguage,
@@ -1940,6 +1942,161 @@ export class MkboardStore {
     return rows.sort(compareTasteRecords).map(mapTaste);
   }
 
+  createTaste(input: CreateTasteInput & { id?: string }): Taste {
+    this.ensureDefaultTastes();
+    const name = input.name.trim();
+    const content = input.content.trim();
+    if (!name) throw new Error("风格名称不能为空。");
+    if (!content) throw new Error("风格规则内容不能为空。");
+
+    const now = new Date().toISOString();
+    const preview: TastePreview = {
+      background: input.preview?.background?.trim() || "#F8FAFC",
+      foreground: input.preview?.foreground?.trim() || "#0F172A",
+      accent: input.preview?.accent?.trim() || "#EFB72E"
+    };
+    const requestedId = input.id?.trim();
+    const existing = requestedId
+      ? (this.db.prepare("SELECT * FROM tastes WHERE id = ?").get(requestedId) as TasteRecord | undefined)
+      : undefined;
+
+    if (existing && !existing.locked) {
+      const sourceUrl = input.sourceUrl?.trim() ?? existing.source_url ?? "user://custom-taste";
+      const previewJson = JSON.stringify(preview);
+      this.db
+        .prepare("UPDATE tastes SET name = ?, description = ?, content = ?, source_url = ?, preview_json = ?, updated_at = ? WHERE id = ?")
+        .run(name, input.description.trim(), content, sourceUrl, previewJson, now, existing.id);
+      return mapTaste({
+        ...existing,
+        name,
+        description: input.description.trim(),
+        content,
+        source_url: sourceUrl,
+        preview_json: previewJson,
+        updated_at: now
+      });
+    }
+
+    const row: TasteRecord = {
+      id: requestedId && !existing ? requestedId : `taste-${createId(name)}`,
+      name,
+      description: input.description.trim(),
+      content,
+      source_url: input.sourceUrl?.trim() || "user://custom-taste",
+      preview_json: JSON.stringify(preview),
+      scope: "user",
+      locked: 0,
+      created_at: now,
+      updated_at: now
+    };
+    this.db
+      .prepare("INSERT INTO tastes (id, name, description, content, source_url, preview_json, scope, locked, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+      .run(row.id, row.name, row.description, row.content, row.source_url, row.preview_json, row.scope, row.locked, row.created_at, row.updated_at);
+    return mapTaste(row);
+  }
+
+  updateTaste(input: UpdateTasteInput): Taste {
+    this.ensureDefaultTastes();
+    const existing = this.db.prepare("SELECT * FROM tastes WHERE id = ?").get(input.id) as TasteRecord | undefined;
+    if (!existing) throw new Error(`未找到风格：${input.id}`);
+    if (existing.locked) throw new Error("系统自适应默认风格不可修改。");
+
+    const name = input.name.trim();
+    const content = input.content.trim();
+    if (!name) throw new Error("风格名称不能为空。");
+    if (!content) throw new Error("风格规则内容不能为空。");
+
+    const currentPreview = parseTastePreview(existing.preview_json);
+    const preview: TastePreview = {
+      background: input.preview?.background?.trim() || currentPreview.background,
+      foreground: input.preview?.foreground?.trim() || currentPreview.foreground,
+      accent: input.preview?.accent?.trim() || currentPreview.accent
+    };
+    const sourceUrl = input.sourceUrl?.trim() ?? existing.source_url;
+    const previewJson = JSON.stringify(preview);
+    const now = new Date().toISOString();
+
+    this.db
+      .prepare("UPDATE tastes SET name = ?, description = ?, content = ?, source_url = ?, preview_json = ?, updated_at = ? WHERE id = ?")
+      .run(name, input.description.trim(), content, sourceUrl, previewJson, now, existing.id);
+
+    return mapTaste({
+      ...existing,
+      name,
+      description: input.description.trim(),
+      content,
+      source_url: sourceUrl,
+      preview_json: previewJson,
+      updated_at: now
+    });
+  }
+
+  deleteTaste(tasteId: string): Taste[] {
+    this.ensureDefaultTastes();
+    const existing = this.db.prepare("SELECT * FROM tastes WHERE id = ?").get(tasteId) as TasteRecord | undefined;
+    if (!existing) return this.listTastes();
+    if (existing.locked || existing.id === defaultTasteId) {
+      throw new Error("系统自适应默认风格不可删除。");
+    }
+    const tx = this.db.transaction(() => {
+      this.db.prepare("UPDATE projects SET taste_id = ? WHERE taste_id = ?").run(defaultTasteId, existing.id);
+      this.db.prepare("DELETE FROM tastes WHERE id = ?").run(existing.id);
+    });
+    tx();
+    return this.listTastes();
+  }
+
+  upsertExternalSkill(input: {
+    id: string;
+    name: string;
+    description: string;
+    content: string;
+    iconId?: string;
+    gradientId?: string;
+  }): Skill {
+    this.ensureDefaultSkills();
+    const name = input.name.trim();
+    const content = input.content.trim();
+    if (!name) throw new Error("SKILL 名称不能为空。");
+    if (!content) throw new Error("SKILL 规则不能为空。");
+
+    const now = new Date().toISOString();
+    const existing = this.db.prepare("SELECT * FROM skills WHERE id = ?").get(input.id) as SkillRecord | undefined;
+    if (existing && !existing.locked) {
+      const iconId = normalizeSkillVisualId(input.iconId, existing.icon_id || defaultSkillIconId);
+      const gradientId = normalizeSkillVisualId(input.gradientId, existing.gradient_id || defaultSkillGradientId);
+      this.db
+        .prepare("UPDATE skills SET name = ?, description = ?, content = ?, icon_id = ?, gradient_id = ?, updated_at = ? WHERE id = ?")
+        .run(name, input.description.trim(), content, iconId, gradientId, now, existing.id);
+      return mapSkill({
+        ...existing,
+        name,
+        description: input.description.trim(),
+        content,
+        icon_id: iconId,
+        gradient_id: gradientId,
+        updated_at: now
+      });
+    }
+
+    const row: SkillRecord = {
+      id: existing ? createId(name) : input.id,
+      name,
+      description: input.description.trim(),
+      content,
+      icon_id: normalizeSkillVisualId(input.iconId, defaultSkillIconId),
+      gradient_id: normalizeSkillVisualId(input.gradientId, defaultSkillGradientId),
+      scope: "user",
+      locked: 0,
+      created_at: now,
+      updated_at: now
+    };
+    this.db
+      .prepare("INSERT INTO skills (id, name, description, content, icon_id, gradient_id, scope, locked, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+      .run(row.id, row.name, row.description, row.content, row.icon_id, row.gradient_id, row.scope, row.locked, row.created_at, row.updated_at);
+    return mapSkill(row);
+  }
+
   listSkills(interfaceLanguage?: InterfaceLanguage): Skill[] {
     this.ensureDefaultSkills();
     const defaultStoryboardSkillId = this.getDefaultStoryboardSkillId(interfaceLanguage);
@@ -3578,7 +3735,8 @@ export class MkboardStore {
   private ensureProjectTasteAssignments(): void {
     const rows = this.db.prepare("SELECT id, taste_id FROM projects").all() as Array<{ id: string; taste_id?: string | null }>;
     if (rows.length === 0) return;
-    const validTasteIds = new Set(systemTasteSeeds.map((taste) => taste.id));
+    const existingTasteRows = this.db.prepare("SELECT id FROM tastes").all() as Array<{ id: string }>;
+    const validTasteIds = new Set([...systemTasteSeeds.map((taste) => taste.id), ...existingTasteRows.map((taste) => taste.id)]);
     const update = this.db.prepare("UPDATE projects SET taste_id = ? WHERE id = ?");
     const tx = this.db.transaction(() => {
       rows.forEach((row) => {

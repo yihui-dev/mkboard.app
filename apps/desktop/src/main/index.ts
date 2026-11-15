@@ -19,6 +19,13 @@ import { getCodexCliStatus, scanLocalCliAgents, startClaudeCodeLogin, startCodex
 import { findCliAgentDefinition } from "./agent-registry";
 import { assertSafeRemoteMediaUrl, ByokStore } from "./byok-store";
 import { CompanionServer } from "./companion-server";
+import {
+  getSkillryCatalogStatus,
+  importSkillFromSource,
+  importTasteFromSource,
+  installSkillryPack,
+  syncSkillryPackToMkboard
+} from "./style-skill-hub";
 import { ElevenLabsService } from "./elevenlabs";
 import { packagedWebBaseUrl } from "./generated-runtime-defaults";
 import { LocalAiMediaService } from "./local-ai-media";
@@ -78,6 +85,11 @@ import type {
   CreateProjectInput,
   CreateProjectTemplateInput,
   CreateSkillInput,
+  CreateTasteInput,
+  ExternalSourceImportInput,
+  SkillryInstallInput,
+  SkillryPackId,
+  UpdateTasteInput,
   DreaminaAgentRegenerateMediaOperation,
   DesktopVersionCheckResult,
   ElevenLabsSpeechInput,
@@ -1601,6 +1613,10 @@ function registerIpc(): void {
   );
   ipcMain.handle("mkboard:delete-template", (_event, templateId: string) => store.deleteTemplate(templateId));
   ipcMain.handle("mkboard:list-tastes", () => store.listTastes());
+  ipcMain.handle("mkboard:create-taste", (_event, input: CreateTasteInput) => store.createTaste(input));
+  ipcMain.handle("mkboard:update-taste", (_event, input: UpdateTasteInput) => store.updateTaste(input));
+  ipcMain.handle("mkboard:delete-taste", (_event, tasteId: string) => store.deleteTaste(tasteId));
+  ipcMain.handle("mkboard:import-taste-from-source", (_event, input: ExternalSourceImportInput) => importTasteFromSource(store, input));
   ipcMain.handle("mkboard:save-project-taste", (_event, projectId: string, tasteId: string) => store.saveProjectTaste(projectId, tasteId));
   ipcMain.handle("mkboard:update-project", (_event, input: UpdateProjectInput) => store.updateProject(input));
   ipcMain.handle("mkboard:get-project", async (_event, projectId: string, interfaceLanguage?: InterfaceLanguage) => {
@@ -1793,6 +1809,30 @@ function registerIpc(): void {
   ipcMain.handle("mkboard:create-skill", (_event, input: CreateSkillInput) => store.createSkill(input));
   ipcMain.handle("mkboard:update-skill", (_event, input: UpdateSkillInput) => store.updateSkill(input));
   ipcMain.handle("mkboard:delete-skill", (_event, skillId: string) => store.deleteSkill(skillId));
+  ipcMain.handle("mkboard:import-skill-from-source", (_event, input: ExternalSourceImportInput) => importSkillFromSource(store, input));
+  ipcMain.handle("mkboard:get-skillry-catalog-status", () => getSkillryCatalogStatus(store));
+  ipcMain.handle("mkboard:install-skillry-pack", (_event, input: SkillryInstallInput) => installSkillryPack(store, input));
+  ipcMain.handle("mkboard:sync-skillry-pack-to-mkboard", (_event, slug: SkillryPackId) => syncSkillryPackToMkboard(store, slug));
+  ipcMain.handle("mkboard:choose-import-directory-path", async (event) => {
+    const ownerWindow = BrowserWindow.fromWebContents(event.sender) ?? mainWindow;
+    const result = ownerWindow
+      ? await dialog.showOpenDialog(ownerWindow, { properties: ["openDirectory"] })
+      : await dialog.showOpenDialog({ properties: ["openDirectory"] });
+    if (result.canceled || result.filePaths.length === 0) return null;
+    return result.filePaths[0];
+  });
+  ipcMain.handle("mkboard:choose-import-archive-or-file-path", async (event) => {
+    const options: Electron.OpenDialogOptions = {
+      properties: ["openFile"],
+      filters: [
+        { name: "Skill / Style Package", extensions: ["zip", "tgz", "gz", "md", "css", "json"] }
+      ]
+    };
+    const ownerWindow = BrowserWindow.fromWebContents(event.sender) ?? mainWindow;
+    const result = ownerWindow ? await dialog.showOpenDialog(ownerWindow, options) : await dialog.showOpenDialog(options);
+    if (result.canceled || result.filePaths.length === 0) return null;
+    return result.filePaths[0];
+  });
   ipcMain.handle("mkboard:create-agent-conversation", (_event, projectId: string) => store.createAgentConversation(projectId));
   ipcMain.handle("mkboard:get-agent-conversation", (_event, projectId: string, conversationId: string) => store.getAgentConversation(projectId, conversationId));
   ipcMain.handle("mkboard:mark-agent-conversation-completion-seen", (_event, projectId: string, conversationId: string) =>

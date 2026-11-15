@@ -9,6 +9,14 @@ import { LocalAiMediaService } from "../src/main/local-ai-media.ts";
 import { renderQrSvg } from "../src/main/qr-svg.ts";
 import { loadCliAgentDefinitions } from "../src/main/agent-registry.ts";
 import { CompanionServer } from "../src/main/companion-server.ts";
+import {
+  classifySkillryInstallFailure,
+  extractPaletteFromSources,
+  getSkillryCatalogStatus,
+  importSkillFromSource,
+  importTasteFromSource,
+  parseGitHubUrl
+} from "../src/main/style-skill-hub.ts";
 
 test("ByokStore persists keys locally, masks previews, honors env overrides, and prevents blank-key wipes", () => {
   const dir = mkdtempSync(join(tmpdir(), "mkboard-byok-"));
@@ -231,6 +239,121 @@ test("ProjectSummary coverPreview uses first B-Roll storyboard image and upgrade
     assert.match(summary?.coverPreview?.url ?? "", /firstFrame=1/u);
     assert.ok(summary?.coverPreview?.videoUrl);
     assert.equal(summary?.videoCount, 1);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("Legacy preset tastes are removed; custom imported styles persist across MkboardStore restarts and fall back cleanly on delete", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "mkboard-taste-hub-"));
+  try {
+    const dbDir = join(dir, "userdata");
+    const templateDir = join(dir, "open-editorial-theme");
+    mkdirSync(dbDir, { recursive: true });
+    mkdirSync(templateDir, { recursive: true });
+
+    writeFileSync(
+      join(templateDir, "DESIGN.md"),
+      "---\nname: Open Editorial Neo\ndescription: Clean high-contrast open-source editorial template\n---\n# Open Editorial Neo\n\nUse crisp ivory backgrounds, deep obsidian ink, and vermilion accents.",
+      "utf8"
+    );
+    writeFileSync(
+      join(templateDir, "tokens.css"),
+      ":root { --background: #FAF8F5; --foreground: #141619; --accent: #E64833; }",
+      "utf8"
+    );
+
+    const store1 = new MkboardStore(join(dbDir, "mkboard.sqlite"), join(dbDir, "projects"));
+    const initialTastes = store1.listTastes();
+    assert.equal(initialTastes.length, 1);
+    assert.equal(initialTastes[0].id, "taste-auto-adaptive");
+
+    const importedTaste = await importTasteFromSource(store1, {
+      sourceType: "local",
+      urlOrPath: templateDir
+    });
+    assert.equal(importedTaste.name, "Open Editorial Neo");
+    assert.equal(importedTaste.preview.background, "#FAF8F5");
+    assert.equal(importedTaste.preview.foreground, "#141619");
+    assert.equal(importedTaste.preview.accent, "#E64833");
+    assert.equal(importedTaste.scope, "user");
+
+    const createdProject = store1.createProject({
+      name: "Custom Style Persistence Check",
+      icon: "film",
+      templateId: "default-template",
+      tasteId: importedTaste.id
+    });
+    assert.equal(createdProject.project.tasteId, importedTaste.id);
+
+    // Reopen MkboardStore against the same SQLite database to verify ensureProjectTasteAssignments preserves user tastes
+    const store2 = new MkboardStore(join(dbDir, "mkboard.sqlite"), join(dbDir, "projects"));
+    const reopenedProject = store2.getProject(createdProject.project.id);
+    assert.equal(reopenedProject.project.tasteId, importedTaste.id);
+    assert.equal(reopenedProject.taste.name, "Open Editorial Neo");
+
+    // Deleting the custom style resets assigned projects back to taste-auto-adaptive
+    const remainingTastes = store2.deleteTaste(importedTaste.id);
+    assert.equal(remainingTastes.length, 1);
+    assert.equal(remainingTastes[0].id, "taste-auto-adaptive");
+    assert.equal(store2.getProject(createdProject.project.id).project.tasteId, "taste-auto-adaptive");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("Skillry CreatorMotion & LaunchMotion hub status, paid entitlement classification, GitHub URL parser, and skill importer work end-to-end", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "mkboard-skillry-hub-"));
+  try {
+    const ghRoot = parseGitHubUrl("https://github.com/nexu-io/open-design");
+    assert.equal(ghRoot?.owner, "nexu-io");
+    assert.equal(ghRoot?.repo, "open-design");
+    assert.equal(ghRoot?.mode, "root");
+
+    const ghTree = parseGitHubUrl("https://github.com/anthropics/skills/tree/main/skills/frontend-design");
+    assert.equal(ghTree?.owner, "anthropics");
+    assert.equal(ghTree?.repo, "skills");
+    assert.equal(ghTree?.mode, "tree");
+    assert.deepEqual(ghTree?.remainderSegments, ["main", "skills", "frontend-design"]);
+
+    const palette = extractPaletteFromSources(":root { --bg: #0b1020; --fg: #f8fafc; --brand: #38bdf8; }");
+    assert.equal(palette.background, "#0B1020");
+    assert.equal(palette.foreground, "#F8FAFC");
+    assert.equal(palette.accent, "#38BDF8");
+
+    const store = new MkboardStore(join(dir, "mkboard.sqlite"), join(dir, "projects"));
+    const catalog = await getSkillryCatalogStatus(store);
+    assert.deepEqual(
+      catalog.packs.map((p) => p.slug),
+      ["bs-creatormotion", "bs-launchmotion"]
+    );
+    assert.equal(catalog.packs[0].pricingTier, "freemium_pro");
+    assert.equal(catalog.packs[1].pricingTier, "paid_pro");
+
+    const launchPaidCheck = classifySkillryInstallFailure(
+      "SkillryApiError: HTTP 402 Payment Required - Upgrade to Skillry Pro at https://skillry.dev/pricing to unlock bs-launchmotion",
+      2,
+      "bs-launchmotion"
+    );
+    assert.equal(launchPaidCheck.status, "needs_entitlement");
+    assert.equal(launchPaidCheck.pricingUrl, "https://skillry.dev/pricing");
+
+    const localSkillDir = join(dir, "my-github-skill");
+    mkdirSync(localSkillDir, { recursive: true });
+    writeFileSync(
+      join(localSkillDir, "SKILL.md"),
+      "---\nname: cinematic-broll-planner\ndescription: Open-source storyboard B-Roll pacing skill\n---\n# Cinematic B-Roll Planner\n\nSplit beats cleanly into 4-second visual hooks.",
+      "utf8"
+    );
+
+    const importedSkill = await importSkillFromSource(store, {
+      sourceType: "local",
+      urlOrPath: localSkillDir,
+      installToAgentSkills: false
+    });
+    assert.equal(importedSkill.name, "Cinematic B-Roll Planner");
+    assert.equal(importedSkill.scope, "user");
+    assert.ok(store.listSkills().some((s) => s.id === importedSkill.id));
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
