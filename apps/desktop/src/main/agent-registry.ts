@@ -3,7 +3,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import type { AgentModelPreset, LocalCliAgentRole, LocalCliInstallStep } from "../shared";
 
-export type RuntimeAgentProtocol = "codex-exec" | "claude-stream-json" | "gemini-json" | "generic-prompt";
+export type RuntimeAgentProtocol = "codex-exec" | "claude-stream-json" | "antigravity-json" | "gemini-json" | "generic-prompt";
 
 export type DeclarativeCliAgentDefinition = {
   id: string;
@@ -86,28 +86,32 @@ export const BUILTIN_CLI_AGENT_DEFINITIONS: readonly DeclarativeCliAgentDefiniti
     ]
   },
   {
-    id: "gemini-cli",
-    name: "Gemini CLI",
-    command: "gemini",
+    id: "antigravity",
+    name: "Antigravity",
+    command: "agy",
+    aliases: ["antigravity"],
     role: "agent",
-    protocol: "gemini-json",
-    configuredPathEnv: "GEMINI_CLI_BIN",
-    installCommand: "npm install -g @google/gemini-cli",
-    loginCommand: "gemini",
+    protocol: "antigravity-json",
+    configuredPathEnv: "ANTIGRAVITY_BIN",
+    installCommand: "agy install",
+    loginCommand: "agy",
     installSteps: [
-      "执行 `npm install -g @google/gemini-cli` 安装 Gemini CLI。",
-      "运行 `gemini` 完成 Google 账号登录或配置 `GEMINI_API_KEY`。",
+      "下载并安装 Google Antigravity（或执行 `agy install` 配置命令行工具）。",
+      "在终端运行 `agy` 完成账号登录授权。",
       "回到 MkBoard 点击「重新扫描」。"
     ],
-    setupHint: "支持本机 Google 账号免费/订阅额度或 GEMINI_API_KEY 直接驱动脚本与分镜编辑。",
-    installUrl: "https://github.com/google-gemini/gemini-cli",
-    docsUrl: "https://github.com/google-gemini/gemini-cli",
+    setupHint: "支持 Google Antigravity 原生 CLI (`agy`) 驱动脚本与分镜编辑，自动复用本机登录态与多模型编排。",
+    installUrl: "https://antigravity.google",
+    docsUrl: "https://antigravity.google/docs",
     guideUrl: MKBOARD_CLI_GUIDE_URL,
-    supportsEffort: false,
+    supportsEffort: true,
     models: [
-      { id: "default", label: "Default (CLI Configured)" },
-      { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
-      { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash" }
+      { id: "default", label: "Default (Antigravity Configured)" },
+      { id: "gemini-4-carbon-high", label: "Gemini 4 Carbon (High)" },
+      { id: "gemini-4-carbon-medium", label: "Gemini 4 Carbon (Medium)" },
+      { id: "gemini-3.8-flash-high", label: "Gemini 3.8 Flash (High)" },
+      { id: "claude-sonnet-5-5-high", label: "Claude Sonnet 5.5 (High)" },
+      { id: "claude-opus-5-5-high", label: "Claude Opus 5.5 (High)" }
     ]
   },
   {
@@ -229,6 +233,11 @@ export function loadCliAgentDefinitions(): DeclarativeCliAgentDefinition[] {
   return builtins;
 }
 
+export function normalizeAgentCliId(agentCliId: string): string {
+  return agentCliId === "gemini-cli" ? "antigravity" : agentCliId;
+}
+
 export function findCliAgentDefinition(agentCliId: string): DeclarativeCliAgentDefinition | undefined {
-  return loadCliAgentDefinitions().find((def) => def.id === agentCliId);
+  const normalized = normalizeAgentCliId(agentCliId);
+  return loadCliAgentDefinitions().find((def) => def.id === normalized);
 }

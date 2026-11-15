@@ -485,7 +485,8 @@ export function getAgentSkillScanRoots(home = homedir()): string[] {
   return [
     join(home, ".agents", "skills"),
     join(home, ".claude", "skills"),
-    join(home, ".codex", "skills")
+    join(home, ".codex", "skills"),
+    join(home, ".gemini", "antigravity", "skills")
   ];
 }
 
@@ -1614,7 +1615,7 @@ export async function installSkillryPack(store: MkboardStore, input: SkillryInst
     isMaster ? Boolean(findInstalledSkillryPackPaths(cleanSlug as SkillryPackId).primarySkillMdPath) : Boolean(findInstalledSkillPathsBySlug(cleanSlug).primarySkillMdPath);
 
   // Optional AI Agent mode
-  if (mode === "ai-agent" && input.agentCliId && (input.agentCliId === "claude-code" || input.agentCliId === "codex")) {
+  if (mode === "ai-agent" && input.agentCliId && (input.agentCliId === "claude-code" || input.agentCliId === "codex" || input.agentCliId === "antigravity")) {
     const probe = await resolveAgentCliExecutable(input.agentCliId).catch(() => null);
     if (probe?.launchBin) {
       logChunks.push(`[AI Agent] 正在通过 ${probe.name || input.agentCliId} 读取 ${installDocUrl} 执行安装...`);
@@ -1627,7 +1628,9 @@ export async function installSkillryPack(store: MkboardStore, input: SkillryInst
       const agentArgs =
         input.agentCliId === "claude-code"
           ? ["-p", agentPrompt, "--dangerously-skip-permissions"]
-          : ["exec", "--skip-git-repo-check", "--dangerously-bypass-approvals-and-sandbox", agentPrompt];
+          : input.agentCliId === "antigravity"
+            ? ["-p", agentPrompt, "--mode", "auto"]
+            : ["exec", "--skip-git-repo-check", "--dangerously-bypass-approvals-and-sandbox", agentPrompt];
 
       const agentRun = await runCommandCapture(probe.launchBin, agentArgs, {
         timeoutMs: 180_000,

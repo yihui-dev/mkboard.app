@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import { ensureWebMkboardBridge } from "./lib/web-mkboard-bridge";
 import "./styles/global.css";
+import "./styles/opendesign-theme.css";
 
 void ensureWebMkboardBridge().finally(() => {
   createRoot(document.getElementById("root")!).render(

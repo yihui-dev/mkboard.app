@@ -944,7 +944,12 @@ function runGenericCliAgent(
     let args: string[] = [];
     let sendViaStdin = false;
 
-    if (executable.protocol === "gemini-json") {
+    if (executable.protocol === "antigravity-json") {
+      args = ["-p", fullPrompt, "--mode", "auto", "--output-format", "json"];
+      if (options.model && options.model !== "default") {
+        args.push("--model", options.model);
+      }
+    } else if (executable.protocol === "gemini-json") {
       args = ["-p", fullPrompt, "-o", "json"];
       if (options.model && options.model !== "default") {
         args.push("-m", options.model);
@@ -1033,10 +1038,22 @@ function runGenericCliAgent(
       }
 
       let extracted = stdout.trim();
-      if (executable.protocol === "gemini-json") {
+      if (executable.protocol === "antigravity-json" || executable.protocol === "gemini-json") {
         const parsedJson = safeParseJson(extracted);
-        if (isRecord(parsedJson) && typeof parsedJson.response === "string") {
-          extracted = parsedJson.response.trim();
+        if (isRecord(parsedJson)) {
+          const candidate =
+            typeof parsedJson.result === "string"
+              ? parsedJson.result
+              : typeof parsedJson.response === "string"
+                ? parsedJson.response
+                : typeof parsedJson.text === "string"
+                  ? parsedJson.text
+                  : typeof parsedJson.content === "string"
+                    ? parsedJson.content
+                    : null;
+          if (candidate) {
+            extracted = candidate.trim();
+          }
         }
       }
       // Strip markdown code fence if CLI wrapped JSON

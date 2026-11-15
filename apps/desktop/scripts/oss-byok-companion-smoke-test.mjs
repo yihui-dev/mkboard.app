@@ -7,7 +7,7 @@ import test from "node:test";
 import { ByokStore } from "../src/main/byok-store.ts";
 import { LocalAiMediaService } from "../src/main/local-ai-media.ts";
 import { renderQrSvg } from "../src/main/qr-svg.ts";
-import { loadCliAgentDefinitions } from "../src/main/agent-registry.ts";
+import { findCliAgentDefinition, loadCliAgentDefinitions } from "../src/main/agent-registry.ts";
 import { CompanionServer } from "../src/main/companion-server.ts";
 import {
   classifySkillryInstallFailure,
@@ -106,7 +106,7 @@ test("renderQrSvg produces standalone SVG markup and loadCliAgentDefinitions mer
     process.env.MKBOARD_AGENTS_CONFIG = cfgPath;
     const defs = loadCliAgentDefinitions();
     const ids = defs.map((d) => d.id);
-    for (const builtin of ["codex", "claude-code", "gemini-cli", "opencode", "cursor-agent", "kimi-cli", "custom:aider"]) {
+    for (const builtin of ["codex", "claude-code", "antigravity", "opencode", "cursor-agent", "kimi-cli", "custom:aider"]) {
       assert.ok(ids.includes(builtin), `missing agent ${builtin}`);
     }
   } finally {

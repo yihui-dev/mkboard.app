@@ -1,0 +1,937 @@
+/* ==========================================================================
+   MkBoard × OpenDesign Studio Design System
+   Cool-neutral architectural surfaces, crisp hairline borders, balanced
+   typographic hierarchy, unobstructed media cards, and vector brand marks.
+   ========================================================================== */
+
+:root {
+  --od-shell-bg: #eef1f5;
+  --od-sheet-bg: #ffffff;
+  --od-surface-subtle: #f7f8fa;
+  --od-surface-pill: #f1f3f6;
+  --od-ink-primary: #0f172a;
+  --od-ink-secondary: #475569;
+  --od-ink-muted: #64748b;
+  --od-border-subtle: rgba(15, 23, 42, 0.075);
+  --od-border-default: rgba(15, 23, 42, 0.1);
+  --od-border-strong: rgba(15, 23, 42, 0.18);
+  --od-accent-ink: #18181b;
+  --od-accent-ink-hover: #27272a;
+  --od-emerald: #10b981;
+  --od-emerald-soft: rgba(16, 185, 129, 0.14);
+  --od-focus-ring: rgba(15, 23, 42, 0.08);
+
+  /* Harmonize legacy yellow tokens where neutral ink is cleaner */
+  --ring: #18181b;
+  --sidebar-primary: #18181b;
+  --sidebar-primary-foreground: #ffffff;
+}
+
+:root[data-theme="dark"] {
+  --od-shell-bg: #0c0e12;
+  --od-sheet-bg: #14171d;
+  --od-surface-subtle: #1b1f27;
+  --od-surface-pill: #20252f;
+  --od-ink-primary: #f8fafc;
+  --od-ink-secondary: #cbd5e1;
+  --od-ink-muted: #94a3b8;
+  --od-border-subtle: rgba(255, 255, 255, 0.08);
+  --od-border-default: rgba(255, 255, 255, 0.12);
+  --od-border-strong: rgba(255, 255, 255, 0.24);
+  --od-accent-ink: #f8fafc;
+  --od-accent-ink-hover: #e2e8f0;
+  --od-emerald: #34d399;
+  --od-emerald-soft: rgba(52, 211, 153, 0.18);
+  --od-focus-ring: rgba(255, 255, 255, 0.12);
+}
+
+/* 1. Brand SVG & Icon Stroke Refinement
+   Prevent global `svg { width: 18px; height: 18px; stroke-width: 2.2 }` from
+   distorting @lobehub/icons vector logos, and refine UI stroke icons. */
+svg:not(.mk-brand-svg) {
+  stroke-width: 1.85;
+}
+
+svg.mk-brand-svg,
+.cli-brand-icon svg.mk-brand-svg,
+.mk-provider-avatar svg.mk-brand-svg {
+  stroke-width: 0 !important;
+  display: block;
+  flex: 0 0 auto;
+}
+
+/* 2. OpenDesign Inset Studio Shell & Left Navigation Rail */
+body {
+  background: var(--od-shell-bg);
+  color: var(--od-ink-primary);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.app-shell:not(.workspace-app-shell) {
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+  background: var(--od-shell-bg);
+}
+
+.app-shell:not(.workspace-app-shell) > .rail {
+  width: 84px;
+  padding: 18px 8px 16px;
+  background: transparent;
+  border-right: 0;
+  gap: 20px;
+}
+
+.rail-brand-button {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  transition: transform 150ms ease;
+}
+
+.rail-brand-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.1);
+}
+
+.rail-brand-button:hover .rail-brand-icon,
+.rail-brand-button:focus-visible .rail-brand-icon {
+  filter: none;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.14);
+}
+
+.rail-nav {
+  padding-top: 14px;
+  border-top: 1px solid var(--od-border-subtle);
+  gap: 6px;
+  justify-items: center;
+}
+
+.rail-item,
+.rail-account {
+  width: 68px;
+  min-height: 54px;
+  border-radius: 12px;
+  color: var(--od-ink-muted);
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 500;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
+}
+
+.rail-item svg,
+.rail-account svg {
+  width: 19px;
+  height: 19px;
+}
+
+.rail-item:hover:not(.active),
+.rail-account:hover {
+  background: rgba(15, 23, 42, 0.045);
+  color: var(--od-ink-primary);
+}
+
+:root[data-theme="dark"] .rail-item:hover:not(.active),
+:root[data-theme="dark"] .rail-account:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.rail-item.active {
+  background: rgba(15, 23, 42, 0.08) !important;
+  color: var(--od-ink-primary) !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme="dark"] .rail-item.active {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+}
+
+/* Inset Pure-White Studio Sheet (OpenDesign signature framing) */
+.app-shell:not(.workspace-app-shell) > .main-area {
+  margin: 8px 8px 8px 0;
+  height: calc(100vh - 16px);
+  border-radius: 18px;
+  background: var(--od-sheet-bg);
+  border: 1px solid var(--od-border-subtle);
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.03);
+  overflow: hidden;
+}
+
+.app-shell:not(.workspace-app-shell) > .main-area > .screen,
+.app-shell:not(.workspace-app-shell) > .main-area > .projects-screen,
+.app-shell:not(.workspace-app-shell) > .main-area > .assets-screen,
+.app-shell:not(.workspace-app-shell) > .main-area > .skills-screen,
+.app-shell:not(.workspace-app-shell) > .main-area > .taste-screen,
+.app-shell:not(.workspace-app-shell) > .main-area > .templates-screen,
+.app-shell:not(.workspace-app-shell) > .main-area > .trash-screen,
+.app-shell:not(.workspace-app-shell) > .main-area > .skill-editor-screen {
+  height: 100% !important;
+  min-height: 0 !important;
+  background: var(--od-sheet-bg) !important;
+}
+
+/* 3. Unified Page Headers, Search Fields & Segmented Pills */
+.library-page-header {
+  min-height: 68px;
+  padding: 0 32px;
+  background: var(--od-sheet-bg) !important;
+  border-bottom: 1px solid var(--od-border-subtle) !important;
+}
+
+.library-page-header h1,
+.skills-page-header h1 {
+  color: var(--od-ink-primary);
+  font-size: 21px;
+  font-weight: 650;
+  letter-spacing: -0.022em;
+}
+
+.library-page-content {
+  padding: 22px 32px 42px;
+}
+
+.project-search-field,
+.skills-search-field {
+  height: 36px !important;
+  min-height: 36px !important;
+  border-radius: 999px !important;
+  border: 1px solid var(--od-border-default) !important;
+  background: var(--od-surface-subtle) !important;
+  box-shadow: none !important;
+  padding: 0 13px !important;
+}
+
+.project-search-field:focus-within,
+.skills-search-field:focus-within {
+  background: var(--od-sheet-bg) !important;
+  border-color: var(--od-border-strong) !important;
+  box-shadow: 0 0 0 3px var(--od-focus-ring) !important;
+}
+
+.project-search-input {
+  font-size: 13px !important;
+  font-weight: 450 !important;
+  color: var(--od-ink-primary) !important;
+}
+
+.project-search-input::placeholder {
+  color: var(--od-ink-muted) !important;
+  font-weight: 450 !important;
+}
+
+.topbar-action-button {
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 14px !important;
+  border-radius: 999px !important;
+  border: 1px solid var(--od-border-default) !important;
+  background: var(--od-sheet-bg) !important;
+  color: var(--od-ink-primary) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
+}
+
+.topbar-action-button:hover {
+  background: var(--od-surface-subtle) !important;
+  border-color: var(--od-border-strong) !important;
+}
+
+.skills-new-action {
+  height: 36px !important;
+  min-height: 36px !important;
+  border-radius: 999px !important;
+  background: var(--od-accent-ink) !important;
+  border-color: var(--od-accent-ink) !important;
+  color: var(--od-sheet-bg) !important;
+  font-size: 13px !important;
+  font-weight: 550 !important;
+  padding: 0 16px !important;
+}
+
+.skills-new-action:hover {
+  background: var(--od-accent-ink-hover) !important;
+  border-color: var(--od-accent-ink-hover) !important;
+}
+
+/* OpenDesign Pill Segmented Controls */
+.project-archive-tabs,
+.skills-filter-tabs,
+.asset-filter-tabs,
+.companion-mode-bar {
+  border-radius: 999px !important;
+  padding: 3px !important;
+  background: var(--od-surface-pill) !important;
+  border: 1px solid var(--od-border-subtle) !important;
+  gap: 2px !important;
+}
+
+.project-archive-tab,
+.skills-filter-tab,
+.asset-filter-tab {
+  border-radius: 999px !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  padding: 0 13px !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  color: var(--od-ink-muted) !important;
+  border: 0 !important;
+}
+
+.project-archive-tab.active,
+.skills-filter-tab.active,
+.asset-filter-tab.active {
+  background: var(--od-sheet-bg) !important;
+  color: var(--od-ink-primary) !important;
+  font-weight: 600 !important;
+  box-shadow:
+    0 1px 3px rgba(15, 23, 42, 0.08),
+    0 0 0 1px rgba(15, 23, 42, 0.05) !important;
+}
+
+/* 4. OpenDesign Project Cards (Unobstructed Artwork + Clean Metadata Subline) */
+.project-grid {
+  --project-card-min-width: clamp(248px, 17vw, 308px);
+  --project-grid-column-gap: 22px;
+  gap: 26px var(--project-grid-column-gap) !important;
+  margin-top: 20px !important;
+}
+
+.project-card,
+.project-card.create-card {
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.project-card:hover,
+.project-card:focus-within,
+.project-card.create-card:hover {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.project-card .folder-preview,
+.project-card .folder-empty {
+  border-radius: 14px !important;
+  aspect-ratio: 16 / 10 !important;
+  border: 1px solid var(--od-border-default) !important;
+  background: var(--od-surface-subtle) !important;
+  overflow: hidden !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03) !important;
+  transition:
+    transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 180ms ease !important;
+}
+
+.project-card:hover .folder-preview,
+.project-card:focus-within .folder-preview {
+  transform: translateY(-2px) !important;
+  border-color: var(--od-border-strong) !important;
+  box-shadow:
+    0 10px 26px rgba(15, 23, 42, 0.08),
+    0 2px 6px rgba(15, 23, 42, 0.04) !important;
+}
+
+.project-card.create-card .folder-empty {
+  border: 1.5px dashed rgba(15, 23, 42, 0.15) !important;
+  background:
+    radial-gradient(circle at 1px 1px, rgba(15, 23, 42, 0.06) 1px, transparent 0) 0 0 / 16px 16px,
+    var(--od-surface-subtle) !important;
+}
+
+:root[data-theme="dark"] .project-card.create-card .folder-empty {
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  background: var(--od-surface-subtle) !important;
+}
+
+.project-card.create-card:hover .folder-empty {
+  transform: translateY(-2px) !important;
+  border-style: solid !important;
+  border-color: var(--od-border-strong) !important;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07) !important;
+}
+
+.project-card.create-card:hover .create-card-plus-badge {
+  background: var(--od-accent-ink) !important;
+  border-color: var(--od-accent-ink) !important;
+  color: var(--od-sheet-bg) !important;
+  transform: scale(1.04);
+}
+
+.project-card-tutorial-lock,
+.project-card-actions-trigger {
+  top: 10px !important;
+  right: 10px !important;
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  border: 1px solid rgba(15, 23, 42, 0.1) !important;
+  color: #0f172a !important;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1) !important;
+}
+
+.project-card-meta {
+  padding: 10px 2px 0 !important;
+  gap: 6px !important;
+}
+
+.project-card-title-line strong {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em !important;
+  color: var(--od-ink-primary) !important;
+  line-height: 1.38 !important;
+  -webkit-line-clamp: 1 !important;
+}
+
+.project-card-subline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.project-card-subline-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.project-card-subline-left .project-card-mini-icon {
+  width: 18px !important;
+  height: 18px !important;
+  border-radius: 5px !important;
+  background: var(--od-surface-pill) !important;
+  border: 0 !important;
+  color: var(--od-ink-secondary) !important;
+  box-shadow: none !important;
+  flex: 0 0 18px !important;
+}
+
+.project-card-subline-left .project-card-mini-icon svg {
+  width: 11px !important;
+  height: 11px !important;
+}
+
+.project-card-subline-left small,
+.project-card.create-card .project-card-meta small {
+  font-size: 12px !important;
+  font-weight: 450 !important;
+  color: var(--od-ink-muted) !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-card-ratio-pill {
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 6px;
+  background: var(--od-surface-pill);
+  border: 1px solid var(--od-border-subtle);
+  color: var(--od-ink-secondary);
+  font-size: 10.5px;
+  font-weight: 550;
+  font-variant-numeric: tabular-nums;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+/* 5. Settings Modal — OpenDesign Studio Architecture */
+.prototype-modal-backdrop {
+  background: rgba(15, 23, 42, 0.36) !important;
+  backdrop-filter: blur(6px);
+}
+
+.prototype-modal.account-settings-modal {
+  border-radius: 20px !important;
+  border: 1px solid var(--od-border-default) !important;
+  box-shadow:
+    0 24px 72px rgba(15, 23, 42, 0.18),
+    0 4px 16px rgba(15, 23, 42, 0.06) !important;
+  overflow: hidden;
+}
+
+.account-settings-nav {
+  background: #f5f7fa !important;
+  border-right: 1px solid var(--od-border-subtle) !important;
+  padding: 24px 14px !important;
+  gap: 4px !important;
+}
+
+:root[data-theme="dark"] .account-settings-nav {
+  background: #11141a !important;
+}
+
+.settings-nav-heading {
+  padding: 0 10px 16px !important;
+  margin-bottom: 6px !important;
+  border-bottom: 1px solid var(--od-border-subtle) !important;
+}
+
+.settings-nav-heading span {
+  font-size: 11px !important;
+  font-weight: 550 !important;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--od-ink-muted) !important;
+}
+
+.settings-nav-heading strong {
+  font-size: 16px !important;
+  font-weight: 650 !important;
+  letter-spacing: -0.02em;
+  color: var(--od-ink-primary) !important;
+}
+
+.settings-nav-item {
+  min-height: 38px !important;
+  padding: 8px 11px !important;
+  border-radius: 10px !important;
+  gap: 10px !important;
+  transition: background-color 130ms ease, color 130ms ease !important;
+}
+
+.settings-nav-item svg {
+  width: 16px !important;
+  height: 16px !important;
+  color: var(--od-ink-muted) !important;
+}
+
+.settings-nav-copy span {
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  color: var(--od-ink-secondary) !important;
+}
+
+.settings-nav-item:hover:not(.active) {
+  background: rgba(15, 23, 42, 0.045) !important;
+}
+
+.settings-nav-item.active {
+  background: var(--od-sheet-bg) !important;
+  box-shadow:
+    0 1px 3px rgba(15, 23, 42, 0.06),
+    inset 0 0 0 1px var(--od-border-default) !important;
+}
+
+.settings-nav-item.active svg {
+  color: var(--od-ink-primary) !important;
+}
+
+.settings-nav-item.active .settings-nav-copy span {
+  color: var(--od-ink-primary) !important;
+  font-weight: 600 !important;
+}
+
+.prototype-modal-close {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 999px !important;
+  border: 1px solid var(--od-border-subtle) !important;
+  background: var(--od-surface-subtle) !important;
+  color: var(--od-ink-secondary) !important;
+}
+
+.prototype-modal-close:hover {
+  background: var(--od-surface-pill) !important;
+  color: var(--od-ink-primary) !important;
+}
+
+.execution-settings-pane {
+  background: var(--od-sheet-bg) !important;
+  padding: 30px 36px 32px !important;
+}
+
+.execution-settings-header h1 {
+  font-size: 21px !important;
+  font-weight: 650 !important;
+  letter-spacing: -0.02em !important;
+  color: var(--od-ink-primary) !important;
+}
+
+.execution-settings-header p,
+.local-cli-head p,
+.byok-provider-desc {
+  font-size: 13px !important;
+  font-weight: 450 !important;
+  color: var(--od-ink-muted) !important;
+  line-height: 1.55 !important;
+}
+
+/* Remove legacy yellow vertical accent bar next to group titles */
+.account-settings-modal .local-cli-group-title::before {
+  display: none !important;
+  content: none !important;
+}
+
+.account-settings-modal .local-cli-group-title {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.005em !important;
+  color: var(--od-ink-secondary) !important;
+}
+
+/* Refined Pill Action Buttons inside Settings */
+.local-cli-action {
+  height: 32px !important;
+  min-height: 32px !important;
+  padding: 0 12px !important;
+  border-radius: 999px !important;
+  border: 1px solid var(--od-border-default) !important;
+  background: var(--od-sheet-bg) !important;
+  color: var(--od-ink-primary) !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
+}
+
+.local-cli-action:hover:not(:disabled) {
+  background: var(--od-surface-subtle) !important;
+  border-color: var(--od-border-strong) !important;
+}
+
+.local-cli-action svg {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+/* 6. Local Agent Cards — Crisp @lobehub/icons Squircles + Clean Selection Ring */
+.local-cli-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+}
+
+@media (max-width: 680px) {
+  .local-cli-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+.local-cli-card {
+  min-height: 76px !important;
+  padding: 13px 16px !important;
+  border-radius: 14px !important;
+  border: 1px solid var(--od-border-default) !important;
+  background: var(--od-sheet-bg) !important;
+  grid-template-columns: 44px minmax(0, 1fr) auto !important;
+  gap: 13px !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.025) !important;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    background-color 150ms ease,
+    transform 150ms ease !important;
+}
+
+.local-cli-card.installed:hover:not(.selected) {
+  border-color: var(--od-border-strong) !important;
+  background: var(--od-surface-subtle) !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05) !important;
+}
+
+/* Selected Agent Card: Clean OpenDesign dark-ink ring + subtle lift, NO yellow wash */
+.local-cli-card.selected {
+  background: var(--od-sheet-bg) !important;
+  border-color: var(--od-ink-primary) !important;
+  box-shadow:
+    inset 0 0 0 0.5px var(--od-ink-primary),
+    0 6px 20px rgba(15, 23, 42, 0.07) !important;
+}
+
+.local-cli-card.not-installed {
+  background: var(--od-surface-subtle) !important;
+  border-style: dashed !important;
+  opacity: 0.72 !important;
+}
+
+.cli-brand-icon {
+  width: 42px !important;
+  height: 42px !important;
+  flex: 0 0 42px !important;
+  border-radius: 11px !important;
+  background: #f8fafc !important;
+  border: 1px solid rgba(15, 23, 42, 0.075) !important;
+  color: #0f172a !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+:root[data-theme="dark"] .cli-brand-icon {
+  background: #1f242e !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #f8fafc !important;
+  box-shadow: none;
+}
+
+/* Kimi Color logo uses white glyph + #1783FF accent dot -> dark squircle */
+.cli-brand-icon.kimi-cli {
+  background: #14161a !important;
+  border-color: #242830 !important;
+  color: #ffffff !important;
+  box-shadow: none;
+}
+
+.local-cli-copy {
+  gap: 4px !important;
+}
+
+.local-cli-title-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.local-cli-copy strong {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em;
+  color: var(--od-ink-primary) !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.local-cli-version-pill {
+  height: 19px;
+  padding: 0 6px;
+  border-radius: 5px;
+  background: var(--od-surface-pill);
+  color: var(--od-ink-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10.5px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.local-cli-status-text,
+.local-cli-copy small {
+  font-size: 12px !important;
+  font-weight: 450 !important;
+  color: var(--od-ink-muted) !important;
+  line-height: 1.35 !important;
+}
+
+.local-cli-card.selected .local-cli-status-text {
+  color: #059669 !important;
+  font-weight: 550 !important;
+}
+
+:root[data-theme="dark"] .local-cli-card.selected .local-cli-status-text {
+  color: #34d399 !important;
+}
+
+.local-cli-status-end {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+}
+
+.local-cli-dot {
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 999px !important;
+  background: #cbd5e1 !important;
+  border: 0 !important;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.local-cli-card.installed:not(.selected) .local-cli-dot {
+  background: #94a3b8 !important;
+}
+
+.local-cli-card.selected .local-cli-dot,
+.local-cli-card.selected.ready .local-cli-dot,
+.local-cli-card.readonly.ready .local-cli-dot {
+  width: 9px !important;
+  height: 9px !important;
+  background: var(--od-emerald) !important;
+  box-shadow: 0 0 0 4px var(--od-emerald-soft) !important;
+}
+
+/* Video Settings & Segmented Options inside Settings */
+.video-settings-card,
+.byok-provider-card,
+.byok-default-card,
+.companion-card,
+.settings-static-card {
+  border-radius: 14px !important;
+  border: 1px solid var(--od-border-default) !important;
+  background: var(--od-sheet-bg) !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02) !important;
+}
+
+.video-setting-copy strong {
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  color: var(--od-ink-primary) !important;
+}
+
+.video-setting-copy small {
+  font-size: 12px !important;
+  font-weight: 450 !important;
+  color: var(--od-ink-muted) !important;
+}
+
+.video-setting-segment {
+  border-radius: 10px !important;
+  background: var(--od-surface-pill) !important;
+  border: 1px solid var(--od-border-subtle) !important;
+  padding: 3px !important;
+}
+
+.video-setting-option {
+  min-height: 32px !important;
+  border-radius: 7px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: var(--od-ink-muted) !important;
+}
+
+.video-setting-option.selected {
+  background: var(--od-sheet-bg) !important;
+  border-color: var(--od-border-subtle) !important;
+  color: var(--od-ink-primary) !important;
+  font-weight: 600 !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06) !important;
+}
+
+/* 7. BYOK Provider Brand Avatars & MCP Snippets */
+.mk-provider-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  color: #0f172a;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 30px;
+}
+
+:root[data-theme="dark"] .mk-provider-avatar {
+  background: #1f242e;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
+}
+
+.byok-provider-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px !important;
+}
+
+.byok-provider-title strong {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+}
+
+.mcp-snippet-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 8. Composer Pill & Agent Picker Popover (OpenDesign Style) */
+.composer-cli-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #94a3b8;
+  flex: 0 0 7px;
+}
+
+.composer-cli-status-dot.connected {
+  background: #10b981;
+}
+
+.composer-popover-option-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* 9. Settings Header, Sticky Footer & BYOK Privacy Banner Polish */
+.local-cli-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.local-cli-footer {
+  position: sticky !important;
+  bottom: -32px !important;
+  margin: 14px -36px -32px !important;
+  padding: 12px 36px !important;
+  border-top: 1px solid var(--od-border-subtle) !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  backdrop-filter: blur(12px) !important;
+  z-index: 6 !important;
+}
+
+:root[data-theme="dark"] .local-cli-footer {
+  background: rgba(22, 25, 32, 0.96) !important;
+}
+
+.selected-cli-state {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: var(--od-ink-secondary) !important;
+  gap: 8px !important;
+}
+
+.byok-privacy-banner {
+  background: var(--od-surface-subtle) !important;
+  border: 1px solid var(--od-border-default) !important;
+  border-radius: 14px !important;
+  padding: 14px 16px !important;
+  box-shadow: none !important;
+}
+
+.byok-privacy-banner svg {
+  color: var(--od-emerald) !important;
+  width: 18px !important;
+  height: 18px !important;
+  flex-shrink: 0;
+}
+
+.byok-privacy-banner strong {
+  color: var(--od-ink-primary) !important;
+  font-size: 13.5px !important;
+  font-weight: 650 !important;
+}
+
+.byok-privacy-banner p {
+  color: var(--od-ink-muted) !important;
+  font-size: 12.5px !important;
+  line-height: 1.55 !important;
+}

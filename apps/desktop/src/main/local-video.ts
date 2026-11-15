@@ -465,6 +465,10 @@ function formatHyperframesAgentError(message: string, agentName: string): string
 
 function agentCliDisplayName(agentCliId: AgentCliId): string {
   if (agentCliId === "claude-code") return "Claude Code";
+  if (agentCliId === "antigravity" || agentCliId === "gemini-cli") return "Antigravity";
+  if (agentCliId === "opencode") return "OpenCode";
+  if (agentCliId === "cursor-agent") return "Cursor Agent";
+  if (agentCliId === "kimi-cli") return "Kimi CLI";
   return "Codex CLI";
 }
 

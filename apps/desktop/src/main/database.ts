@@ -4740,7 +4740,19 @@ function parseAgentOperationConfirmationStatus(input: unknown): AgentOperationCo
 }
 
 function parseAgentCliId(input?: string | null): AgentCliId | undefined {
-  if (input === "codex" || input === "claude-code") return input;
+  if (!input) return undefined;
+  if (input === "gemini-cli") return "antigravity";
+  if (
+    input === "codex" ||
+    input === "claude-code" ||
+    input === "antigravity" ||
+    input === "opencode" ||
+    input === "cursor-agent" ||
+    input === "kimi-cli" ||
+    input.startsWith("custom:")
+  ) {
+    return input;
+  }
   return undefined;
 }
 

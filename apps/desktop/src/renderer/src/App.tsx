@@ -12,6 +12,7 @@ import CodexIcon from "@lobehub/icons/es/Codex/components/Color";
 import OpenAIIcon from "@lobehub/icons/es/OpenAI/components/Mono";
 import tasteMediaUrlMap from "./data/taste-media.json";
 import tastePreviewImageUrlMap from "./data/taste-preview-images.json";
+import { AgentBrandGlyph, ByokProviderBrandAvatar, normalizeBrandAgentId } from "./components/BrandIcons";
 import { SkillryMotionHub } from "./components/SkillryMotionHub";
 import {
   SkillCreateActionCard,
@@ -613,7 +614,7 @@ const hyperframesVideoConcurrencyOptions = [1, 2, 3, 4, 5] as const;
 
 const languageValues = languageOptions.map((option) => option.value);
 const appearanceValues = appearanceOptions.map((option) => option.value);
-const agentCliValues: AgentCliId[] = ["codex", "claude-code", "gemini-cli", "opencode", "cursor-agent", "kimi-cli"];
+const agentCliValues: AgentCliId[] = ["codex", "claude-code", "antigravity", "opencode", "cursor-agent", "kimi-cli"];
 
 function isAgentCliId(value: string): value is AgentCliId {
   return agentCliValues.includes(value as AgentCliId) || value.startsWith("custom:");
@@ -1628,7 +1629,7 @@ function mergeLocalCliAgentsWithDefaults(agents: LocalCliAgent[], codexStatus: C
 
 function agentCliDisplayName(agentCliId: AgentCliId) {
   if (agentCliId === "claude-code") return "Claude Code";
-  if (agentCliId === "gemini-cli") return "Gemini CLI";
+  if (agentCliId === "antigravity" || agentCliId === "gemini-cli") return "Antigravity";
   if (agentCliId === "opencode") return "OpenCode";
   if (agentCliId === "cursor-agent") return "Cursor Agent";
   if (agentCliId === "kimi-cli") return "Kimi CLI";
@@ -1764,7 +1765,18 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
   });
   const [localCliAgents, setLocalCliAgents] = useState<LocalCliAgent[]>([]);
   const [localCliScanBusy, setLocalCliScanBusy] = useState(false);
-  const [selectedCliId, setSelectedCliId] = useState<AgentCliId>(() => readStoredOption(SELECTED_CLI_STORAGE_KEY, "codex", agentCliValues));
+  const [selectedCliId, setSelectedCliId] = useState<AgentCliId>(() => {
+    try {
+      const raw = window.localStorage.getItem(SELECTED_CLI_STORAGE_KEY);
+      if (raw === "gemini-cli") {
+        window.localStorage.setItem(SELECTED_CLI_STORAGE_KEY, "antigravity");
+        return "antigravity";
+      }
+    } catch {
+      // ignore storage errors
+    }
+    return readStoredOption(SELECTED_CLI_STORAGE_KEY, "codex", agentCliValues);
+  });
   const [cliTestBusy, setCliTestBusy] = useState(false);
   const [cliTestResult, setCliTestResult] = useState<CliTestResult | null>(null);
   const [storyboardBusyAction, setStoryboardBusyAction] = useState<StoryboardAiAction | null>(null);
@@ -7041,31 +7053,15 @@ function ProjectCard({
                   ) : null}
                 </>
               )}
-              {!tutorialProject ? (
-                <span className="project-card-cover-pill is-video">
-                  <Film aria-hidden="true" />
-                  <span>{t("project.coverVideoBadge")}</span>
-                  {coverPreview.shotNumber ? <em>#{coverPreview.shotNumber}</em> : null}
-                </span>
-              ) : null}
             </>
           ) : coverPreview?.kind === "broll-image" && !coverImageFailed ? (
-            <>
-              <img
-                className="project-card-cover-media"
-                src={coverPreview.url}
-                alt=""
-                loading="lazy"
-                onError={() => setCoverImageFailed(true)}
-              />
-              {!tutorialProject ? (
-                <span className="project-card-cover-pill is-broll">
-                  <Image aria-hidden="true" />
-                  <span>{t("project.coverBRollBadge")}</span>
-                  {coverPreview.shotNumber ? <em>#{coverPreview.shotNumber}</em> : null}
-                </span>
-              ) : null}
-            </>
+            <img
+              className="project-card-cover-media"
+              src={coverPreview.url}
+              alt=""
+              loading="lazy"
+              onError={() => setCoverImageFailed(true)}
+            />
           ) : (
             <div className="project-card-empty-stage">
               <div className="project-card-empty-frame">
@@ -7074,25 +7070,24 @@ function ProjectCard({
               <span className="project-card-empty-caption">{t("project.coverEmptyHint")}</span>
             </div>
           )}
-
-          <div className="project-card-cover-scrim">
-            <span className="project-card-ratio-chip">{project.imageRatio}</span>
-            {shotCount > 0 ? (
-              <span className="project-card-stats-chip">
-                {t("project.shotsCount", { count: String(shotCount) })}
-                {videoCount > 0 ? ` · ${t("project.videosCount", { count: String(videoCount) })}` : ""}
-              </span>
-            ) : null}
-          </div>
         </div>
         <div className="project-card-meta">
           <span className="project-card-title-line" title={project.name}>
-            <span className="project-card-mini-icon">
-              <ProjectMarkIcon value={project.icon} />
-            </span>
             <strong title={project.name}>{project.name}</strong>
           </span>
-          <small>{tutorialProject ? t("project.tutorialDescription") : t("project.createdAt", { date: formatProjectDate(project.createdAt, t) })}</small>
+          <span className="project-card-subline">
+            <span className="project-card-subline-left">
+              <span className="project-card-mini-icon">
+                <ProjectMarkIcon value={project.icon} />
+              </span>
+              <small>
+                {tutorialProject
+                  ? t("project.tutorialDescription")
+                  : `${formatProjectDate(project.createdAt, t)}${shotCount > 0 ? ` · ${t("project.shotsCount", { count: String(shotCount) })}` : ""}`}
+              </small>
+            </span>
+            <span className="project-card-ratio-pill">{project.imageRatio}</span>
+          </span>
         </div>
       </Button>
       {tutorialProject ? (
@@ -7273,18 +7268,6 @@ function ProjectListRow({
               <strong className="project-list-title" title={project.name}>{project.name}</strong>
               {tutorialProject ? (
                 <span className="project-list-badge is-tutorial">{t("project.tutorialBadge")}</span>
-              ) : coverPreview?.kind === "video-first-frame" ? (
-                <span className="project-list-badge is-video">
-                  <Film aria-hidden="true" />
-                  <span>{t("project.coverVideoBadge")}</span>
-                  {coverPreview.shotNumber ? <em>#{coverPreview.shotNumber}</em> : null}
-                </span>
-              ) : coverPreview?.kind === "broll-image" ? (
-                <span className="project-list-badge is-broll">
-                  <Image aria-hidden="true" />
-                  <span>{t("project.coverBRollBadge")}</span>
-                  {coverPreview.shotNumber ? <em>#{coverPreview.shotNumber}</em> : null}
-                </span>
               ) : null}
             </span>
           </span>
@@ -10184,27 +10167,26 @@ function CodexAuthorizationDialog({
 
                 <section className="local-cli-section onboarding-settings-local-agent-target" aria-label={t("settings.runtime.localCli")}>
                   <span className="onboarding-floating-anchor onboarding-settings-local-anchor" aria-hidden="true" />
-                  <div className="local-cli-head">
-                    <div className="local-cli-actions">
-                      <button className="local-cli-action" type="button" onClick={() => onOpenExternal(LOCAL_CLI_GUIDE_URL)}>
-                        <BookOpen aria-hidden="true" />
-                        {t("settings.runtime.webGuide")}
-                      </button>
-                      <button className="local-cli-action" disabled={cliTestBusy} type="button" onClick={onRefreshSelectedCliStatus}>
-                        {cliTestBusy ? <LoaderCircle className="spinning" aria-hidden="true" /> : <CircleCheck aria-hidden="true" />}
-                        {cliTestBusy ? t("common.testing") : t("common.test")}
-                      </button>
-                      <button className="local-cli-action" disabled={localCliScanBusy} type="button" onClick={onRefreshLocalCliAgents}>
-                        <RefreshCw aria-hidden="true" />
-                        {localCliScanBusy ? t("common.scanning") : t("common.rescan")}
-                      </button>
-                    </div>
-                  </div>
-
                   <div className="local-cli-group onboarding-settings-agent-group-target">
                     <span className="onboarding-floating-anchor onboarding-settings-agent-anchor" aria-hidden="true" />
-                    <div className="local-cli-group-title">
-                      <span>{t("settings.runtime.agentCliGroup")}</span>
+                    <div className="local-cli-group-head">
+                      <div className="local-cli-group-title">
+                        <span>{t("settings.runtime.agentCliGroup")}</span>
+                      </div>
+                      <div className="local-cli-actions">
+                        <button className="local-cli-action" type="button" onClick={() => onOpenExternal(LOCAL_CLI_GUIDE_URL)}>
+                          <BookOpen aria-hidden="true" />
+                          {t("settings.runtime.webGuide")}
+                        </button>
+                        <button className="local-cli-action" disabled={cliTestBusy} type="button" onClick={onRefreshSelectedCliStatus}>
+                          {cliTestBusy ? <LoaderCircle className="spinning" aria-hidden="true" /> : <CircleCheck aria-hidden="true" />}
+                          {cliTestBusy ? t("common.testing") : t("common.test")}
+                        </button>
+                        <button className="local-cli-action" disabled={localCliScanBusy} type="button" onClick={onRefreshLocalCliAgents}>
+                          <RefreshCw aria-hidden="true" />
+                          {localCliScanBusy ? t("common.scanning") : t("common.rescan")}
+                        </button>
+                      </div>
                     </div>
                     <div className="local-cli-grid" aria-label={t("settings.runtime.agentCliGroup")}>
                       {agentCliCards.map((agent) => (
@@ -10262,8 +10244,18 @@ function CodexAuthorizationDialog({
 
                   <div className="local-cli-footer">
                     <div className={cn("selected-cli-state", selectedConnected && "connected", !selectedConnected && "needs-auth")}>
-                      {selectedConnected ? <ShieldCheck aria-hidden="true" /> : <KeyRound aria-hidden="true" />}
-                      <span>{selectedCli?.installed ? `${selectedCli.name} · ${selectedCli.version || t("common.installed")}` : t("settings.runtime.selectInstalledCli")}</span>
+                      {selectedCli ? (
+                        <AgentBrandGlyph agentId={selectedCli.id} name={selectedCli.name} size={16} variant="inline" />
+                      ) : selectedConnected ? (
+                        <ShieldCheck aria-hidden="true" />
+                      ) : (
+                        <KeyRound aria-hidden="true" />
+                      )}
+                      <span>
+                        {selectedCli?.installed
+                          ? `${selectedCli.name} · ${formatCleanCliVersion(selectedCli.version) || t("common.installed")}`
+                          : t("settings.runtime.selectInstalledCli")}
+                      </span>
                     </div>
                   </div>
                 </section>
@@ -10533,7 +10525,7 @@ function ByokAndCompanionSection({
             <article className="byok-provider-card" key={provider.id}>
               <div className="byok-provider-head">
                 <div className="byok-provider-title">
-                  <KeyRound size={15} aria-hidden="true" />
+                  <ByokProviderBrandAvatar providerId={provider.id} size={18} />
                   <strong>{provider.name}</strong>
                   <span className={cn("byok-badge", provider.configured && "ready", provider.source === "env" && "env")}>
                     {provider.source === "env"
@@ -10552,7 +10544,27 @@ function ByokAndCompanionSection({
                   </button>
                 ) : null}
               </div>
-              <p className="byok-provider-desc">{provider.category === "image_video" ? "KIE 分镜生图 + Seedance 2.0 视频直连" : provider.category === "voice" ? "ElevenLabs 脚本与分镜演示配音直连" : `${provider.name} (${provider.model})`}</p>
+              <p className="byok-provider-desc">
+                {provider.id === "kie"
+                  ? isEn
+                    ? "Direct KIE storyboard image & Seedance 2.0 video generation"
+                    : "KIE 分镜生图 + Seedance 2.0 视频直连"
+                  : provider.id === "openai"
+                    ? isEn
+                      ? "Direct OpenAI GPT-Image storyboard generation"
+                      : "OpenAI GPT-Image 分镜生图直连"
+                    : provider.id === "gemini"
+                      ? isEn
+                        ? "Direct Google Gemini / Imagen storyboard generation"
+                        : "Google Gemini / Imagen 分镜生图直连"
+                      : provider.category === "voice"
+                        ? isEn
+                          ? "Direct ElevenLabs script & storyboard voice synthesis"
+                          : "ElevenLabs 脚本与分镜演示配音直连"
+                        : provider.name.includes(provider.model)
+                          ? provider.name
+                          : `${provider.name} (${provider.model})`}
+              </p>
               <div className="byok-provider-inputs">
                 <input
                   type="password"
@@ -11083,8 +11095,9 @@ function McpBridgeRuntimeSetting() {
           <small>{t("settings.mcp.restartHint")}</small>
           {status?.snippets && status.snippets.length > 0 ? (
             <span className="mcp-snippets-box">
-              {status.snippets.slice(0, 3).map((snip) => (
+              {status.snippets.slice(0, 4).map((snip) => (
                 <span className="mcp-snippet-item" key={snip.id}>
+                  <AgentBrandGlyph agentId={snip.id} name={snip.label} size={15} variant="inline" />
                   <code>{snip.label}: {snip.command}</code>
                   <button
                     className="local-cli-action"
@@ -11574,7 +11587,8 @@ function LocalCliCard({
   const statusClass = selected ? "selected" : agent.installed ? "installed" : "not-installed";
   const authClass = connectionState === "connected" ? "ready" : agent.installed ? "needs-auth" : "";
   const connectionLabel = localizeLocalCliConnectionLabel(agent, connectionState, selected, t);
-  const Icon = getLocalCliIcon(agent.id);
+  const normalizedId = normalizeBrandAgentId(agent.id);
+  const cleanVersion = formatCleanCliVersion(installedLabel);
   const selectable = interactive && agent.installed;
   const handleKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
     if (!selectable || !onSelect) return;
@@ -11586,23 +11600,46 @@ function LocalCliCard({
   return (
     <article
       aria-disabled={interactive && !agent.installed ? true : undefined}
-      className={cn("local-cli-card", `local-cli-card-${agent.id}`, statusClass, authClass, !interactive && "readonly", interactive && !agent.installed && "disabled")}
+      className={cn("local-cli-card", `local-cli-card-${normalizedId}`, statusClass, authClass, !interactive && "readonly", interactive && !agent.installed && "disabled")}
       role={interactive ? "button" : "group"}
       tabIndex={selectable ? 0 : undefined}
       onClick={selectable ? onSelect : undefined}
       onKeyDown={handleKeyDown}
     >
-      <span className={cn("cli-brand-icon", agent.id)} aria-hidden="true">
-        {Icon ? <Icon size={26} /> : <span className="cli-brand-letter">{getLocalCliFallbackMark(agent.name)}</span>}
+      <span className={cn("cli-brand-icon", normalizedId)} aria-hidden="true">
+        <AgentBrandGlyph agentId={normalizedId} name={agent.name} size={23} variant="tile" />
       </span>
       <span className="local-cli-copy">
-        <strong>{agent.name}</strong>
-        <span>{agent.installed ? installedLabel : t("common.notInstalled")}</span>
-        {agent.installed && connectionLabel ? <small>{connectionLabel}</small> : null}
+        <span className="local-cli-title-row">
+          <strong>{agent.name}</strong>
+          {agent.installed && cleanVersion ? <span className="local-cli-version-pill">{cleanVersion}</span> : null}
+        </span>
+        <small className="local-cli-status-text">
+          {agent.installed ? connectionLabel || installedLabel : t("common.notInstalled")}
+        </small>
       </span>
-      <span className="local-cli-dot" aria-hidden="true" />
+      <span className="local-cli-status-end" aria-hidden="true">
+        <span className="local-cli-dot" />
+      </span>
     </article>
   );
+}
+
+function formatCleanCliVersion(raw?: string | null): string {
+  if (!raw) return "";
+  const cleaned = raw
+    .replace(/^codex-cli\s+/i, "")
+    .replace(/\s*\([^)]*\)\s*/g, "")
+    .trim();
+  const dateVerMatch = /^(\d{4}\.\d{1,2}\.\d{1,2})(?:-[0-9A-Za-z.]+)?/.exec(cleaned);
+  if (dateVerMatch?.[1]) {
+    return dateVerMatch[1];
+  }
+  const semverMatch = /^v?(\d+\.\d+(?:\.\d+)?)(?:-[0-9A-Za-z.]+)?/.exec(cleaned);
+  if (semverMatch?.[1]) {
+    return `v${semverMatch[1]}`;
+  }
+  return cleaned.length > 16 ? cleaned.slice(0, 14) : cleaned;
 }
 
 function getLocalCliIcon(id: string): LocalCliIconComponent | undefined {
@@ -18308,7 +18345,8 @@ function AgentComposer({
               onClick={() => setAgentMenuOpen((open) => !open)}
               title={isEn ? "Switch CLI Agent, Model & Effort" : "切换本地 CLI Agent、模型与推理强度"}
             >
-              <Terminal aria-hidden="true" />
+              <span className={cn("composer-cli-status-dot", cliConnected && "connected")} aria-hidden="true" />
+              <AgentBrandGlyph agentId={selectedCliId} name={selectedCliName} size={15} variant="inline" />
               <span>
                 {selectedCliName}
                 {selectedAgentModel && selectedAgentModel !== "default" ? ` · ${selectedAgentModel}` : ""}
@@ -18332,7 +18370,10 @@ function AgentComposer({
                         onSelectAgentModel("default");
                       }}
                     >
-                      <span>{agent.name}</span>
+                      <span className="composer-popover-option-main">
+                        <AgentBrandGlyph agentId={agent.id} name={agent.name} size={16} variant="inline" />
+                        <span>{agent.name}</span>
+                      </span>
                       <small>{agent.installed ? (agent.id === selectedCliId ? "✓" : "") : isEn ? "Not installed" : "未安装"}</small>
                     </button>
                   ))}

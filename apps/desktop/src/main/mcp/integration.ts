@@ -94,7 +94,7 @@ export function getMcpIntegrationStatus(options: McpIntegrationOptions): McpInte
     snippets: [
       { id: "claude-code", label: "Claude Code", command: `claude mcp add ${serverName} -- ${quotedLauncher}` },
       { id: "codex", label: "Codex CLI", command: `codex mcp add ${serverName} -- ${quotedLauncher}` },
-      { id: "gemini-cli", label: "Gemini CLI", command: `gemini mcp add ${serverName} ${quotedLauncher}` },
+      { id: "antigravity", label: "Antigravity", command: `agy mcp add ${serverName} -- ${quotedLauncher}` },
       { id: "cursor", label: "Cursor / OpenCode (stdio)", command: quotedLauncher }
     ],
     clients: clientIds.map((client) => {
