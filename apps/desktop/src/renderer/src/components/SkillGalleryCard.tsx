@@ -3,20 +3,18 @@ import {
   ArrowRight,
   BookOpen,
   CircleCheck,
-  Clapperboard,
   Code2,
   Compass,
   FileText,
-  Film,
   Layers,
-  Lock,
+  Palette,
   Plus,
   Rocket,
   Sparkles,
   Terminal,
   WandSparkles
 } from "lucide-react";
-import type { Skill, SkillryPackStatus } from "../../../shared";
+import type { Skill, SkillryPackStatus, Taste } from "../../../shared";
 import type { InterfaceLanguage } from "../i18n";
 
 const CREATOR_POSTERS = [
@@ -34,7 +32,6 @@ const LAUNCH_HERO_POSTER =
 const LAUNCH_POSTERS = [
   LAUNCH_HERO_POSTER,
   "https://media.skillry.dev/cdn-cgi/image/width=960,quality=82,fit=scale-down,format=auto/product-launch-video/beat-hook.f692b5ce1d.webp",
-  "https://media.skillry.dev/cdn-cgi/image/width=960,quality=82,fit=scale-down,format=auto/product-launch-video/beat-demo.3317300011.webp",
   "https://media.skillry.dev/cdn-cgi/image/width=960,quality=82,fit=scale-down,format=auto/product-launch-video/beat-close.6fdb4d7fdc.webp"
 ];
 
@@ -43,58 +40,32 @@ type EditorialArtPalette = {
   accent: string;
   ink: string;
   cardBg: string;
-  badgeBg: string;
-  gridColor: string;
 };
 
 const EDITORIAL_ART_PALETTES: EditorialArtPalette[] = [
   {
-    bg: "linear-gradient(135deg, #0F172A 0%, #1E293B 58%, #1E3A8A 100%)",
-    accent: "#38BDF8",
-    ink: "#F8FAFC",
-    cardBg: "rgba(15, 23, 42, 0.72)",
-    badgeBg: "rgba(56, 189, 248, 0.18)",
-    gridColor: "rgba(148, 163, 184, 0.14)"
+    bg: "linear-gradient(180deg, #F8FAFC 0%, #EEF2F6 100%)",
+    accent: "#2563EB",
+    ink: "#0F172A",
+    cardBg: "#FFFFFF"
   },
   {
-    bg: "linear-gradient(135deg, #FBF8F1 0%, #F3E9D7 58%, #E7D6B9 100%)",
+    bg: "linear-gradient(180deg, #FAF9F6 0%, #F2EFE9 100%)",
     accent: "#D97706",
     ink: "#1C1917",
-    cardBg: "rgba(255, 255, 255, 0.84)",
-    badgeBg: "rgba(217, 119, 6, 0.14)",
-    gridColor: "rgba(28, 25, 23, 0.07)"
+    cardBg: "#FFFFFF"
   },
   {
-    bg: "linear-gradient(135deg, #0D1F1B 0%, #13332B 58%, #065F46 100%)",
-    accent: "#34D399",
-    ink: "#ECFDF5",
-    cardBg: "rgba(6, 36, 29, 0.74)",
-    badgeBg: "rgba(52, 211, 153, 0.18)",
-    gridColor: "rgba(110, 231, 183, 0.12)"
+    bg: "linear-gradient(180deg, #F4FBF8 0%, #E7F5EE 100%)",
+    accent: "#059669",
+    ink: "#064E3B",
+    cardBg: "#FFFFFF"
   },
   {
-    bg: "linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 58%, #C7D2FE 100%)",
+    bg: "linear-gradient(180deg, #F5F7FF 0%, #EBF0FF 100%)",
     accent: "#4F46E5",
     ink: "#1E1B4B",
-    cardBg: "rgba(255, 255, 255, 0.85)",
-    badgeBg: "rgba(79, 70, 229, 0.14)",
-    gridColor: "rgba(49, 46, 129, 0.07)"
-  },
-  {
-    bg: "linear-gradient(135deg, #1F1629 0%, #311D3F 58%, #4C1D95 100%)",
-    accent: "#C084FC",
-    ink: "#FAF5FF",
-    cardBg: "rgba(26, 16, 38, 0.74)",
-    badgeBg: "rgba(192, 132, 252, 0.18)",
-    gridColor: "rgba(216, 180, 254, 0.12)"
-  },
-  {
-    bg: "linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 58%, #FED7AA 100%)",
-    accent: "#EA580C",
-    ink: "#431407",
-    cardBg: "rgba(255, 255, 255, 0.86)",
-    badgeBg: "rgba(234, 88, 12, 0.14)",
-    gridColor: "rgba(124, 45, 18, 0.07)"
+    cardBg: "#FFFFFF"
   }
 ];
 
@@ -130,6 +101,81 @@ function extractSkillFeatureTags(skill: Skill, isEn: boolean): string[] {
   }
   if (headings.length >= 2) return headings.slice(0, 3);
   return isEn ? ["Custom Rules", "Prompt Spec", "Reusable"] : ["自定义规则", "分镜规范", "可复用模版"];
+}
+
+/**
+ * Minimalist OpenDesign-style architectural wireframe illustration for Default Storyboard Skill.
+ * Zero text clutter, zero neon/gold noise: pure geometric storyboard triptych on a calm slate canvas.
+ */
+function MinimalStoryboardArtwork() {
+  return (
+    <div className="skg-art-minimal-sb" aria-hidden="true">
+      <svg
+        className="skg-minimal-sb-svg mk-brand-svg"
+        viewBox="0 0 380 214"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        style={{ width: "100%", height: "100%", strokeWidth: 0 }}
+      >
+        <defs>
+          <pattern id="mk-sb-dots" x="0" y="0" width="16" height="16" patternUnits="userSpaceOnUse">
+            <circle cx="2" cy="2" r="1" fill="#CBD5E1" fillOpacity="0.55" />
+          </pattern>
+          <filter id="mk-sb-shadow" x="-12%" y="-12%" width="124%" height="132%">
+            <feDropShadow dx="0" dy="6" stdDeviation="8" floodColor="#0F172A" floodOpacity="0.06" />
+          </filter>
+        </defs>
+
+        <rect width="380" height="214" fill="#F6F8FB" />
+        <rect width="380" height="214" fill="url(#mk-sb-dots)" />
+
+        {/* Left card: Script structure */}
+        <g filter="url(#mk-sb-shadow)" transform="translate(38, 56)">
+          <rect width="84" height="104" rx="10" fill="#FFFFFF" stroke="#E2E8F0" strokeWidth="1" />
+          <rect x="14" y="18" width="28" height="5" rx="2.5" fill="#94A3B8" />
+          <rect x="14" y="32" width="56" height="4" rx="2" fill="#E2E8F0" />
+          <rect x="14" y="42" width="48" height="4" rx="2" fill="#E2E8F0" />
+          <rect x="14" y="58" width="56" height="4" rx="2" fill="#E2E8F0" />
+          <rect x="14" y="68" width="38" height="4" rx="2" fill="#E2E8F0" />
+          <rect x="14" y="84" width="22" height="5" rx="2.5" fill="#CBD5E1" />
+        </g>
+
+        {/* Center hero card: 16:9 Storyboard Keyframe */}
+        <g filter="url(#mk-sb-shadow)" transform="translate(114, 38)">
+          <rect width="152" height="138" rx="13" fill="#FFFFFF" stroke="#CBD5E1" strokeWidth="1.2" />
+          {/* Inner 16:9 frame */}
+          <rect x="12" y="12" width="128" height="76" rx="8" fill="#F1F5F9" stroke="#E2E8F0" strokeWidth="1" />
+          {/* Minimalist sun + composition geometry */}
+          <circle cx="44" cy="36" r="8" fill="#CBD5E1" />
+          <path
+            d="M22 80L56 50L82 70L104 54L130 80H22Z"
+            fill="#CBD5E1"
+            fillOpacity="0.65"
+          />
+          {/* Subtle rule-of-thirds crosshair */}
+          <line x1="60" y1="22" x2="60" y2="30" stroke="#94A3B8" strokeWidth="1.2" strokeLinecap="round" />
+          <line x1="56" y1="26" x2="64" y2="26" stroke="#94A3B8" strokeWidth="1.2" strokeLinecap="round" />
+
+          {/* Clean shot caption & timeline scrubber */}
+          <rect x="14" y="100" width="64" height="6" rx="3" fill="#0F172A" fillOpacity="0.82" />
+          <rect x="14" y="114" width="124" height="5" rx="2.5" fill="#EEF2F6" />
+          <rect x="14" y="114" width="74" height="5" rx="2.5" fill="#0F172A" />
+          <circle cx="88" cy="116.5" r="4" fill="#0F172A" />
+        </g>
+
+        {/* Right card: A/B-Roll sequence rhythm */}
+        <g filter="url(#mk-sb-shadow)" transform="translate(258, 56)">
+          <rect width="84" height="104" rx="10" fill="#FFFFFF" stroke="#E2E8F0" strokeWidth="1" />
+          <rect x="14" y="18" width="56" height="18" rx="5" fill="#F1F5F9" />
+          <rect x="20" y="25" width="24" height="4" rx="2" fill="#64748B" />
+          <rect x="14" y="43" width="56" height="18" rx="5" fill="#0F172A" fillOpacity="0.06" stroke="#CBD5E1" strokeWidth="1" />
+          <rect x="20" y="50" width="32" height="4" rx="2" fill="#0F172A" fillOpacity="0.75" />
+          <rect x="14" y="68" width="56" height="18" rx="5" fill="#F1F5F9" />
+          <rect x="20" y="75" width="20" height="4" rx="2" fill="#94A3B8" />
+        </g>
+      </svg>
+    </div>
+  );
 }
 
 export function SkillGalleryCard({
@@ -198,9 +244,9 @@ export function SkillGalleryCard({
     switch (kind) {
       case "system-storyboard":
         return {
-          label: isEn ? "Official · Core Engine" : "官方内置 · 核心分镜",
-          tone: "amber",
-          Icon: Clapperboard
+          label: isEn ? "Core Built-in" : "内置核心",
+          tone: "neutral",
+          Icon: Layers
         };
       case "creator-master":
       case "creator-sub":
@@ -218,14 +264,14 @@ export function SkillGalleryCard({
         };
       case "github-imported":
         return {
-          label: isEn ? "GitHub / Imported" : "GitHub / 外部导入",
+          label: isEn ? "GitHub / Imported" : "GitHub 导入",
           tone: "slate",
           Icon: Code2
         };
       default:
         return {
-          label: isEn ? "Custom Skill" : "我的自定义技能",
-          tone: "violet",
+          label: isEn ? "Custom Skill" : "自定义技能",
+          tone: "slate",
           Icon: Sparkles
         };
     }
@@ -252,50 +298,7 @@ export function SkillGalleryCard({
     >
       <div className="skg-cover">
         {kind === "system-storyboard" ? (
-          <div className="skg-art-storyboard" aria-hidden="true">
-            <div className="skg-art-storyboard-glow" />
-            <div className="skg-storyboard-sheet">
-              <div className="skg-sb-header">
-                <span className="skg-sb-brand">
-                  <Film />
-                  <span>STORYBOARD ENGINE</span>
-                </span>
-                <span className="skg-sb-ratio">16:9 · HD</span>
-              </div>
-              <div className="skg-sb-rows">
-                <div className="skg-sb-row">
-                  <span className="skg-sb-shot">01</span>
-                  <span className="skg-sb-pill aroll">A-ROLL</span>
-                  <div className="skg-sb-wave">
-                    <i style={{ height: "45%" }} />
-                    <i style={{ height: "85%" }} />
-                    <i style={{ height: "60%" }} />
-                    <i style={{ height: "95%" }} />
-                    <i style={{ height: "50%" }} />
-                    <i style={{ height: "75%" }} />
-                  </div>
-                  <span className="skg-sb-time">3.5s</span>
-                </div>
-                <div className="skg-sb-row highlight">
-                  <span className="skg-sb-shot">02</span>
-                  <span className="skg-sb-pill broll">B-ROLL</span>
-                  <span className="skg-sb-prompt-bar">
-                    <span className="skg-sb-thumb" />
-                    <span>{isEn ? "Cinematic Visual Prompt" : "分镜画面与视频提示词"}</span>
-                  </span>
-                  <span className="skg-sb-time">4.0s</span>
-                </div>
-                <div className="skg-sb-row">
-                  <span className="skg-sb-shot">03</span>
-                  <span className="skg-sb-pill motion">MOTION</span>
-                  <span className="skg-sb-bars">
-                    <b style={{ width: "68%" }} />
-                  </span>
-                  <span className="skg-sb-time">2.8s</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          <MinimalStoryboardArtwork />
         ) : mediaInfo && !imgFailed ? (
           <div className="skg-art-media" aria-hidden="true">
             <img
@@ -325,42 +328,19 @@ export function SkillGalleryCard({
             </div>
           </div>
         ) : (
-          <div
-            className="skg-art-editorial"
-            style={{
-              background: palette.bg,
-              color: palette.ink,
-              ["--skg-grid" as string]: palette.gridColor,
-              ["--skg-accent" as string]: palette.accent
-            }}
-            aria-hidden="true"
-          >
-            <div className="skg-editorial-orb" style={{ background: palette.accent }} />
-            <div className="skg-editorial-window" style={{ background: palette.cardBg }}>
-              <div className="skg-ew-top">
-                <span className="skg-ew-dots">
-                  <i style={{ background: palette.accent }} />
-                  <i />
-                  <i />
-                </span>
-                <span className="skg-ew-spec" style={{ background: palette.badgeBg, color: palette.accent }}>
-                  SKILL.MD
-                </span>
+          <div className="skg-art-clean-doc" style={{ background: palette.bg }} aria-hidden="true">
+            <div className="skg-clean-doc-sheet" style={{ background: palette.cardBg }}>
+              <div className="skg-clean-doc-head">
+                <span className="skg-clean-doc-dot" style={{ background: palette.accent }} />
+                <span className="skg-clean-doc-bar" />
               </div>
-              <div className="skg-ew-main">
-                <div className="skg-ew-icon" style={{ borderColor: `${palette.accent}44`, color: palette.accent }}>
+              <div className="skg-clean-doc-body">
+                <span className="skg-clean-doc-glyph" style={{ color: palette.accent }}>
                   <Compass />
-                </div>
-                <div className="skg-ew-lines">
-                  <span className="skg-ew-title-line" style={{ background: palette.ink }} />
-                  <span className="skg-ew-sub-line" style={{ background: palette.accent }} />
-                  <div className="skg-ew-tags">
-                    {tags.slice(0, 2).map((tg) => (
-                      <em key={tg} style={{ borderColor: `${palette.ink}22`, color: palette.ink }}>
-                        {tg}
-                      </em>
-                    ))}
-                  </div>
+                </span>
+                <div className="skg-clean-doc-lines">
+                  <span style={{ width: "78%" }} />
+                  <span style={{ width: "54%" }} />
                 </div>
               </div>
             </div>
@@ -372,17 +352,18 @@ export function SkillGalleryCard({
             <BadgeIcon aria-hidden="true" />
             <span>{badgeInfo.label}</span>
           </span>
-          {skill.locked ? (
-            <span className="skg-lock-pill" title={isEn ? "Read-only built-in skill" : "官方内置只读技能"}>
-              <Lock aria-hidden="true" />
-            </span>
-          ) : null}
         </div>
       </div>
 
       <div className="skg-body">
         <div className="skg-title-row">
-          {iconNode}
+          {kind === "system-storyboard" ? (
+            <span className="skg-minimal-avatar" aria-hidden="true">
+              <Layers />
+            </span>
+          ) : (
+            iconNode
+          )}
           <div className="skg-title-col">
             <strong className="skg-title">{skill.name}</strong>
             <span className="skg-scope-sub">
@@ -412,7 +393,7 @@ export function SkillGalleryCard({
         <div className="skg-footer">
           <span className="skg-footer-hint">
             <Layers aria-hidden="true" />
-            <span>{skill.locked ? (isEn ? "Built-in Spec" : "查看内置规则") : isEn ? "Editable SKILL" : "支持自定义编辑"}</span>
+            <span>{skill.locked ? (isEn ? "Built-in Spec" : "内置分镜规范") : isEn ? "Editable SKILL" : "支持自定义编辑"}</span>
           </span>
           <span className="skg-footer-cta">
             <span>{skill.locked ? (isEn ? "Inspect" : "查看规范") : isEn ? "Edit Skill" : "查看 / 编辑"}</span>
@@ -599,7 +580,114 @@ export function SkillryPackGalleryCard({
 }
 
 /**
- * Unified-size Skillry Collection Style Card inside `.taste-card-grid-library` (matches `.taste-card` dimensions 1:1).
+ * Unified Visual Preset Card inside `SkillsScreen` `.skg-grid` (replaces standalone Style screen cards).
+ */
+export function VisualPresetGalleryCard({
+  taste,
+  locale,
+  isDefault,
+  starterBadge,
+  specimenText,
+  onSelect
+}: {
+  taste: Pick<Taste, "id" | "name" | "description" | "preview">;
+  locale: InterfaceLanguage;
+  isDefault?: boolean;
+  starterBadge?: string;
+  specimenText?: string;
+  onSelect: () => void;
+}) {
+  const isEn = locale === "en";
+  const bg = taste.preview?.background || "#111317";
+  const fg = taste.preview?.foreground || "#F8FAFC";
+  const accent = taste.preview?.accent || "#34D399";
+  const displayTitle = specimenText || taste.name;
+
+  return (
+    <button type="button" className="skg-card skg-visual-preset-card" onClick={onSelect}>
+      <div className="skg-cover">
+        <div
+          className="skg-preset-poster"
+          style={{ background: bg, color: fg }}
+          aria-hidden="true"
+        >
+          <div className="skg-preset-top">
+            <span className="skg-preset-kicker">{starterBadge ? "OPEN-SOURCE PRESET" : "VISUAL PRESET"}</span>
+            {isDefault ? (
+              <span className="skg-preset-pill default">
+                {isEn ? "Default" : "默认"}
+              </span>
+            ) : starterBadge ? (
+              <span className="skg-preset-pill starter" style={{ background: accent, color: "#FFFFFF" }}>
+                {starterBadge}
+              </span>
+            ) : null}
+          </div>
+
+          <div className="skg-preset-mid">
+            <strong className="skg-preset-specimen">{displayTitle}</strong>
+            <span className="skg-preset-orb" style={{ background: accent }} />
+          </div>
+
+          <div className="skg-preset-bottom">
+            <span className="skg-preset-hex">{bg.toUpperCase()}</span>
+            <span className="skg-preset-swatches">
+              <i style={{ background: bg }} />
+              <i style={{ background: fg }} />
+              <i style={{ background: accent }} />
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="skg-body">
+        <div className="skg-title-row">
+          <span className="skg-minimal-avatar" aria-hidden="true">
+            <Palette />
+          </span>
+          <div className="skg-title-col">
+            <strong className="skg-title">{taste.name}</strong>
+            <span className="skg-scope-sub">
+              {starterBadge
+                ? isEn
+                  ? "One-click Color & Layout Preset"
+                  : "开源配色与版式预设"
+                : isDefault
+                  ? isEn
+                    ? "Active Default Visual Preset"
+                    : "当前默认视觉预设"
+                  : isEn
+                    ? "Saved Visual & Color Spec"
+                    : "自定义配色与画风规范"}
+            </span>
+          </div>
+        </div>
+
+        <p className="skg-desc">{taste.description}</p>
+
+        <div className="skg-tags-row">
+          <span className="skg-tag-chip">{bg.toUpperCase()}</span>
+          <span className="skg-tag-chip">{accent.toUpperCase()}</span>
+          <span className="skg-tag-chip">{isEn ? "Color & Tone" : "色彩与画风"}</span>
+        </div>
+
+        <div className="skg-footer">
+          <span className="skg-footer-hint">
+            <Palette aria-hidden="true" />
+            <span>{starterBadge ? (isEn ? "Add to Library" : "一键加入预设库") : isEn ? "Visual Spec" : "视觉配色规范"}</span>
+          </span>
+          <span className="skg-footer-cta">
+            <span>{starterBadge ? (isEn ? "Add & Use" : "一键启用") : isEn ? "Configure" : "编辑 / 设默认"}</span>
+            <ArrowRight aria-hidden="true" />
+          </span>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+/**
+ * Legacy export kept for backwards compatibility if referenced.
  */
 export function SkillryTastePackCard({
   pack,
@@ -610,141 +698,96 @@ export function SkillryTastePackCard({
   locale: InterfaceLanguage;
   onOpenGallery: () => void;
 }) {
-  const isEn = locale === "en";
-  const isCreator = pack.slug === "bs-creatormotion";
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const [videoPlaying, setVideoPlaying] = useState(false);
-
-  const posterUrl = isCreator ? CREATOR_POSTERS[0] : LAUNCH_HERO_POSTER;
-  const hoverVideoUrl = isCreator
-    ? "https://media.skillry.dev/ai-motion-graphics/hero/preview-1.mp4"
-    : "https://media.skillry.dev/product-launch-video/hero-collage-desktop.mp4";
-  const dots =
-    pack.themes.length > 0
-      ? pack.themes.map((th) => th.swatches[2] || th.swatches[0])
-      : isCreator
-        ? ["#F6C445", "#39E58C", "#F97316", "#38BDF8"]
-        : ["#2563EB", "#18181B", "#EA580C", "#10B981", "#E11D48", "#EAB308"];
-
   return (
-    <button
-      type="button"
-      className="taste-card taste-pack-card"
-      onClick={onOpenGallery}
-      onMouseEnter={() => {
-        if (videoRef.current) {
-          videoRef.current.play().catch(() => {});
-        }
-      }}
-      onMouseLeave={() => {
-        setVideoPlaying(false);
-        if (videoRef.current) {
-          videoRef.current.pause();
-        }
-      }}
-    >
-      <div className="taste-card-preview taste-pack-preview">
-        <img className="skg-cover-img" src={posterUrl} alt="" loading="lazy" />
-        <video
-          ref={videoRef}
-          className={`skg-cover-video hover-overlay ${videoPlaying ? "playing" : ""}`}
-          src={hoverVideoUrl}
-          muted
-          loop
-          playsInline
-          preload="none"
-          onPlaying={() => setVideoPlaying(true)}
-        />
-        <div className="taste-pack-scrim" />
-
-        <div className="taste-swiss-top">
-          <span className="taste-pack-kicker">SKILLRY COLLECTION</span>
-          <span className="taste-pack-pill">
-            {isEn ? `${pack.totalEffectsCount} Effects →` : `${pack.totalEffectsCount} 子效果 →`}
-          </span>
-        </div>
-
-        <div className="taste-swiss-bottom taste-pack-bottom">
-          <span className="taste-pack-theme-count">
-            {isEn
-              ? `${dots.length} Color Themes`
-              : `${dots.length} 套内置配色`}
-          </span>
-          <div className="taste-card-swatches" aria-hidden="true">
-            {dots.slice(0, 5).map((hex, idx) => (
-              <span key={`${hex}-${idx}`} className="taste-card-swatch-dot" style={{ background: hex }} />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="taste-card-copy">
-        <strong>
-          {pack.title} · {isCreator ? (isEn ? "Explainer Themes" : "口播动态视觉合集") : isEn ? "Launch Themes" : "发布片视觉合集"}
-        </strong>
-        <small className="taste-card-desc-line">
-          {isCreator
-            ? isEn
-              ? "Preview 4 color systems & 122 editable motion B-Roll effects; unlock via Skillry to pull."
-              : "点击预览 4 套口播配色体系与 122 个子动效，解锁后一键保存配色或拉取。"
-            : isEn
-              ? "Preview 6 brand palettes & 208 SaaS launch scenes; unlock via Skillry to pull."
-              : "点击预览 6 套品牌配色与 208 个发布片场景，解锁后一键保存配色或拉取。"}
-        </small>
-      </div>
-    </button>
+    <SkillryPackGalleryCard
+      pack={pack}
+      locale={locale}
+      onOpenGallery={onOpenGallery}
+      onPullPack={onOpenGallery}
+    />
   );
 }
 
 export function SkillCreateActionCard({
   locale,
+  mode = "skill",
   onCreate,
+  onCreatePreset,
   onImportGithub
 }: {
   locale: InterfaceLanguage;
+  mode?: "skill" | "preset";
   onCreate: () => void;
+  onCreatePreset?: () => void;
   onImportGithub: () => void;
 }) {
   const isEn = locale === "en";
+  const isPreset = mode === "preset";
+  const handlePrimary = isPreset && onCreatePreset ? onCreatePreset : onCreate;
+
   return (
     <div className="skg-card skg-create-card">
-      <button type="button" className="skg-create-main" onClick={onCreate}>
+      <button type="button" className="skg-create-main" onClick={handlePrimary}>
         <div className="skg-cover skg-create-cover" aria-hidden="true">
           <div className="skg-create-blueprint">
             <span className="skg-create-plus">
               <Plus />
             </span>
-            <span className="skg-create-caption">
-              {isEn ? "AUTHOR NEW STORYBOARD SKILL" : "新建专属分镜技能规范"}
-            </span>
           </div>
         </div>
         <div className="skg-body">
           <div className="skg-title-row">
-            <span className="skg-create-mini-icon" aria-hidden="true">
-              <BookOpen />
+            <span className="skg-minimal-avatar" aria-hidden="true">
+              {isPreset ? <Palette /> : <BookOpen />}
             </span>
             <div className="skg-title-col">
-              <strong className="skg-title">{isEn ? "Create Custom Skill" : "新建自定义分镜技能"}</strong>
-              <span className="skg-scope-sub">{isEn ? "Markdown Prompt & Shot Rules" : "支持 Markdown 编写镜头拆解与提示词模版"}</span>
+              <strong className="skg-title">
+                {isPreset
+                  ? isEn
+                    ? "New Visual Preset"
+                    : "新建自定义视觉预设"
+                  : isEn
+                    ? "New Custom Skill"
+                    : "新建自定义技能"}
+              </strong>
+              <span className="skg-scope-sub">
+                {isPreset
+                  ? isEn
+                    ? "Palette, Typography & Tone"
+                    : "主副配色、字体层级与画风词"
+                  : isEn
+                    ? "Markdown Prompt & Shot Rules"
+                    : "编写分镜拆解规则或导入 SKILL.md"}
+              </span>
             </div>
           </div>
           <p className="skg-desc">
-            {isEn
-              ? "Define your own pacing, shot categories, B-Roll density, or import an open-source SKILL.md from GitHub."
-              : "沉淀你的专属口播节奏、镜头分类与 B-Roll 提示词结构，或直接从 GitHub 导入开源 SKILL.md。"}
+            {isPreset
+              ? isEn
+                ? "Define primary/accent colors and visual art direction for storyboard generation, or import from GitHub."
+                : "自定义生图与动效的主副色比例、留白节奏与画风描述，或从 GitHub 仓库一键提取。"
+              : isEn
+                ? "Define your own pacing, shot categories, and B-Roll prompt templates, or import from GitHub."
+                : "沉淀你的专属口播节奏、镜头拆解与提示词规范，或直接从 GitHub / ZIP 导入。"}
           </p>
         </div>
       </button>
       <div className="skg-create-actions">
-        <button type="button" className="hub-btn hub-btn-dark hub-btn-sm" onClick={onCreate}>
+        <button type="button" className="hub-btn hub-btn-dark hub-btn-sm" onClick={handlePrimary}>
           <Plus aria-hidden="true" />
-          <span>{isEn ? "New Skill" : "空白创建"}</span>
+          <span>{isPreset ? (isEn ? "New Preset" : "新建预设") : isEn ? "New Skill" : "新建技能"}</span>
         </button>
-        <button type="button" className="hub-btn hub-btn-outline hub-btn-sm" onClick={onImportGithub}>
-          <Code2 aria-hidden="true" />
-          <span>{isEn ? "Import GitHub / ZIP" : "导入 GitHub / ZIP"}</span>
-        </button>
+        {onCreatePreset && !isPreset ? (
+          <button type="button" className="hub-btn hub-btn-outline hub-btn-sm" onClick={onCreatePreset}>
+            <Palette aria-hidden="true" />
+            <span>{isEn ? "New Preset" : "新建视觉预设"}</span>
+          </button>
+        ) : (
+          <button type="button" className="hub-btn hub-btn-outline hub-btn-sm" onClick={onImportGithub}>
+            <Code2 aria-hidden="true" />
+            <span>{isEn ? "Import GitHub" : "导入 GitHub"}</span>
+          </button>
+        )}
       </div>
     </div>
   );

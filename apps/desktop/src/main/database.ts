@@ -4,7 +4,7 @@ import { createRequire } from "node:module";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve } from "node:path";
 import { createHash, randomUUID } from "node:crypto";
 import { defaultTasteId, systemTasteSeeds } from "./taste-catalog";
-import { extractVideoFirstFrame, extractVideoTailFrame } from "./video-poster";
+import { extractVideoBestCoverFrame, extractVideoFirstFrame, extractVideoTailFrame } from "./video-poster";
 import {
   areManagedTutorialStoryboardRows,
   areTutorialStoryboardRows,
@@ -2179,8 +2179,8 @@ export class MkboardStore {
 
   async resolveAssetFirstFramePath(assetId: string): Promise<string | null> {
     const row = this.db
-      .prepare("SELECT id, kind, local_path, content_hash FROM assets WHERE id = ?")
-      .get(assetId) as Pick<AssetRecord, "id" | "kind" | "local_path" | "content_hash"> | undefined;
+      .prepare("SELECT id, project_id, kind, local_path, content_hash FROM assets WHERE id = ?")
+      .get(assetId) as Pick<AssetRecord, "id" | "project_id" | "kind" | "local_path" | "content_hash"> | undefined;
     if (!row || !row.local_path || isHttpUrl(row.local_path) || !existsSync(row.local_path)) return null;
     if (!isPathInside(this.projectRoot, row.local_path)) return null;
     if (row.kind !== "video") return this.resolveAssetPreviewPath(assetId);
@@ -2188,7 +2188,7 @@ export class MkboardStore {
     const coversDir = join(dirname(row.local_path), ".covers");
     mkdirSync(coversDir, { recursive: true });
     const versionHash = (row.content_hash || "v1").replace(/[^a-zA-Z0-9_-]/gu, "").slice(0, 12) || "v1";
-    const coverPath = join(coversDir, `${row.id}-${versionHash}-first-frame.jpg`);
+    const coverPath = join(coversDir, `${row.id}-${versionHash}-smart-cover-v2.jpg`);
     if (existsSync(coverPath) && statSync(coverPath).size > 0) {
       return coverPath;
     }
@@ -2196,7 +2196,53 @@ export class MkboardStore {
     const inflight = this.firstFrameExtractions.get(coverPath);
     if (inflight) return inflight;
 
-    const job = extractVideoFirstFrame(row.local_path, coverPath)
+    const extractSmartProjectCover = async (): Promise<string | null> => {
+      const primary = await extractVideoBestCoverFrame(row.local_path, coverPath);
+      // If the primary clip already has substantive visual content (score >= 9), use it directly.
+      if (primary.posterPath && primary.score >= 9.0) {
+        return primary.posterPath;
+      }
+
+      // Otherwise inspect up to 4 subsequent video clips in the same project to rescue projects
+      // whose opening clip is a pure white/black intro wipe or empty wireframe.
+      const siblings = this.db
+        .prepare(
+          "SELECT id, local_path, content_hash FROM assets WHERE project_id = ? AND kind = 'video' AND id <> ? ORDER BY created_at ASC LIMIT 4"
+        )
+        .all(row.project_id, row.id) as Array<Pick<AssetRecord, "id" | "local_path" | "content_hash">>;
+
+      let bestScore = primary.score;
+      let bestSourcePath: string | null = null;
+      const tempCandidates: string[] = [];
+
+      try {
+        for (const sib of siblings) {
+          if (!sib.local_path || isHttpUrl(sib.local_path) || !existsSync(sib.local_path)) continue;
+          if (!isPathInside(this.projectRoot, sib.local_path)) continue;
+          const sibTemp = join(coversDir, `${row.id}-sib-${sib.id.slice(0, 8)}.tmp.jpg`);
+          tempCandidates.push(sibTemp);
+          const candidate = await extractVideoBestCoverFrame(sib.local_path, sibTemp).catch(() => null);
+          if (candidate?.posterPath && candidate.score > bestScore + 2.5) {
+            bestScore = candidate.score;
+            bestSourcePath = candidate.posterPath;
+          }
+          if (bestScore >= 22.0) break;
+        }
+
+        if (bestSourcePath && existsSync(bestSourcePath)) {
+          copyFileSync(bestSourcePath, coverPath);
+          return coverPath;
+        }
+      } finally {
+        for (const tmp of tempCandidates) {
+          rmSync(tmp, { force: true });
+        }
+      }
+
+      return primary.posterPath;
+    };
+
+    const job = extractSmartProjectCover()
       .catch(() => null)
       .finally(() => {
         this.firstFrameExtractions.delete(coverPath);
@@ -4169,7 +4215,7 @@ function createAssetPreviewUrl(row: Pick<AssetRecord, "id" | "kind" | "file_name
 
 function createAssetFirstFrameUrl(row: Pick<AssetRecord, "id" | "kind" | "file_name" | "local_path" | "content_hash">): string {
   const previewUrl = createAssetPreviewUrl(row);
-  return `${previewUrl}${previewUrl.includes("?") ? "&" : "?"}firstFrame=1`;
+  return `${previewUrl}${previewUrl.includes("?") ? "&" : "?"}firstFrame=1&cv=smart2`;
 }
 
 function createAssetPosterUrl(row: Pick<AssetRecord, "id" | "kind" | "file_name" | "local_path" | "poster_path" | "content_hash">): string | null {

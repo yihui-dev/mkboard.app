@@ -389,3 +389,49 @@ test("Skillry CreatorMotion & LaunchMotion hub status, paid entitlement classifi
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+import { scoreRgb24CoverSample } from "../src/main/video-poster.ts";
+
+test("scoreRgb24CoverSample rejects blank white/black intro frames in favor of rich content frames", () => {
+  const w = 96;
+  const h = 54;
+  const blankWhite = Buffer.alloc(w * h * 3, 252);
+  const blankBlackWithThinBox = Buffer.alloc(w * h * 3, 8);
+  // Draw a thin 1px grey rectangle outline in the middle (simulating an empty intro wireframe)
+  for (let x = 28; x <= 68; x += 1) {
+    for (const y of [18, 36]) {
+      const idx = (y * w + x) * 3;
+      blankBlackWithThinBox[idx] = 140;
+      blankBlackWithThinBox[idx + 1] = 140;
+      blankBlackWithThinBox[idx + 2] = 140;
+    }
+  }
+
+  // Simulate a rich slide / UI showcase frame with high-contrast central panels, typography bars, and accent graphics
+  const richSlide = Buffer.alloc(w * h * 3, 18);
+  for (let y = 10; y < 44; y += 1) {
+    for (let x = 16; x < 80; x += 1) {
+      const idx = (y * w + x) * 3;
+      if ((y + x) % 5 === 0) {
+        richSlide[idx] = 56;
+        richSlide[idx + 1] = 189;
+        richSlide[idx + 2] = 248;
+      } else if (y % 4 === 0 && x > 22 && x < 72) {
+        richSlide[idx] = 248;
+        richSlide[idx + 1] = 250;
+        richSlide[idx + 2] = 252;
+      } else {
+        richSlide[idx] = 34;
+        richSlide[idx + 1] = 42;
+        richSlide[idx + 2] = 58;
+      }
+    }
+  }
+
+  const whiteScore = scoreRgb24CoverSample(blankWhite, w, h);
+  const sparseWireframeScore = scoreRgb24CoverSample(blankBlackWithThinBox, w, h);
+  const richScore = scoreRgb24CoverSample(richSlide, w, h);
+
+  assert.ok(whiteScore < 2, `Expected blank white frame score < 2, got ${whiteScore}`);
+  assert.ok(richScore > sparseWireframeScore * 2.5, `Expected rich frame (${richScore}) >> sparse intro wireframe (${sparseWireframeScore})`);
+});

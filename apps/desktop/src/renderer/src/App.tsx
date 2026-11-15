@@ -18,7 +18,8 @@ import {
   SkillCreateActionCard,
   SkillGalleryCard,
   SkillryPackGalleryCard,
-  SkillryTastePackCard
+  SkillryTastePackCard,
+  VisualPresetGalleryCard
 } from "./components/SkillGalleryCard";
 import {
   AlertTriangle,
@@ -263,7 +264,7 @@ const MCP_PROJECT_LIFECYCLE_TOOLS = new Set([
   "restore_project",
   "delete_project_permanently"
 ]);
-type SkillFilter = "all" | "system" | "user";
+type SkillFilter = "all" | "packs" | "skills" | "presets";
 type TemplateFilter = "all" | "system" | "user";
 type ConfirmationDialogStatus = "default" | "accent" | "success" | "warning" | "danger";
 type ConfirmationDialogConfirmVariant = "primary" | "danger";
@@ -1267,7 +1268,7 @@ function parseAppRoute(pathname: string): AppRouteState {
   if (normalizedPath === "/" || normalizedPath === "/projects") return DEFAULT_ROUTE_STATE;
   if (normalizedPath === "/trash") return { screen: "trash", projectId: "", tab: "script" };
   if (normalizedPath === "/skills") return { screen: "skills", projectId: "", tab: "script" };
-  if (normalizedPath === "/taste") return { screen: "taste", projectId: "", tab: "script" };
+  if (normalizedPath === "/taste") return { screen: "skills", projectId: "", tab: "script" };
   if (normalizedPath === "/templates/new") return { screen: "template-create", projectId: "", tab: "script" };
   if (normalizedPath === "/templates") return { screen: "templates", projectId: "", tab: "script" };
 
@@ -2018,11 +2019,7 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
         const nextProjectId = nextRoute.projectId || loadedProjects[0]?.id;
         if (nextProjectId) await loadProject(nextProjectId);
       } else if (nextRoute.screen === "skills") {
-        try {
-          await refreshSkills();
-        } catch {
-          // The SKILL page stays visible and shows the load error.
-        }
+        await Promise.allSettled([refreshSkills(), refreshTastes()]);
       } else if (nextRoute.screen === "taste") {
         try {
           await refreshTastes();
@@ -2536,11 +2533,7 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
         setScreen("trash");
       } else if (route.screen === "skills") {
         setScreen("skills");
-        try {
-          await refreshSkills();
-        } catch {
-          // Keep booting into the SKILL page so the user can see and retry the error.
-        }
+        await Promise.allSettled([refreshSkills(), refreshTastes()]);
       } else if (route.screen === "taste") {
         setScreen("taste");
         try {
@@ -3192,21 +3185,11 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
     setSkillsHomeRequestId((requestId) => requestId + 1);
     applyRoute({ screen: "skills", projectId: "", tab });
     void refreshSkillryCatalog();
-    try {
-      await refreshSkills();
-    } catch {
-      // The SKILL page stays visible and shows the load error.
-    }
+    await Promise.allSettled([refreshSkills(), refreshTastes()]);
   }
 
   async function openTaste() {
-    applyRoute({ screen: "taste", projectId: "", tab });
-    void refreshSkillryCatalog();
-    try {
-      await refreshTastes();
-    } catch {
-      // The Taste page stays visible and shows the load error.
-    }
+    await openSkills();
   }
 
   async function openTemplates() {
@@ -5340,13 +5323,9 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
               <PackageSearch aria-hidden="true" />
               <span>{t("nav.assets")}</span>
             </Button>
-            <Button className={cn("rail-item", screen === "skills" && "active")} variant="ghost" aria-label={t("nav.skills")} onPress={() => void openSkills()}>
+            <Button className={cn("rail-item", (screen === "skills" || screen === "taste") && "active")} variant="ghost" aria-label={t("nav.skills")} onPress={() => void openSkills()}>
               <Lightbulb aria-hidden="true" />
               <span>{t("nav.skills")}</span>
-            </Button>
-            <Button className={cn("rail-item", screen === "taste" && "active")} variant="ghost" aria-label={t("nav.taste")} onPress={() => void openTaste()}>
-              <Palette aria-hidden="true" />
-              <span>{t("nav.taste")}</span>
             </Button>
           </nav>
         <Button
@@ -5421,24 +5400,32 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
             onRenameAsset={(assetId, fileName) => void renameProjectAsset(assetId, fileName)}
             onSelectProject={(nextProjectId) => void openAssets(nextProjectId)}
           />
-        ) : screen === "skills" ? (
+        ) : screen === "skills" || screen === "taste" ? (
           <SkillsScreen
             error={skillsError}
             homeRequestId={skillsHomeRequestId}
             loading={skillsLoading}
             skills={skills}
+            tastes={tastes.length > 0 ? tastes : [getFallbackDefaultTaste()]}
+            defaultTasteId={defaultTasteId}
             selectedCliId={selectedCliId}
             skillryCatalog={skillryCatalog}
             skillryCatalogLoading={skillryCatalogLoading}
             onCreateSkill={(input) => createSkill(input)}
             onDeleteSkill={(skillId) => deleteSkill(skillId)}
             onImportSkill={(input) => importSkillFromExternal(input)}
+            onSetDefaultTaste={saveDefaultTaste}
+            onCreateTaste={(input) => createCustomTaste(input)}
+            onUpdateTaste={(input) => updateCustomTaste(input)}
+            onDeleteTaste={(tasteId) => deleteCustomTaste(tasteId)}
+            onImportTaste={(input) => importCustomTaste(input)}
             onInstallSkillryPack={(input) => handleInstallSkillryPack(input)}
             onSyncSkillryPack={(slug) => handleSyncSkillryPack(slug)}
             onRefreshSkillryCatalog={(force) => refreshSkillryCatalog(force)}
             onOpenExternal={(url) => void window.mkboard.openExternal(url)}
             onReloadSkills={async () => {
               void refreshSkillryCatalog();
+              void refreshTastes().catch(() => undefined);
               try {
                 return await refreshSkills();
               } catch {
@@ -5446,26 +5433,6 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
               }
             }}
             onUpdateSkill={(input) => updateSkill(input)}
-          />
-        ) : screen === "taste" ? (
-          <TasteScreen
-            defaultTasteId={defaultTasteId}
-            error={tastesError}
-            loading={tastesLoading}
-            tastes={tastes.length > 0 ? tastes : [getFallbackDefaultTaste()]}
-            selectedCliId={selectedCliId}
-            skillryCatalog={skillryCatalog}
-            skillryCatalogLoading={skillryCatalogLoading}
-            onRefreshSkillryCatalog={(force) => refreshSkillryCatalog(force)}
-            onSkillsChanged={() => refreshSkills().catch(() => [])}
-            onSetDefaultTaste={saveDefaultTaste}
-            onCreateTaste={(input) => createCustomTaste(input)}
-            onUpdateTaste={(input) => updateCustomTaste(input)}
-            onDeleteTaste={(tasteId) => deleteCustomTaste(tasteId)}
-            onImportTaste={(input) => importCustomTaste(input)}
-            onNavigateToSkills={() => void openSkills()}
-            onOpenExternal={(url) => void window.mkboard.openExternal(url)}
-            onReload={() => void refreshTastes().catch(() => undefined)}
           />
         ) : screen === "trash" ? (
           <TrashScreen
@@ -7024,7 +6991,7 @@ function ProjectCard({
               {coverPreview.isRemoteVideo || coverImageFailed ? (
                 <video
                   className="project-card-cover-media"
-                  src={coverPreview.videoUrl ? `${coverPreview.videoUrl}#t=0.05` : coverPreview.url}
+                  src={coverPreview.videoUrl ? `${coverPreview.videoUrl}#t=1.2` : coverPreview.url}
                   poster={coverPreview.fallbackUrl ?? undefined}
                   preload="metadata"
                   muted
@@ -7216,7 +7183,7 @@ function ProjectListRow({
               coverPreview.isRemoteVideo || coverImageFailed ? (
                 <video
                   className="project-list-thumb-media"
-                  src={coverPreview.videoUrl ? `${coverPreview.videoUrl}#t=0.05` : coverPreview.url}
+                  src={coverPreview.videoUrl ? `${coverPreview.videoUrl}#t=1.2` : coverPreview.url}
                   poster={coverPreview.fallbackUrl ?? undefined}
                   preload="metadata"
                   muted
@@ -7957,14 +7924,19 @@ function SkillsScreen({
   homeRequestId,
   loading,
   skills,
+  tastes,
+  defaultTasteId,
   selectedCliId,
   skillryCatalog,
   skillryCatalogLoading,
   onCreateSkill,
   onDeleteSkill,
   onImportSkill,
-  onInstallSkillryPack,
-  onSyncSkillryPack,
+  onSetDefaultTaste,
+  onCreateTaste,
+  onUpdateTaste,
+  onDeleteTaste,
+  onImportTaste,
   onRefreshSkillryCatalog,
   onOpenExternal,
   onReloadSkills,
@@ -7974,12 +7946,19 @@ function SkillsScreen({
   homeRequestId: number;
   loading: boolean;
   skills: Skill[];
+  tastes: Taste[];
+  defaultTasteId: string;
   selectedCliId: AgentCliId;
   skillryCatalog: SkillryCatalogStatus | null;
   skillryCatalogLoading: boolean;
   onCreateSkill: (input: CreateSkillInput) => Promise<Skill>;
   onDeleteSkill: (skillId: string) => Promise<Skill[]>;
   onImportSkill: (input: ExternalSourceImportInput) => Promise<Skill>;
+  onSetDefaultTaste: (tasteId: string) => void;
+  onCreateTaste: (input: CreateTasteInput) => Promise<Taste>;
+  onUpdateTaste: (input: UpdateTasteInput) => Promise<Taste>;
+  onDeleteTaste: (tasteId: string) => Promise<Taste[]>;
+  onImportTaste: (input: ExternalSourceImportInput) => Promise<Taste>;
   onInstallSkillryPack: (input: SkillryInstallInput) => Promise<SkillryInstallResult>;
   onSyncSkillryPack: (slug: string) => Promise<SkillryInstallResult>;
   onRefreshSkillryCatalog: (forceRefresh?: boolean) => Promise<SkillryCatalogStatus | null>;
@@ -7988,6 +7967,7 @@ function SkillsScreen({
   onUpdateSkill: (input: UpdateSkillInput) => Promise<Skill>;
 }) {
   const { locale, t } = useI18n();
+  const isEn = locale === "en";
   const [skillView, setSkillView] = useState<"list" | "editor">("list");
   const [selectedSkillId, setSelectedSkillId] = useState("");
   const [activeFilter, setActiveFilter] = useState<SkillFilter>("all");
@@ -8000,7 +7980,28 @@ function SkillsScreen({
   const [skillVisualPickerOpen, setSkillVisualPickerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [pendingDeleteSkill, setPendingDeleteSkill] = useState<Skill | null>(null);
-  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [importModalMode, setImportModalMode] = useState<null | "skill" | "taste">(null);
+
+  // Visual preset (Taste) editor state
+  const [editingTaste, setEditingTaste] = useState<Taste | "new" | null>(null);
+  const [pendingDeleteTaste, setPendingDeleteTaste] = useState<Taste | null>(null);
+  const [defaultNoticeTasteId, setDefaultNoticeTasteId] = useState<string | null>(null);
+
+  const customTastes = useMemo(
+    () => orderTastesWithPinnedDefault(tastes.filter((taste) => taste.id !== DEFAULT_TASTE_ID), defaultTasteId),
+    [defaultTasteId, tastes]
+  );
+
+  useEffect(() => {
+    if (!defaultNoticeTasteId) return undefined;
+    const timer = window.setTimeout(() => setDefaultNoticeTasteId(null), 2400);
+    return () => window.clearTimeout(timer);
+  }, [defaultNoticeTasteId]);
+
+  function setDefaultTasteWithNotice(tasteId: string) {
+    onSetDefaultTaste(tasteId);
+    setDefaultNoticeTasteId(tasteId);
+  }
 
   const isCreating = selectedSkillId === "new";
   const selectedSkill = isCreating ? null : skills.find((skill) => skill.id === selectedSkillId) ?? null;
@@ -8010,8 +8011,7 @@ function SkillsScreen({
   const filteredSkills = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
     return skills.filter((skill) => {
-      if (activeFilter === "system" && !skill.locked) return false;
-      if (activeFilter === "user" && skill.locked) return false;
+      if (activeFilter === "packs" || activeFilter === "presets") return false;
       if (!normalizedQuery) return true;
       return `${skill.name} ${skill.description}`.toLocaleLowerCase().includes(normalizedQuery);
     });
@@ -8290,6 +8290,41 @@ function SkillsScreen({
     );
   }
 
+  const defaultNoticeTaste = defaultNoticeTasteId ? tastes.find((taste) => taste.id === defaultNoticeTasteId) : null;
+
+  const ossPresetStarters = [
+    {
+      key: "oss-swiss-klein",
+      titleZh: "瑞士克莱因网格",
+      titleEn: "Swiss Klein Grid",
+      specimen: "International\nKlein Blue.",
+      descZh: "开源瑞士网格主义海报规范，高饱和克莱因蓝配极简留白卡片。",
+      descEn: "Open-source Swiss International grid with bold Klein Blue & crisp alabaster surfaces.",
+      preview: { background: "#0B3B9E", foreground: "#FFFFFF", accent: "#60A5FA" },
+      rules: "# Swiss Klein Grid\n- Background: #0B3B9E\n- Text: #FFFFFF\n- Accent: #60A5FA\n- Layout: Strict 12-column Swiss grid, crisp geometric sans-serif headings."
+    },
+    {
+      key: "oss-editorial-paper",
+      titleZh: "暖纸画报社论风",
+      titleEn: "Editorial Paper Studio",
+      specimen: "Editorial\nPaper Studio.",
+      descZh: "温润米白纸感底色与信号橙点缀，适合深度人文、商业拆解与知识口播。",
+      descEn: "Warm off-white editorial stock paired with signal orange for essays & explainers.",
+      preview: { background: "#F6F1E7", foreground: "#1C1917", accent: "#EA580C" },
+      rules: "# Warm Editorial Print\n- Background: #F6F1E7\n- Text: #1C1917\n- Accent: #EA580C\n- Layout: Generous editorial margins, high-contrast serif/sans hierarchy."
+    },
+    {
+      key: "oss-noir-console",
+      titleZh: "黑金极客控制台",
+      titleEn: "Noir Dev Console",
+      specimen: "Noir\nConsole.",
+      descZh: "深邃暗色终端底板搭配荧光绿高亮，适合 AI 工具、开发者产品与硬核科技。",
+      descEn: "Deep obsidian terminal surface with neon emerald highlights for AI & dev tools.",
+      preview: { background: "#111317", foreground: "#F4F6FB", accent: "#34D399" },
+      rules: "# Noir Dev Console\n- Background: #111317\n- Text: #F4F6FB\n- Accent: #34D399\n- Layout: Monospace metrics, subtle hairline borders, glowing terminal accents."
+    }
+  ] as const;
+
   return (
     <section className="screen skills-screen active" aria-label={t("skills.title")}>
       <header className="library-page-header skills-page-header">
@@ -8301,24 +8336,43 @@ function SkillsScreen({
             type="button"
             className="hub-btn hub-btn-outline"
             disabled={loading}
-            onClick={() => setImportModalOpen(true)}
+            onClick={() => setImportModalMode(activeFilter === "presets" ? "taste" : "skill")}
           >
             <UploadCloud aria-hidden="true" />
             <span>{t("skills.importButton")}</span>
           </button>
-          <button
-            type="button"
-            className="hub-btn hub-btn-dark"
-            disabled={loading}
-            onClick={startCreateSkill}
-          >
-            <Plus aria-hidden="true" />
-            <span>{t("skills.new")}</span>
-          </button>
+          {activeFilter === "presets" ? (
+            <button
+              type="button"
+              className="hub-btn hub-btn-dark"
+              disabled={loading}
+              onClick={() => setEditingTaste("new")}
+            >
+              <Plus aria-hidden="true" />
+              <span>{isEn ? "New Visual Preset" : "新建视觉预设"}</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="hub-btn hub-btn-dark"
+              disabled={loading}
+              onClick={startCreateSkill}
+            >
+              <Plus aria-hidden="true" />
+              <span>{t("skills.new")}</span>
+            </button>
+          )}
         </div>
       </header>
 
       <div className="skills-library">
+        {defaultNoticeTaste ? (
+          <div className="taste-default-notice" role="status" aria-live="polite" style={{ marginBottom: 14 }}>
+            <CircleCheck aria-hidden="true" />
+            <span>{t("taste.defaultSaved", { name: getLocalizedTasteName(defaultNoticeTaste, locale) })}</span>
+          </div>
+        ) : null}
+
         <SkillryMotionHub
           surface="skills"
           locale={locale}
@@ -8327,31 +8381,62 @@ function SkillsScreen({
           selectedCliId={selectedCliId}
           onRefreshCatalog={onRefreshSkillryCatalog}
           onSkillsChanged={onReloadSkills}
+          onApplyVisualThemeAsTaste={onCreateTaste}
           onOpenSkillInEditor={openSkill}
           onOpenExternal={onOpenExternal}
           renderUnifiedGrid={({ packs, accountControls, openPackGallery, openPackPullModal }) => {
             const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
-            const visiblePacks = packs.filter((pack) => {
-              if (activeFilter === "user" && !pack.syncedToMkboard) return false;
-              if (!normalizedQuery) return true;
-              const hay = `${pack.title} ${pack.subtitle} ${pack.categoryTagsZh.join(" ")} ${pack.categoryTagsEn.join(" ")}`.toLocaleLowerCase();
-              return hay.includes(normalizedQuery);
-            });
+
+            const visiblePacks =
+              activeFilter === "skills" || activeFilter === "presets"
+                ? []
+                : packs.filter((pack) => {
+                    if (!normalizedQuery) return true;
+                    const hay = `${pack.title} ${pack.subtitle} ${pack.categoryTagsZh.join(" ")} ${pack.categoryTagsEn.join(" ")}`.toLocaleLowerCase();
+                    return hay.includes(normalizedQuery);
+                  });
+
             const packSkillIds = new Set(packs.map((pack) => pack.mkboardSkillId));
             const dedupedSkills = filteredSkills.filter((sk) => !packSkillIds.has(sk.id));
             const systemSkills = dedupedSkills.filter((sk) => sk.locked);
             const customSkills = dedupedSkills.filter((sk) => !sk.locked);
-            const totalVisibleCards = systemSkills.length + visiblePacks.length + customSkills.length;
+
+            const visibleCustomTastes =
+              activeFilter === "packs" || activeFilter === "skills"
+                ? []
+                : customTastes.filter((taste) => {
+                    if (!normalizedQuery) return true;
+                    return `${taste.name} ${taste.description}`.toLocaleLowerCase().includes(normalizedQuery);
+                  });
+
+            const visibleStarterPresets =
+              activeFilter === "presets"
+                ? ossPresetStarters.filter((starter) => {
+                    if (customTastes.some((ct) => ct.name === starter.titleZh || ct.name === starter.titleEn)) return false;
+                    if (!normalizedQuery) return true;
+                    return `${starter.titleZh} ${starter.titleEn} ${starter.descZh} ${starter.descEn}`.toLocaleLowerCase().includes(normalizedQuery);
+                  })
+                : [];
+
+            const totalVisibleCards =
+              systemSkills.length +
+              visiblePacks.length +
+              customSkills.length +
+              visibleCustomTastes.length +
+              visibleStarterPresets.length;
+
+            const filterTabs: Array<[SkillFilter, string]> = [
+              ["all", isEn ? "All" : "全部"],
+              ["packs", isEn ? "Motion Packs" : "动效合集"],
+              ["skills", isEn ? "Storyboard Skills" : "分镜技能"],
+              ["presets", isEn ? "Visual Presets" : "视觉预设"]
+            ];
 
             return (
               <section className="sry-unified-section">
                 <div className="skills-toolbar sry-unified-toolbar">
                   <div className="skills-filter-tabs" role="tablist" aria-label={t("skills.filterLabel")}>
-                    {([
-                      ["all", t("skills.filter.all")],
-                      ["system", t("skills.filter.system")],
-                      ["user", t("skills.filter.user")]
-                    ] as Array<[SkillFilter, string]>).map(([filter, label]) => (
+                    {filterTabs.map(([filter, label]) => (
                       <button
                         className={cn("skills-filter-tab", activeFilter === filter && "active")}
                         key={filter}
@@ -8436,11 +8521,51 @@ function SkillsScreen({
                       />
                     ))}
 
-                    {activeFilter !== "system" && !normalizedQuery ? (
+                    {visibleCustomTastes.map((taste) => (
+                      <VisualPresetGalleryCard
+                        key={taste.id}
+                        taste={{
+                          id: taste.id,
+                          name: getLocalizedTasteName(taste, locale),
+                          description: taste.description,
+                          preview: taste.preview
+                        }}
+                        locale={locale}
+                        isDefault={taste.id === defaultTasteId}
+                        onSelect={() => setEditingTaste(taste)}
+                      />
+                    ))}
+
+                    {visibleStarterPresets.map((starter) => (
+                      <VisualPresetGalleryCard
+                        key={starter.key}
+                        taste={{
+                          id: starter.key,
+                          name: isEn ? starter.titleEn : starter.titleZh,
+                          description: isEn ? starter.descEn : starter.descZh,
+                          preview: starter.preview
+                        }}
+                        locale={locale}
+                        starterBadge={isEn ? "+ Add" : "+ 一键添加"}
+                        specimenText={starter.specimen}
+                        onSelect={() => {
+                          void onCreateTaste({
+                            name: isEn ? starter.titleEn : starter.titleZh,
+                            description: isEn ? starter.descEn : starter.descZh,
+                            content: starter.rules,
+                            preview: starter.preview
+                          }).then((created) => setDefaultTasteWithNotice(created.id));
+                        }}
+                      />
+                    ))}
+
+                    {activeFilter !== "packs" && !normalizedQuery ? (
                       <SkillCreateActionCard
                         locale={locale}
+                        mode={activeFilter === "presets" ? "preset" : "skill"}
                         onCreate={startCreateSkill}
-                        onImportGithub={() => setImportModalOpen(true)}
+                        onCreatePreset={() => setEditingTaste("new")}
+                        onImportGithub={() => setImportModalMode(activeFilter === "presets" ? "taste" : "skill")}
                       />
                     ) : null}
                   </div>
@@ -8452,13 +8577,68 @@ function SkillsScreen({
       </div>
 
       <SourceImportModal
-        isOpen={importModalOpen}
-        kind="skill"
-        onClose={() => setImportModalOpen(false)}
+        isOpen={Boolean(importModalMode)}
+        kind={importModalMode === "taste" ? "taste" : "skill"}
+        onClose={() => setImportModalMode(null)}
         onSubmit={async (input) => {
-          const imported = await onImportSkill(input);
-          setImportModalOpen(false);
-          openSkill(imported.id);
+          if (importModalMode === "taste") {
+            const imported = await onImportTaste(input);
+            setImportModalMode(null);
+            setEditingTaste(imported);
+          } else {
+            const imported = await onImportSkill(input);
+            setImportModalMode(null);
+            openSkill(imported.id);
+          }
+        }}
+      />
+
+      <CustomTasteEditorModal
+        taste={editingTaste}
+        defaultTasteId={defaultTasteId}
+        onClose={() => setEditingTaste(null)}
+        onSave={async (draft) => {
+          if (editingTaste === "new") {
+            await onCreateTaste(draft);
+          } else if (editingTaste) {
+            await onUpdateTaste({ ...draft, id: editingTaste.id });
+          }
+          setEditingTaste(null);
+        }}
+        onResync={async (target) => {
+          const resynced = await onImportTaste({
+            sourceType: target.sourceUrl.includes("github.com") ? "github" : "local",
+            urlOrPath: target.sourceUrl.replace(/^file:\/\//u, ""),
+            existingId: target.id,
+            name: target.name
+          });
+          setEditingTaste(resynced);
+        }}
+        onSetDefault={(id) => {
+          setDefaultTasteWithNotice(id);
+          setEditingTaste(null);
+        }}
+        onRequestDelete={(target) => {
+          setEditingTaste(null);
+          setPendingDeleteTaste(target);
+        }}
+        onOpenExternal={onOpenExternal}
+      />
+
+      <ScreenConfirmationDialog
+        cancelLabel={t("common.cancel")}
+        confirmLabel={t("taste.delete")}
+        descriptions={[t("taste.deleteConfirmDescription")]}
+        icon={<AlertTriangle />}
+        idBase="taste-delete-confirmation-unified"
+        isOpen={Boolean(pendingDeleteTaste)}
+        title={t("taste.deleteConfirmTitle", { name: pendingDeleteTaste?.name ?? "" })}
+        onClose={() => setPendingDeleteTaste(null)}
+        onConfirm={() => {
+          if (!pendingDeleteTaste) return;
+          const targetId = pendingDeleteTaste.id;
+          setPendingDeleteTaste(null);
+          void onDeleteTaste(targetId);
         }}
       />
 
