@@ -1,0 +1,28 @@
+MkBoard FFmpeg runtime build: 7.1.5-mkboard1
+
+FFmpeg source: 7.1.5
+x264 source: b35605ace3ddf7c1a5d67a2eb553f034aef41d55
+
+Required licensing flags:
+  --enable-gpl
+  --enable-libx264
+  --disable-nonfree
+
+Common build flags:
+  --disable-autodetect
+  --disable-debug
+  --disable-doc
+  --disable-ffplay
+  --disable-shared
+  --enable-static
+  --disable-indevs
+  --disable-outdevs
+  --enable-indev=lavfi
+
+macOS deployment target:
+  MACOSX_DEPLOYMENT_TARGET=12.0
+
+The exact configure command and compiler output are captured as
+licenses/ffmpeg-configure.txt in every staged and packaged runtime. A public
+release must fail if the resulting `ffmpeg -version` contains
+`--enable-nonfree`, omits `--enable-gpl`, or omits `--enable-libx264`.

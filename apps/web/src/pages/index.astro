@@ -1,0 +1,406 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { getLocaleFromRequest, localizePath } from "../lib/i18n";
+import {
+  ChevronDown,
+  Download,
+  FileText,
+  Image as ImageIcon,
+  Monitor,
+  MonitorDown,
+  Table as TableIcon,
+} from "lucide-react";
+
+const locale = getLocaleFromRequest(Astro.request, Astro.url);
+const windowsAvailable = Boolean(import.meta.env.PUBLIC_WINDOWS_DOWNLOAD_URL);
+
+const copyMap = {
+  zh: {
+    title: "MkBoard - 自媒体 AI 视频 Agent，拆脚本并生成 B-roll 视频",
+    description: "MkBoard 是专属自媒体人的桌面端 AI 视频 Agent，能智能拆出口播、剧情、课程和广告脚本里的 A-roll / B-roll 镜头，并用 Seedance、ChatGPT Image 等模型生成图片和 B-roll 视频素材。",
+    keywords: ["自媒体 AI 视频 Agent", "AI B-roll 视频生成", "短视频 B-roll", "AI 分镜 Agent", "视频脚本拆分镜头", "Seedance 视频生成", "ChatGPT Image", "MkBoard"],
+    heroAria: "MkBoard 自媒体剪辑 Agent",
+    heroBadge: "AI 视频 Agent",
+    heroTitle: "专为自媒体而生的分镜制作Agent",
+    heroTitleLines: ["专为自媒体而生的", "分镜制作Agent"],
+    heroLead: "导入脚本，AI 会理解内容节奏，智能拆出 A-roll / B-roll 镜头，并生成可继续剪辑的视频素材。",
+    primaryCta: "下载客户端",
+    floatLeft: ["角色参考", "A-ROLL"],
+    floatRight: ["画面参考", "B-ROLL"],
+    previewAria: "MkBoard macOS 应用界面示意",
+    heroImage: "/images/landing/hero-ai-storyboard-video-draft.webp",
+    heroImageAlt: "MkBoard 自媒体 AI 视频 Agent 界面，包含脚本、B-roll 分镜卡片和 AI 视频生成时间线",
+    previewTitle: "雨夜重逢 · MkBoard",
+    problem: {
+      aria: "创作痛点",
+      badge: "创作卡点",
+      title: "视频卡点在哪？",
+      body: "从脚本到 B-roll，最难的是把镜头、提示词和素材串起来。",
+      items: [
+        { title: "脚本缺画面", body: "口播写完了，每段该补什么 B-roll 还要重新想。", image: "/images/landing/problem-long-scripts-icon.svg", imageAlt: "长脚本被拆成 B-roll 镜头卡片的 Notion 风格图标插画" },
+        { title: "工具太分散", body: "拆镜头、写提示词、生成视频常常分散在不同工具里。", image: "/images/landing/problem-scattered-assets-icon.svg", imageAlt: "分散的 AI 生成任务被整理进分镜板的 Notion 风格图标插画" },
+        { title: "素材难归位", body: "生成结果如果不绑定镜头，剪辑时很难追踪和替换。", image: "/images/landing/problem-slow-feedback-icon.svg", imageAlt: "AI 生成素材回到视频剪辑时间线的 Notion 风格图标插画" }
+      ]
+    },
+    workflow: {
+      aria: "MkBoard Agent 工作流",
+      badge: "工作流",
+      title: "从脚本到分镜再到剪辑",
+      body: "AI 先理解内容和节奏，拆出需要生成的镜头，再生成图片与 B-roll 视频素材。",
+      items: [
+        { step: "01", title: "放入脚本", body: "口播、剧情、课程段落或广告卖点。", image: "/images/landing/workflow-add-script.webp", imageAlt: "脚本文档进入桌面端自媒体分镜Agent的 Notion 风格插画" },
+        { step: "02", title: "智能拆镜头", body: "识别 A-roll、B-roll、画面意图和节奏。", image: "/images/landing/workflow-generate-storyboard.webp", imageAlt: "桌面端自媒体 AI 视频 Agent 智能拆出 A-roll 和 B-roll 镜头卡片的 Notion 风格插画" },
+        { step: "03", title: "生成 B-roll", body: "用 Seedance、ChatGPT Image 生成镜头素材。", image: "/images/landing/workflow-create-video-draft.webp", imageAlt: "分镜卡片通过 Seedance 和 ChatGPT Image 生成 B-roll 视频素材的 Notion 风格插画" },
+        { step: "04", title: "进入剪辑", body: "生成结果按镜头回到项目，继续剪辑成片。", image: "/images/landing/workflow-keep-refining.webp", imageAlt: "桌面端自媒体 AI 视频 Agent 中按镜头素材继续剪辑视频的 Notion 风格插画" }
+      ]
+    },
+    features: {
+      aria: "MkBoard 功能",
+      badge: "Agent 核心能力",
+      title: "AI 理解脚本并生成 B-roll 视频",
+      body: "MkBoard 的 Agent 会理解脚本，自动拆分脚本，并通过 AI 模型生成你想要的 B-roll 画面",
+      items: [
+        { title: "智能拆分镜头", body: "输入选题、脚本或想法，AI 会判断内容结构、口播段落、B-roll 画面和节奏，不是机械切段。", image: "/images/landing/feature-ai-storyboard-generation.webp", imageAlt: "脚本被 AI 智能拆成 A-roll 和 B-roll 镜头卡片的桌面端产品插画", className: "feature-card feature-card-large" },
+        { title: "AI 生成 B-roll 视频", body: "按镜头生成图片、B-roll 和视频素材，让分镜直接推进到可剪辑素材。", image: "/images/landing/feature-ai-video-draft-editing.webp", imageAlt: "分镜卡片生成 B-roll 视频素材并进入剪辑时间线的桌面端产品插画", className: "feature-card accent" }
+      ]
+    },
+    audience: {
+      aria: "MkBoard 适合谁",
+      badge: "适合谁",
+      title: "适合哪类自媒体？",
+      body: "MkBoard 不把你限制在专业影视流程里。它更适合自媒体人和小团队，让 Agent 判断“这段要拍什么、要生成什么视频、要给谁看”。",
+      items: [
+        { title: "短视频自媒体", body: "让 Agent 拆出开场、转折、证明和收尾，并补上 B-roll 视频。", image: "/images/landing/audience-short-form-creators.webp", imageAlt: "短视频创作者整理 B-roll 视频镜头卡片的 Notion 风格插画" },
+        { title: "口播与知识博主", body: "按讲解内容生成示意画面、补充镜头和 B-roll 视频。", image: "/images/landing/audience-course-creators.webp", imageAlt: "课程作者规划口播和 B-roll 视频的 Notion 风格插画" },
+        { title: "动画与剧情账号", body: "整理角色、场景和动作，再生成对应镜头视频素材。", image: "/images/landing/audience-animation-makers.webp", imageAlt: "动画作者整理角色和场景并生成视频镜头的 Notion 风格插画" },
+        { title: "产品与广告内容", body: "把卖点和场景拆成镜头，生成可剪辑的视频素材。", image: "/images/landing/audience-product-ad-teams.webp", imageAlt: "产品与广告团队讨论 AI 生成视频镜头的 Notion 风格插画" }
+      ]
+    },
+    finalCta: {
+      aria: "立即下载 MkBoard",
+      title: "立即下载 MkBoard",
+      body: "导入脚本，让 AI Agent 来帮你制作分镜",
+      cta: "立即下载"
+    },
+    seo: {
+      aria: "自媒体 AI 视频 Agent 选型说明",
+      badge: "选型建议",
+      title: "让脚本变成可剪辑素材",
+      items: [
+        { title: "会理解脚本", body: "能判断 A-roll、B-roll、节奏和画面意图。" },
+        { title: "能调用模型", body: "把镜头交给 Seedance、ChatGPT Image 等模型生成。" },
+        { title: "能生成视频", body: "不止停在静态分镜，还能生成 B-roll 视频素材。" }
+      ]
+    },
+    faqAria: "常见问题",
+    faqBadge: "FAQ",
+    faqTitle: "常见问题",
+    faqItems: [
+      { question: "MkBoard 里的 Agent 会做什么？", answer: "它会读取口播、剧情、课程或广告脚本，智能拆成 A-roll / B-roll 镜头，并用 Seedance、ChatGPT Image 等模型生成图片和 B-roll 视频素材。" },
+      { question: "Agent 会替我一次做完整个视频吗？", answer: "不会把创作变成黑盒。MkBoard 先把脚本变成可控镜头，再生成可剪辑的 B-roll 视频素材，你可以继续调整镜头、素材、节奏和版本。" },
+      { question: "不会画画也能使用这个 Agent 吗？", answer: "可以。你用文字描述内容，AI 会拆出适合生成的镜头，并继续生成图片或 B-roll 视频素材。" },
+      { question: "为什么 Agent 要放在桌面端？", answer: "自媒体内容经常涉及大量本地素材、长文脚本和反复调整。桌面端更适合让 Agent 稳定读取、整理和预览项目上下文。" },
+      { question: "可以把 Agent 生成的分镜交给团队继续用吗？", answer: "可以。你可以把分镜结构、脚本和素材整理在同一个项目里，再按后续交付需要导出或继续制作。" },
+      { question: "目前支持哪些桌面端系统？", answer: windowsAvailable ? "当前支持 Apple 芯片（M 系列）Mac 和 Windows 10/11 x64。Intel 芯片 Mac 暂不支持。" : "当前仅开放 Apple 芯片（M 系列）Mac。Intel 芯片 Mac 暂不支持，Windows 版 Coming Soon，当前暂不开放下载。" }
+    ],
+    structuredDescription: windowsAvailable ? "MkBoard 是专属自媒体人的桌面端 AI 视频 Agent，支持 Apple 芯片（M 系列）Mac 和 Windows 10/11 x64，用于智能拆解口播、剧情、课程和广告脚本里的 A-roll / B-roll 镜头，并生成图片和 B-roll 视频素材。" : "MkBoard 是专属自媒体人的桌面端 AI 视频 Agent，当前开放 Apple 芯片（M 系列）Mac，用于智能拆解口播、剧情、课程和广告脚本里的 A-roll / B-roll 镜头，并通过 Seedance、ChatGPT Image 等模型生成图片和 B-roll 视频素材。Windows 版 Coming Soon。"
+  },
+  en: {
+    title: "MkBoard - Storyboard Agent Built for Content Creators",
+    description: "MkBoard is a desktop storyboard Agent built for content creators. Import a script and the AI understands pacing, plans A-roll and B-roll shots, and generates editable images and B-roll video assets with Seedance and ChatGPT Image.",
+    keywords: ["storyboard agent for content creators", "AI B-roll video generator", "short-form B-roll", "AI storyboard agent", "script to video shots", "Seedance video generation", "ChatGPT Image", "MkBoard"],
+    heroAria: "MkBoard creator storyboard Agent",
+    heroBadge: "AI Video Agent",
+    heroTitle: "A Storyboard Agent Built for Content Creators",
+    heroTitleLines: ["A Storyboard Agent", "Built for Content Creators"],
+    heroLead: "Import a script. The AI understands the pacing, plans A-roll and B-roll shots, and generates video assets you can keep editing.",
+    primaryCta: "Download app",
+    floatLeft: ["Character refs", "A-ROLL"],
+    floatRight: ["Scene refs", "B-ROLL"],
+    previewAria: "MkBoard macOS app interface preview",
+    heroImage: "/images/landing/hero-ai-storyboard-video-draft.webp",
+    heroImageAlt: "MkBoard creator AI video Agent interface with script notes, B-roll shot cards, and an AI video generation timeline",
+    previewTitle: "Rainy Reunion · MkBoard",
+    problem: {
+      aria: "Creative pain points",
+      badge: "Creative bottlenecks",
+      title: "Where video work gets stuck",
+      body: "From script to B-roll, the hard part is keeping shots, prompts, and assets connected.",
+      items: [
+        { title: "Scripts lack visuals", body: "Once narration is written, every segment still needs the right B-roll.", image: "/images/landing/problem-long-scripts-icon.svg", imageAlt: "Notion-style icon illustration of a long script becoming B-roll shot cards" },
+        { title: "Tools are scattered", body: "Shot planning, prompt writing, and video generation often happen in separate tools.", image: "/images/landing/problem-scattered-assets-icon.svg", imageAlt: "Notion-style icon illustration of scattered AI generation tasks being organized into a storyboard board" },
+        { title: "Assets lose their place", body: "If generated results are not tied to shots, they are hard to track and replace during editing.", image: "/images/landing/problem-slow-feedback-icon.svg", imageAlt: "Notion-style icon illustration of AI generated assets returning to a video editing timeline" }
+      ]
+    },
+    workflow: {
+      aria: "MkBoard Agent workflow",
+      badge: "Workflow",
+      title: "From Script to B-roll Video, Then Edit",
+      body: "The AI first understands the content and pacing, finds the shots that need generation, then creates image and B-roll video assets.",
+      items: [
+        { step: "01", title: "Add the script", body: "Talking-head scripts, story scenes, course segments, or ad points.", image: "/images/landing/workflow-add-script.webp", imageAlt: "Notion-style illustration of a script document entering a desktop storyboard app" },
+        { step: "02", title: "Split shots intelligently", body: "Detect A-roll, B-roll, visual intent, and pacing.", image: "/images/landing/workflow-generate-storyboard.webp", imageAlt: "Notion-style illustration of a desktop AI video Agent intelligently planning A-roll and B-roll shot cards" },
+        { step: "03", title: "Generate B-roll", body: "Use Seedance and ChatGPT Image to generate shot assets.", image: "/images/landing/workflow-create-video-draft.webp", imageAlt: "Notion-style illustration of storyboard cards generating B-roll video assets with Seedance and ChatGPT Image" },
+        { step: "04", title: "Move into editing", body: "Generated assets return to the right shots so you can keep editing.", image: "/images/landing/workflow-keep-refining.webp", imageAlt: "Notion-style illustration of a creator AI video Agent continuing editing from generated shot assets" }
+      ]
+    },
+    features: {
+      aria: "MkBoard features",
+      badge: "Core Agent capabilities",
+      title: "AI Understands Scripts and Generates B-roll Video",
+      body: "MkBoard's Agent understands your script, automatically breaks it down, and uses AI models to generate the B-roll visuals you want.",
+      items: [
+        { title: "Intelligent shot splitting", body: "Give it a topic, script, or idea. The AI reads content structure, talking-head segments, B-roll visuals, and pacing instead of mechanically chopping text.", image: "/images/landing/feature-ai-storyboard-generation.webp", imageAlt: "Desktop product illustration of a script being intelligently split into A-roll and B-roll shot cards", className: "feature-card feature-card-large" },
+        { title: "AI-generated B-roll video", body: "Generate images, B-roll, and video assets for each shot, so the storyboard moves straight into editable material.", image: "/images/landing/feature-ai-video-draft-editing.webp", imageAlt: "Desktop product illustration of storyboard cards generating B-roll video assets into an editing timeline", className: "feature-card accent" }
+      ]
+    },
+    audience: {
+      aria: "Who MkBoard is for",
+      badge: "Who it is for",
+      title: "Which creators is MkBoard for?",
+      body: "MkBoard does not force you into a professional studio workflow. It is built for creators and small teams that need an Agent to decide what this segment should show, what video to generate, and who it is for.",
+      items: [
+        { title: "Short-form creators", body: "Let the Agent plan hooks, turns, proof, and endings, then fill them with B-roll video.", image: "/images/landing/audience-short-form-creators.webp", imageAlt: "Notion-style illustration of a short-form creator arranging B-roll video shot cards" },
+        { title: "Talking-head educators", body: "Generate explanatory visuals, cutaways, and B-roll video from what you teach.", image: "/images/landing/audience-course-creators.webp", imageAlt: "Notion-style illustration of a course creator planning narration and B-roll videos" },
+        { title: "Animation and story channels", body: "Organize characters, scenes, and actions, then generate matching shot videos.", image: "/images/landing/audience-animation-makers.webp", imageAlt: "Notion-style illustration of an animation maker organizing characters, scenes, and generated video shots" },
+        { title: "Product and ad content", body: "Turn selling points and scenarios into editable generated video assets.", image: "/images/landing/audience-product-ad-teams.webp", imageAlt: "Notion-style illustration of a product and ad team reviewing AI generated video shots" }
+      ]
+    },
+    finalCta: {
+      aria: "Download MkBoard now",
+      title: "Download MkBoard",
+      body: "Import a script and let the AI Agent create the storyboard for you.",
+      cta: "Download now"
+    },
+    seo: {
+      aria: "How to choose a creator AI video Agent",
+      badge: "Choosing an Agent",
+      title: "Turn Scripts Into Editable Assets",
+      items: [
+        { title: "Understands scripts", body: "Recognizes A-roll, B-roll, pacing, and visual intent." },
+        { title: "Can call models", body: "Sends shot tasks to models like Seedance and ChatGPT Image." },
+        { title: "Can generate video", body: "Moves beyond static storyboards into B-roll video assets." }
+      ]
+    },
+    faqAria: "Frequently asked questions",
+    faqBadge: "FAQ",
+    faqTitle: "Frequently Asked Questions",
+    faqItems: [
+      { question: "What does the MkBoard Agent do?", answer: "It reads talking-head, story, course, or ad scripts, intelligently splits them into A-roll and B-roll shots, and uses models like Seedance and ChatGPT Image to generate images and B-roll video assets." },
+      { question: "Will the Agent make the whole video for me in one step?", answer: "No. MkBoard keeps the process controllable: it turns scripts into shots, generates editable B-roll video assets, then lets you refine shots, assets, pacing, and versions." },
+      { question: "Can I use the Agent if I cannot draw?", answer: "Yes. Start with text. The AI plans shots that are suitable for generation, then creates images or B-roll video assets." },
+      { question: "Why make the Agent desktop-first?", answer: "Content creation often involves local assets, long scripts, and repeated revisions. A desktop app gives the Agent a steadier place to read, organize, and preview project context." },
+      { question: "Can I hand off an Agent-generated storyboard to a team?", answer: "Yes. You can keep the storyboard structure, script, and assets organized in one project, then export or continue production as needed." },
+      { question: "Which desktop systems are supported?", answer: windowsAvailable ? "MkBoard supports Apple silicon Macs and Windows 10/11 x64. Intel Macs are not supported yet." : "MkBoard is currently available for Apple silicon Macs only. Intel Macs are not supported yet, and Windows is coming soon." }
+    ],
+    structuredDescription: windowsAvailable ? "MkBoard is a desktop storyboard Agent for content creators on Apple silicon Mac and Windows 10/11 x64. It understands scripts, plans A-roll and B-roll shots, and generates editable image and video assets." : "MkBoard is a desktop storyboard Agent built for content creators, currently available for Apple silicon Macs. It understands talking-head, story, course, and ad scripts, plans A-roll and B-roll shots, then uses models like Seedance and ChatGPT Image to generate images and B-roll video assets. Windows is coming soon."
+  }
+} as const;
+
+const copy = copyMap[locale];
+const downloadPath = localizePath("/download", locale);
+const homePath = localizePath("/", locale);
+const seoIcons = [ImageIcon, TableIcon, Monitor] as const;
+
+const structuredData = [
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "MkBoard",
+    applicationCategory: "MultimediaApplication",
+    operatingSystem: "macOS",
+    url: new URL(homePath, import.meta.env.PUBLIC_WEB_URL ?? Astro.url.origin).toString(),
+    downloadUrl: new URL(downloadPath, import.meta.env.PUBLIC_WEB_URL ?? Astro.url.origin).toString(),
+    description: copy.structuredDescription,
+    offers: {
+      "@type": "Offer",
+      price: "20",
+      priceCurrency: "USD",
+      category: "subscription"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: copy.faqItems.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.answer
+      }
+    }))
+  }
+];
+---
+
+<BaseLayout title={copy.title} description={copy.description} keywords={copy.keywords} structuredData={structuredData}>
+  <section class="hero-shell landing-section" aria-label={copy.heroAria}>
+    <div class="dot-grid" aria-hidden="true"></div>
+    <div class="float-card float-card-left" aria-hidden="true">
+      <span>{copy.floatLeft[0]}</span>
+      <strong>{copy.floatLeft[1]}</strong>
+    </div>
+    <div class="float-card float-card-right" aria-hidden="true">
+      <span>{copy.floatRight[0]}</span>
+      <strong>{copy.floatRight[1]}</strong>
+    </div>
+    <div class="hero-content">
+      <p class="section-badge">{copy.heroBadge}</p>
+      <h1 aria-label={copy.heroTitle}>
+        {copy.heroTitleLines.map((line) => (
+          <span class="hero-title-line" aria-hidden="true">{line}</span>
+        ))}
+      </h1>
+      <p class="lede">{copy.heroLead}</p>
+      <div class="actions">
+        <a class="button primary" href={downloadPath}>
+          <span class="button-icon" aria-hidden="true"><Download size={18} strokeWidth={2.4} /></span>
+          <span>{copy.primaryCta}</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="mac-window" aria-label={copy.previewAria}>
+      <figure class="hero-product-visual">
+        <img src={copy.heroImage} alt={copy.heroImageAlt} decoding="async" fetchpriority="high" />
+      </figure>
+    </div>
+  </section>
+
+  <section class="landing-section problem-section" aria-label={copy.problem.aria}>
+    <div class="section-heading centered">
+      <p class="section-badge">{copy.problem.badge}</p>
+      <h2>{copy.problem.title}</h2>
+      <p>{copy.problem.body}</p>
+    </div>
+    <div class="problem-grid">
+      {
+        copy.problem.items.map((item) => (
+          <article>
+            <figure class="problem-card-media">
+              <img src={item.image} alt={item.imageAlt} loading="lazy" decoding="async" />
+            </figure>
+            <strong>{item.title}</strong>
+            <p>{item.body}</p>
+          </article>
+        ))
+      }
+    </div>
+  </section>
+
+  <section id="workflow" class="landing-section workflow-section" aria-label={copy.workflow.aria}>
+    <div class="section-heading">
+      <p class="section-badge">{copy.workflow.badge}</p>
+      <h2>{copy.workflow.title}</h2>
+      <p>{copy.workflow.body}</p>
+    </div>
+    <div class="workflow-timeline">
+      {copy.workflow.items.map((item) => (
+        <article>
+          <span>{item.step}</span>
+          <div class="workflow-copy">
+            <h3>{item.title}</h3>
+            <p>{item.body}</p>
+          </div>
+          <figure class="workflow-card-media">
+            <img src={item.image} alt={item.imageAlt} loading="lazy" decoding="async" />
+          </figure>
+        </article>
+      ))}
+    </div>
+  </section>
+
+  <section id="features" class="landing-section feature-stage" aria-label={copy.features.aria}>
+    <div class="section-heading centered">
+      <p class="section-badge">{copy.features.badge}</p>
+      <h2>{copy.features.title}</h2>
+      <p>{copy.features.body}</p>
+    </div>
+    <div class="feature-mosaic">
+      {copy.features.items.map((item) => (
+        <article class={item.className}>
+          <h3>{item.title}</h3>
+          <p>{item.body}</p>
+          <figure class="feature-card-media">
+            <img src={item.image} alt={item.imageAlt} loading="lazy" decoding="async" />
+          </figure>
+        </article>
+      ))}
+    </div>
+  </section>
+
+  <section id="about" class="landing-section audience-section" aria-label={copy.audience.aria}>
+    <div class="section-heading centered">
+      <p class="section-badge">{copy.audience.badge}</p>
+      <h2>{copy.audience.title}</h2>
+      <p>{copy.audience.body}</p>
+    </div>
+    <div class="audience-grid">
+      {
+        copy.audience.items.map((item) => (
+          <article>
+            <div class="audience-card-copy">
+              <strong>{item.title}</strong>
+              <p>{item.body}</p>
+            </div>
+            <figure class="audience-card-media">
+              <img src={item.image} alt={item.imageAlt} loading="lazy" decoding="async" />
+            </figure>
+          </article>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="landing-section seo-content" aria-label={copy.seo.aria}>
+    <div class="section-heading">
+      <p class="section-badge">{copy.seo.badge}</p>
+      <h2>{copy.seo.title}</h2>
+    </div>
+    <div class="seo-columns">
+      {
+        copy.seo.items.map((item, index) => {
+          const Icon = seoIcons[index] ?? FileText;
+          return (
+            <article>
+              <span class="seo-card-icon" aria-hidden="true"><Icon size={20} strokeWidth={2.25} /></span>
+              <h3>{item.title}</h3>
+              <p>{item.body}</p>
+            </article>
+          );
+        })
+      }
+    </div>
+  </section>
+
+  <section id="faq" class="landing-section faq-section" aria-label={copy.faqAria}>
+    <div class="section-heading centered">
+      <p class="section-badge">{copy.faqBadge}</p>
+      <h2>{copy.faqTitle}</h2>
+    </div>
+    <div class="faq-list">
+      {copy.faqItems.map((item, index) => (
+        <details open={index === 0}>
+          <summary>
+            <span class="faq-question">{item.question}</span>
+            <span class="faq-expand-icon" aria-hidden="true"><ChevronDown size={20} strokeWidth={2.35} /></span>
+          </summary>
+          <p>{item.answer}</p>
+        </details>
+      ))}
+    </div>
+  </section>
+
+  <section class="landing-section faq-download-cta" aria-label={copy.finalCta.aria}>
+    <div class="section-heading centered">
+      <h2>{copy.finalCta.title}</h2>
+      <p>{copy.finalCta.body}</p>
+    </div>
+    <a class="button primary" href={downloadPath}>
+      <span class="button-icon" aria-hidden="true"><MonitorDown size={18} strokeWidth={2.4} /></span>
+      <span>{copy.finalCta.cta}</span>
+    </a>
+  </section>
+
+</BaseLayout>

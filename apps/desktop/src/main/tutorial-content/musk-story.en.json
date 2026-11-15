@@ -1,0 +1,440 @@
+{
+  "locale": "en",
+  "projectName": "The Story of Elon Musk · Tutorial",
+  "scriptHtml": "\n  <h1>The Story of Elon Musk</h1>\n  <p>When people hear the name Elon Musk, they often think of rockets, electric cars, or plans that sound almost impossible.</p>\n  <p>But the story begins in South Africa: a boy who loved books and computers, and learned that code could turn ideas into something real. As a teenager, he built a small game. Later, he moved to Canada and then the United States to study and start companies.</p>\n  <p>His first major startup was Zip2. Then came the online payment company that became PayPal. After PayPal was acquired, Musk could have stopped. Instead, he put his money into harder problems: space travel, electric cars, and clean energy.</p>\n  <p>SpaceX almost died. Its first three launches failed, and the company was nearly out of money. In 2008, Falcon 1 finally reached orbit on the fourth attempt, and SpaceX survived.</p>\n  <p>Then the scale changed. In 2025, SpaceX completed 165 orbital launches. Starlink added more than 4.6 million active customers and completed its first Direct to Cell constellation. In August 2025, Starship's tenth flight test met major objectives, including simulated satellite deployment, an in-space engine relight, and controlled splashdowns.</p>\n  <p>Tesla was under pressure too. Electric cars were not mainstream, and many people doubted they could be desirable. Musk pushed Tesla to make them fast, practical, and exciting. Model S, Model 3, and the Supercharger network changed how many people thought about EVs.</p>\n  <p>By 2025, Tesla delivered more than 1.63 million vehicles and deployed 46.7 GWh of storage. In Q1 2026, it produced more than 408,000 vehicles, deployed 8.8 GWh of storage, and kept preparing Megapack 3, Tesla Semi, Cybercab, and a denser charging network. The story had moved beyond cars, into energy, mobility, and AI.</p>\n  <p>Musk's story is not only success. His goals can be too big, his pace extreme, and his choices controversial. But the useful lesson is a method: take an impossible problem, turn it into engineering tasks, and start with the next small step.</p>\n",
+  "legacyScriptHtml": [
+    "\n  <h1>The Story of Elon Musk</h1>\n  <p>When people hear the name Elon Musk, they often think of rockets, electric cars, or plans that sound almost impossible.</p>\n  <p>But his story starts in a much simpler place: a boy in South Africa who loved books, computers, and big questions. He learned early that code could turn an idea in his head into something real. As a teenager, he built a small video game. Later, he left South Africa, moved first to Canada, and then to the United States to study and start companies.</p>\n  <p>His first major startup was Zip2, an internet company that helped newspapers put maps and city guides online. After Zip2 was sold, he kept going. He helped build the online payment company that eventually became PayPal. When PayPal was acquired, Musk could have stopped there. Instead, he put his money into much harder problems: space travel, electric cars, and clean energy.</p>\n  <p>SpaceX almost did not survive. Its first three rocket launches failed, and the company was running out of money. The fourth launch was close to being the last chance. In 2008, Falcon 1 finally reached orbit, and SpaceX stayed alive.</p>\n  <p>At the same time, Tesla was also under pressure. Electric cars were not mainstream, and many people doubted they could become desirable products. Musk pushed Tesla to make electric cars feel fast, practical, and exciting. Over time, the Model S, the Model 3, and the Supercharger network changed how many people thought about electric vehicles.</p>\n  <p>Musk's story is not only a story of success. His goals are often enormous, his pace can be extreme, and his choices have brought criticism and debate. But that is what makes the story useful: he takes problems that seem impossible and treats them like engineering challenges.</p>\n  <p>The lesson is not that everyone should copy his personality. The lesson is simpler: imagine the future clearly, then begin with the next small step you can actually build today.</p>\n"
+  ],
+  "rows": [
+    {
+      "id": "tutorial-en-shot-01",
+      "shot": "1",
+      "scene": "A-ROLL",
+      "duration": "8",
+      "content": "When people hear the name Elon Musk, they often think of rockets, electric cars, or plans that sound almost impossible.",
+      "note": "Presenter opening: curious, direct, not overdramatic.",
+      "customValues": {
+        "custom-1": "—",
+        "custom-2": "—",
+        "custom-3": ""
+      }
+    },
+    {
+      "id": "tutorial-en-shot-02",
+      "shot": "2",
+      "scene": "B-ROLL",
+      "duration": "10",
+      "content": "The story starts in South Africa: a boy who loved books and computers, learning that code could make ideas real.",
+      "note": "Books, early computer, no recognizable real-person likeness.",
+      "customValues": {
+        "custom-1": "A teenager's bedroom in South Africa with an old computer, open science-fiction books, handwritten code notes, soft morning light, realistic documentary look, no identifiable person.",
+        "custom-2": "Slow push toward an old computer and open books, code characters gently flickering on screen, showing a young mind discovering programming.",
+        "custom-3": "Seedance 2.0"
+      },
+      "imageAssetIds": [
+        "musk-story-en-seedance-shot-02-image",
+        "musk-story-en-seedance-shot-02-video"
+      ]
+    },
+    {
+      "id": "tutorial-en-shot-03",
+      "shot": "3",
+      "scene": "B-ROLL",
+      "duration": "9",
+      "content": "As a teenager, he built a small game, then left South Africa for Canada and later the United States.",
+      "note": "Migration route, airport, campus, early startup energy.",
+      "customValues": {
+        "custom-1": "A clean documentary map showing a glowing route from South Africa to Canada and the United States, layered with a boarding pass, campus notebook, and code window.",
+        "custom-2": "HyperFrames map-path animation from South Africa to Canada and the United States, with boarding pass, campus, and code-window motifs, no captions.",
+        "custom-3": "Hyperframes"
+      },
+      "imageAssetIds": [
+        "musk-story-en-hyperframes-shot-03"
+      ]
+    },
+    {
+      "id": "tutorial-en-shot-04",
+      "shot": "4",
+      "scene": "B-ROLL",
+      "duration": "10",
+      "content": "His first major startup was Zip2, followed by the online payment company that eventually became PayPal.",
+      "note": "Early internet maps, web layouts, payment flow.",
+      "customValues": {
+        "custom-1": "A 1990s internet startup office with CRT monitors showing abstract city maps and web layouts, business plans on a desk, documentary realism, no logos.",
+        "custom-2": "City map lines transform into online payment nodes, web windows and money symbols connect in a clean motion-graphics sequence.",
+        "custom-3": "Seedance 2.0"
+      },
+      "imageAssetIds": [
+        "musk-story-en-seedance-shot-04-image",
+        "musk-story-en-seedance-shot-04-video"
+      ]
+    },
+    {
+      "id": "tutorial-en-shot-05",
+      "shot": "5",
+      "scene": "A-ROLL",
+      "duration": "8",
+      "content": "After PayPal was acquired, Musk could have stopped. Instead, he chose three much harder problems.",
+      "note": "Presenter turning point: the choice to work on harder problems.",
+      "customValues": {
+        "custom-1": "—",
+        "custom-2": "—",
+        "custom-3": ""
+      }
+    },
+    {
+      "id": "tutorial-en-shot-06",
+      "shot": "6",
+      "scene": "B-ROLL",
+      "duration": "11",
+      "content": "Those problems were space travel, electric cars, and clean energy, each one a risky bet at the time.",
+      "note": "Three-panel visual: rocket, EV, battery/solar.",
+      "customValues": {
+        "custom-1": "Triptych composition: a rocket launchpad, electric vehicle chassis, and solar battery storage system, dark technology documentary style, yellow lines connecting the three ideas.",
+        "custom-2": "HyperFrames three-panel infographic animation: rocket, EV, and battery icons light up in sequence, then merge into one engineering roadmap, visual only, no title text.",
+        "custom-3": "Hyperframes"
+      },
+      "imageAssetIds": [
+        "musk-story-en-hyperframes-shot-06"
+      ]
+    },
+    {
+      "id": "tutorial-en-shot-07",
+      "shot": "7",
+      "scene": "B-ROLL",
+      "duration": "10",
+      "content": "SpaceX's first three launches failed, and the company was almost out of money. The fourth launch was close to the last chance.",
+      "note": "Failure and countdown tension.",
+      "customValues": {
+        "custom-1": "Nighttime rocket test site, silhouettes in a control room, abstract countdown lights on a screen, tense documentary mood, no company logos.",
+        "custom-2": "Cut between control room and launchpad; three failed attempts shown as dim red lights, a fourth light begins flashing for countdown.",
+        "custom-3": "Seedance 2.0"
+      },
+      "imageAssetIds": [
+        "musk-story-en-seedance-shot-07-image",
+        "musk-story-en-seedance-shot-07-video"
+      ]
+    },
+    {
+      "id": "tutorial-en-shot-08",
+      "shot": "8",
+      "scene": "B-ROLL",
+      "duration": "9",
+      "content": "In 2008, Falcon 1 finally reached orbit, and SpaceX stayed alive.",
+      "note": "Release after the successful orbital launch.",
+      "customValues": {
+        "custom-1": "A small rocket rising above clouds into low Earth orbit, Earth's curve visible in the background, cinematic technology documentary frame, no logos.",
+        "custom-2": "Rocket clears the clouds, camera pulls back to reveal Earth's curve, control room lights shift from tense darkness to relief.",
+        "custom-3": "Seedance 2.0"
+      },
+      "imageAssetIds": [
+        "musk-story-en-seedance-shot-08-image",
+        "musk-story-en-seedance-shot-08-video"
+      ]
+    },
+    {
+      "id": "tutorial-en-shot-09",
+      "shot": "9",
+      "scene": "B-ROLL",
+      "duration": "10",
+      "content": "Later, SpaceX turned reusable rockets into a high-cadence launch system. In 2025, it reached 165 orbital launches.",
+      "note": "Rocket reuse and launch cadence.",
+      "customValues": {
+        "custom-1": "A reusable rocket booster landing on an ocean droneship, abstract launch-count light points forming a timeline in the distance, technology documentary style, no logos.",
+        "custom-2": "Booster descends through clouds toward a droneship, with an abstract launch timeline overlay rapidly accumulating light points to show high-frequency reuse.",
+        "custom-3": "Seedance 2.0"
+      },
+      "imageAssetIds": [
+        "musk-story-en-seedance-shot-09-image",
+        "musk-story-en-seedance-shot-09-video"
+      ]
+    },
+    {
+      "id": "tutorial-en-shot-10",
+      "shot": "10",
+      "scene": "B-ROLL",
+      "duration": "9",
+      "content": "Starlink kept expanding, adding more than 4.6 million active customers in 2025 and completing its first Direct to Cell constellation.",
+      "note": "Satellite internet coverage and direct-to-cell service.",
+      "customValues": {
+        "custom-1": "Low Earth orbit satellite constellation above Earth at night, connection points appearing over remote regions and oceans, phone signal graphics reaching the ground, clean technology style.",
+        "custom-2": "HyperFrames orbital animation: satellite lights move around Earth, ground connection points turn on one by one, ending with a phone signal ripple, no text.",
+        "custom-3": "Hyperframes"
+      },
+      "imageAssetIds": [
+        "musk-story-en-hyperframes-shot-10"
+      ]
+    },
+    {
+      "id": "tutorial-en-shot-11",
+      "shot": "11",
+      "scene": "B-ROLL",
+      "duration": "10",
+      "content": "Starship's tenth flight test met major objectives, shifting the goal from reaching space to reusing a large space transportation system.",
+      "note": "Starship test flight, simulated payload deployment, controlled splashdowns.",
+      "customValues": {
+        "custom-1": "A giant unbranded silver rocket launches from a coastal pad; after stage separation, the ship releases small simulated payloads high above Earth, cinematic documentary look.",
+        "custom-2": "Four-part sequence of liftoff, stage separation, simulated payload release, and controlled splashdown, showing validation of a large reusable space system.",
+        "custom-3": "Seedance 2.0"
+      },
+      "imageAssetIds": [
+        "musk-story-en-seedance-shot-11-image",
+        "musk-story-en-seedance-shot-11-video"
+      ]
+    },
+    {
+      "id": "tutorial-en-shot-12",
+      "shot": "12",
+      "scene": "B-ROLL",
+      "duration": "10",
+      "content": "At the same time, Tesla was under pressure. Musk pushed electric cars to feel like performance products, not compromises.",
+      "note": "EV skepticism turning into performance.",
+      "customValues": {
+        "custom-1": "A non-branded electric car silhouette on a dark test track, engineers checking battery modules and performance curves, cool modern automotive documentary lighting.",
+        "custom-2": "Electric car accelerates on a test track while transparent battery-module lines and performance curves overlay the frame.",
+        "custom-3": "Seedance 2.0"
+      },
+      "imageAssetIds": [
+        "musk-story-en-seedance-shot-12-image",
+        "musk-story-en-seedance-shot-12-video"
+      ]
+    },
+    {
+      "id": "tutorial-en-shot-13",
+      "shot": "13",
+      "scene": "B-ROLL",
+      "duration": "11",
+      "content": "By 2025, Tesla delivered over 1.63 million vehicles, deployed 46.7 GWh of storage, and kept pushing Semi, Cybercab, Megapack 3, and charging infrastructure.",
+      "note": "Tesla expanding from cars into energy, mobility, and AI.",
+      "customValues": {
+        "custom-1": "Composite technology scene of a city and electric grid: non-branded EV, large battery storage cabinets, heavy truck charging station, autonomous test road, and charging network light points connected.",
+        "custom-2": "HyperFrames infographic animation: EV, storage cabinet, heavy truck, autonomous cabin, and charger icons light up in sequence, then connect into an energy and mobility network.",
+        "custom-3": "Hyperframes"
+      },
+      "imageAssetIds": [
+        "musk-story-en-hyperframes-shot-13"
+      ]
+    },
+    {
+      "id": "tutorial-en-shot-14",
+      "shot": "14",
+      "scene": "A-ROLL",
+      "duration": "10",
+      "content": "Musk's story is not only about success; it also brings criticism and debate. The useful lesson is the method: imagine the future, then build the next small step today.",
+      "note": "Closing presenter line: avoid hero worship, land on the method.",
+      "customValues": {
+        "custom-1": "—",
+        "custom-2": "—",
+        "custom-3": ""
+      }
+    }
+  ],
+  "mediaAssets": [
+    {
+      "id": "musk-story-en-seedance-shot-02-image",
+      "rowId": "tutorial-en-shot-02",
+      "kind": "image",
+      "fileName": "musk-story-en-shot-02-seedance-image.webp",
+      "url": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/en/seedance/musk-story-en-shot-02-seedance-image.webp?sha=f8312a97ed24bb488f90366683ed98325940e6ab597be78b041f7efd40f85e36",
+      "fileSize": 89626,
+      "sha256": "f8312a97ed24bb488f90366683ed98325940e6ab597be78b041f7efd40f85e36"
+    },
+    {
+      "id": "musk-story-en-seedance-shot-02-video",
+      "rowId": "tutorial-en-shot-02",
+      "kind": "video",
+      "fileName": "musk-story-en-shot-02-seedance-video.webm",
+      "url": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/en/seedance/musk-story-en-shot-02-seedance-video.webm?sha=3c78edee5810bc75015eeffb33e01620a19c48cb5ba036de8da94420951ace3e",
+      "fileSize": 2479687,
+      "sha256": "3c78edee5810bc75015eeffb33e01620a19c48cb5ba036de8da94420951ace3e",
+      "posterFileName": "musk-story-en-shot-02-seedance-video-poster.webp",
+      "posterUrl": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/en/seedance/musk-story-en-shot-02-seedance-video-poster.webp?sha=328c0d894035ee14740b6de6c82f2119d864802cb3c03953deca3b5dd82f40e1",
+      "posterFileSize": 31530,
+      "posterSha256": "328c0d894035ee14740b6de6c82f2119d864802cb3c03953deca3b5dd82f40e1"
+    },
+    {
+      "id": "musk-story-en-hyperframes-shot-03",
+      "rowId": "tutorial-en-shot-03",
+      "kind": "video",
+      "fileName": "musk-story-en-shot-03-hyperframes.webm",
+      "url": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/en/hyperframes/musk-story-en-shot-03-hyperframes.webm?sha=f051b4dd10e42c72897fa6dc149d053a12a151aff9be4db8dd91e161f95bb44a",
+      "fileSize": 161687,
+      "sha256": "f051b4dd10e42c72897fa6dc149d053a12a151aff9be4db8dd91e161f95bb44a",
+      "posterFileName": "musk-story-en-shot-03-hyperframes-poster.webp",
+      "posterUrl": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/en/hyperframes/musk-story-en-shot-03-hyperframes-poster.webp?sha=7876d62091d6509e6da4a134fef93ae26f16ba4ce12a08b8433274119268a45b",
+      "posterFileSize": 17366,
+      "posterSha256": "7876d62091d6509e6da4a134fef93ae26f16ba4ce12a08b8433274119268a45b"
+    },
+    {
+      "id": "musk-story-en-seedance-shot-04-image",
+      "rowId": "tutorial-en-shot-04",
+      "kind": "image",
+      "fileName": "musk-story-en-shot-04-seedance-image.webp",
+      "url": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/en/seedance/musk-story-en-shot-04-seedance-image.webp?sha=c9a619133aaa46a1b6dc20f052e75c3d83cfa2d1954ed8b2e422892b74204d8d",
+      "fileSize": 105462,
+      "sha256": "c9a619133aaa46a1b6dc20f052e75c3d83cfa2d1954ed8b2e422892b74204d8d"
+    },
+    {
+      "id": "musk-story-en-seedance-shot-04-video",
+      "rowId": "tutorial-en-shot-04",
+      "kind": "video",
+      "fileName": "musk-story-en-shot-04-seedance-video.webm",
+      "url": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/en/seedance/musk-story-en-shot-04-seedance-video.webm?sha=17f38ec302d57760e9fcc8b3960a794969ff03fcd575830894939d810a42f5d4",
+      "fileSize": 1261063,
+      "sha256": "17f38ec302d57760e9fcc8b3960a794969ff03fcd575830894939d810a42f5d4",
+      "posterFileName": "musk-story-en-shot-04-seedance-video-poster.webp",
+      "posterUrl": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/en/seedance/musk-story-en-shot-04-seedance-video-poster.webp?sha=3354e0e35733c1b79085ae9c37534ad75af9dba18d102b59893c616794c97076",
+      "posterFileSize": 30618,
+      "posterSha256": "3354e0e35733c1b79085ae9c37534ad75af9dba18d102b59893c616794c97076"
+    },
+    {
+      "id": "musk-story-en-hyperframes-shot-06",
+      "rowId": "tutorial-en-shot-06",
+      "kind": "video",
+      "fileName": "musk-story-en-shot-06-hyperframes.webm",
+      "url": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/en/hyperframes/musk-story-en-shot-06-hyperframes.webm?sha=f7b5340442108b16c4b2d832cfc96375f3affcb57e7532b480f000ad25cba438",
+      "fileSize": 167635,
+      "sha256": "f7b5340442108b16c4b2d832cfc96375f3affcb57e7532b480f000ad25cba438",
+      "posterFileName": "musk-story-en-shot-06-hyperframes-poster.webp",
+      "posterUrl": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/en/hyperframes/musk-story-en-shot-06-hyperframes-poster.webp?sha=86e0fd9edafbf705267a25652f5255c4dd43a89706a9a47eda55c2c48039d5d2",
+      "posterFileSize": 18306,
+      "posterSha256": "86e0fd9edafbf705267a25652f5255c4dd43a89706a9a47eda55c2c48039d5d2"
+    },
+    {
+      "id": "musk-story-en-seedance-shot-07-image",
+      "rowId": "tutorial-en-shot-07",
+      "kind": "image",
+      "fileName": "musk-story-en-shot-07-seedance-image.webp",
+      "url": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/en/seedance/musk-story-en-shot-07-seedance-image.webp?sha=82c1abc425953b8255c7eb4ec38fce2343759fa5983f8c5a1f13cb1f95aac62f",
+      "fileSize": 37606,
+      "sha256": "82c1abc425953b8255c7eb4ec38fce2343759fa5983f8c5a1f13cb1f95aac62f"
+    },
+    {
+      "id": "musk-story-en-seedance-shot-07-video",
+      "rowId": "tutorial-en-shot-07",
+      "kind": "video",
+      "fileName": "musk-story-en-shot-07-seedance-video.webm",
+      "url": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/en/seedance/musk-story-en-shot-07-seedance-video.webm?sha=f87d6d8ca541bbe2d0ef6b9026ad180c6cb30711e88374265bac8f6902f59fe9",
+      "fileSize": 1364835,
+      "sha256": "f87d6d8ca541bbe2d0ef6b9026ad180c6cb30711e88374265bac8f6902f59fe9",
+      "posterFileName": "musk-story-en-shot-07-seedance-video-poster.webp",
+      "posterUrl": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/en/seedance/musk-story-en-shot-07-seedance-video-poster.webp?sha=45634e9b4790456e0f607234304212f9933fde52547cb23a066ab59bb058c36f",
+      "posterFileSize": 23708,
+      "posterSha256": "45634e9b4790456e0f607234304212f9933fde52547cb23a066ab59bb058c36f"
+    },
+    {
+      "id": "musk-story-en-seedance-shot-08-image",
+      "rowId": "tutorial-en-shot-08",
+      "kind": "image",
+      "fileName": "musk-story-en-shot-08-seedance-image.webp",
+      "url": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/en/seedance/musk-story-en-shot-08-seedance-image.webp?sha=af81dfa392d318bb5d2f794d6455b636d9cbc0fe4edffbe9985ca74b1e1a9c60",
+      "fileSize": 69252,
+      "sha256": "af81dfa392d318bb5d2f794d6455b636d9cbc0fe4edffbe9985ca74b1e1a9c60"
+    },
+    {
+      "id": "musk-story-en-seedance-shot-08-video",
+      "rowId": "tutorial-en-shot-08",
+      "kind": "video",
+      "fileName": "musk-story-en-shot-08-seedance-video.webm",
+      "url": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/en/seedance/musk-story-en-shot-08-seedance-video.webm?sha=bf84bbc335ec17eeb29e8037cbe2fc81504997edff56407127c509aa9e1752c2",
+      "fileSize": 1921843,
+      "sha256": "bf84bbc335ec17eeb29e8037cbe2fc81504997edff56407127c509aa9e1752c2",
+      "posterFileName": "musk-story-en-shot-08-seedance-video-poster.webp",
+      "posterUrl": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/en/seedance/musk-story-en-shot-08-seedance-video-poster.webp?sha=07694bae9e60a4b55faa02c42bf727833cc2844cdf06b03081077e440c8ccf79",
+      "posterFileSize": 55348,
+      "posterSha256": "07694bae9e60a4b55faa02c42bf727833cc2844cdf06b03081077e440c8ccf79"
+    },
+    {
+      "id": "musk-story-en-seedance-shot-09-image",
+      "rowId": "tutorial-en-shot-09",
+      "kind": "image",
+      "fileName": "musk-story-en-shot-09-seedance-image.webp",
+      "url": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/en/seedance/musk-story-en-shot-09-seedance-image.webp?sha=3e8e9e952098c60210860a0c3057627c8b127b4afaf2d630d934d0d75c54b91f",
+      "fileSize": 47718,
+      "sha256": "3e8e9e952098c60210860a0c3057627c8b127b4afaf2d630d934d0d75c54b91f"
+    },
+    {
+      "id": "musk-story-en-seedance-shot-09-video",
+      "rowId": "tutorial-en-shot-09",
+      "kind": "video",
+      "fileName": "musk-story-en-shot-09-seedance-video.webm",
+      "url": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/en/seedance/musk-story-en-shot-09-seedance-video.webm?sha=ab0c1b39a49d6c66f37ced12463e03fe67748b3556a79848c0089fc9a1a3fd55",
+      "fileSize": 1960660,
+      "sha256": "ab0c1b39a49d6c66f37ced12463e03fe67748b3556a79848c0089fc9a1a3fd55",
+      "posterFileName": "musk-story-en-shot-09-seedance-video-poster.webp",
+      "posterUrl": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/en/seedance/musk-story-en-shot-09-seedance-video-poster.webp?sha=615d302ae6b5008f25210af273bf63b9e279c53e9aa2e7cc48c89b17637f28a7",
+      "posterFileSize": 28020,
+      "posterSha256": "615d302ae6b5008f25210af273bf63b9e279c53e9aa2e7cc48c89b17637f28a7"
+    },
+    {
+      "id": "musk-story-en-hyperframes-shot-10",
+      "rowId": "tutorial-en-shot-10",
+      "kind": "video",
+      "fileName": "musk-story-en-shot-10-hyperframes.webm",
+      "url": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/en/hyperframes/musk-story-en-shot-10-hyperframes.webm?sha=b712d24d9f6ea738fd861c49f8a11341f4029c8346501a9494c8ad4748139435",
+      "fileSize": 292641,
+      "sha256": "b712d24d9f6ea738fd861c49f8a11341f4029c8346501a9494c8ad4748139435",
+      "posterFileName": "musk-story-en-shot-10-hyperframes-poster.webp",
+      "posterUrl": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/en/hyperframes/musk-story-en-shot-10-hyperframes-poster.webp?sha=b44c42df24cc76b2b07608b254981154a4c141a563f2ed757eef0c342c79adec",
+      "posterFileSize": 26954,
+      "posterSha256": "b44c42df24cc76b2b07608b254981154a4c141a563f2ed757eef0c342c79adec"
+    },
+    {
+      "id": "musk-story-en-seedance-shot-11-image",
+      "rowId": "tutorial-en-shot-11",
+      "kind": "image",
+      "fileName": "musk-story-en-shot-11-seedance-image.webp",
+      "url": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/en/seedance/musk-story-en-shot-11-seedance-image.webp?sha=4b13b0f2aaab6611d43c9b8771fa55e6eb56d066d5cdc39c33bf28fb1eaae8c1",
+      "fileSize": 65886,
+      "sha256": "4b13b0f2aaab6611d43c9b8771fa55e6eb56d066d5cdc39c33bf28fb1eaae8c1"
+    },
+    {
+      "id": "musk-story-en-seedance-shot-11-video",
+      "rowId": "tutorial-en-shot-11",
+      "kind": "video",
+      "fileName": "musk-story-en-shot-11-seedance-video.webm",
+      "url": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/en/seedance/musk-story-en-shot-11-seedance-video.webm?sha=4924b950d9d86ca50df5cbe2283d91d728e096799dc924f676b6417666753757",
+      "fileSize": 1581387,
+      "sha256": "4924b950d9d86ca50df5cbe2283d91d728e096799dc924f676b6417666753757",
+      "posterFileName": "musk-story-en-shot-11-seedance-video-poster.webp",
+      "posterUrl": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/en/seedance/musk-story-en-shot-11-seedance-video-poster.webp?sha=b2705a8c12dc0fb2256552721d8770719b22424cf1320bdd77912bd30c291dcc",
+      "posterFileSize": 43458,
+      "posterSha256": "b2705a8c12dc0fb2256552721d8770719b22424cf1320bdd77912bd30c291dcc"
+    },
+    {
+      "id": "musk-story-en-seedance-shot-12-image",
+      "rowId": "tutorial-en-shot-12",
+      "kind": "image",
+      "fileName": "musk-story-en-shot-12-seedance-image.webp",
+      "url": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/en/seedance/musk-story-en-shot-12-seedance-image.webp?sha=6dab1485dc69c85522da5bc59449fa0441a6300a4760e75f8e91ea909baec118",
+      "fileSize": 59762,
+      "sha256": "6dab1485dc69c85522da5bc59449fa0441a6300a4760e75f8e91ea909baec118"
+    },
+    {
+      "id": "musk-story-en-seedance-shot-12-video",
+      "rowId": "tutorial-en-shot-12",
+      "kind": "video",
+      "fileName": "musk-story-en-shot-12-seedance-video.webm",
+      "url": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/en/seedance/musk-story-en-shot-12-seedance-video.webm?sha=658602526613e1e13e0a60244fc486828da290752b9acb2dfe2bc201f3d8ef71",
+      "fileSize": 2815644,
+      "sha256": "658602526613e1e13e0a60244fc486828da290752b9acb2dfe2bc201f3d8ef71",
+      "posterFileName": "musk-story-en-shot-12-seedance-video-poster.webp",
+      "posterUrl": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/en/seedance/musk-story-en-shot-12-seedance-video-poster.webp?sha=30858c5c3e56d543bdcbb2d074c12f52143cbcd6197effdebc5a0076b36a4100",
+      "posterFileSize": 2190,
+      "posterSha256": "30858c5c3e56d543bdcbb2d074c12f52143cbcd6197effdebc5a0076b36a4100"
+    },
+    {
+      "id": "musk-story-en-hyperframes-shot-13",
+      "rowId": "tutorial-en-shot-13",
+      "kind": "video",
+      "fileName": "musk-story-en-shot-13-hyperframes.webm",
+      "url": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/en/hyperframes/musk-story-en-shot-13-hyperframes.webm?sha=a08ecd4ae16833b77e72b03b1995bb7f88320a945ed4793c1f20d36557cdfefb",
+      "fileSize": 308373,
+      "sha256": "a08ecd4ae16833b77e72b03b1995bb7f88320a945ed4793c1f20d36557cdfefb",
+      "posterFileName": "musk-story-en-shot-13-hyperframes-poster.webp",
+      "posterUrl": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/en/hyperframes/musk-story-en-shot-13-hyperframes-poster.webp?sha=53c321eecac5f37730ca64636bb4678278bd31d2527565c4e58bb3b3b982556e",
+      "posterFileSize": 26664,
+      "posterSha256": "53c321eecac5f37730ca64636bb4678278bd31d2527565c4e58bb3b3b982556e"
+    }
+  ]
+}

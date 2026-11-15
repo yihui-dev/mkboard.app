@@ -1,0 +1,178 @@
+---
+import releaseHistoryData from "../data/desktop-release-history.json";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { getLocaleFromRequest } from "../lib/i18n";
+import type { Locale } from "../lib/i18n";
+
+type ReleaseTarget = "production" | "dev";
+type LocalizedText = Record<Locale, string>;
+type ReleaseImage = {
+  src: string;
+  alt?: LocalizedText;
+  caption?: LocalizedText;
+};
+type ReleaseSection = {
+  title: LocalizedText;
+  items: LocalizedText[];
+};
+type ReleaseEntry = {
+  version: string;
+  date: string;
+  title?: LocalizedText;
+  image?: ReleaseImage;
+  sections?: ReleaseSection[];
+  summary: LocalizedText;
+};
+type ReleaseHistory = {
+  updatedAt: string;
+  currentVersions: Partial<Record<ReleaseTarget, string>>;
+  releases: ReleaseEntry[];
+};
+
+const R2_IMAGE_HOSTS = new Set(["assets.mkboard.app", "assets.dev.mkboard.app", "static.mkboard.app"]);
+const R2_IMAGE_QUALITY = "80";
+
+const locale = getLocaleFromRequest(Astro.request, Astro.url);
+const history = releaseHistoryData as ReleaseHistory;
+const webUrl = import.meta.env.PUBLIC_WEB_URL ?? Astro.url.origin;
+const releaseTarget: ReleaseTarget = webUrl.includes("dev.mkboard.app") || Astro.url.hostname.startsWith("dev.") ? "dev" : "production";
+const currentVersion = history.currentVersions[releaseTarget] ?? history.currentVersions.production ?? history.releases[0]?.version ?? "";
+const currentRelease = history.releases.find((release) => release.version === currentVersion) ?? history.releases[0];
+const copyMap = {
+  zh: {
+    title: "更新日志 - MkBoard",
+    description: "查看 MkBoard 桌面端的版本更新记录。",
+    eyebrow: "Changelog",
+    heading: "更新日志",
+    intro: "记录 MkBoard 桌面端每个版本的主要变化。当前页面仅用于查看更新日志信息，不提供历史版本安装包下载。",
+    currentLabel: "当前版本",
+    currentTitle: "当前版本更新",
+    historyLabel: "版本记录",
+    updatedAt: "最后更新"
+  },
+  en: {
+    title: "Changelog - MkBoard",
+    description: "View MkBoard Desktop release notes and version history.",
+    eyebrow: "Changelog",
+    heading: "Changelog",
+    intro: "A concise record of MkBoard Desktop updates. This page is for release history only and does not provide historical installer downloads.",
+    currentLabel: "Current",
+    currentTitle: "Current update",
+    historyLabel: "Releases",
+    updatedAt: "Last updated"
+  }
+} as const;
+
+const copy = copyMap[locale];
+
+function formatDate(date: string) {
+  if (!date) return "";
+  const parsed = new Date(`${date}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime())) return date;
+  return new Intl.DateTimeFormat(locale === "zh" ? "zh-CN" : "en", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC"
+  }).format(parsed);
+}
+
+function withR2ImageQuality(imageUrl: string) {
+  try {
+    const url = new URL(imageUrl);
+    if (!R2_IMAGE_HOSTS.has(url.hostname)) return imageUrl;
+
+    url.searchParams.set("quality", R2_IMAGE_QUALITY);
+    return url.toString();
+  } catch {
+    return imageUrl;
+  }
+}
+
+function releaseTitle(release: ReleaseEntry) {
+  return release.title?.[locale] ?? release.summary[locale];
+}
+
+function imageAlt(image: ReleaseImage) {
+  return image.alt?.[locale] ?? "";
+}
+
+function imageCaption(image: ReleaseImage) {
+  return image.caption?.[locale] ?? "";
+}
+
+function updatedAtDate(date: string) {
+  if (!date) return "";
+  const parsed = new Date(`${date}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime())) return date;
+  return new Intl.DateTimeFormat(locale === "zh" ? "zh-CN" : "en", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC"
+  }).format(parsed);
+}
+
+function shouldShowTitle(release: ReleaseEntry) {
+  return Boolean(release.title?.[locale] && release.title[locale] !== release.summary[locale]);
+}
+
+function releaseListItems(release: ReleaseEntry) {
+  const items = release.sections?.flatMap((section) => section.items ?? []).filter((item) => item?.[locale]) ?? [];
+  if (items.length > 0) return items;
+  return release.summary?.[locale] ? [release.summary] : [];
+}
+
+---
+
+<BaseLayout title={copy.title} description={copy.description}>
+  <section class="changelog-page" aria-labelledby="changelog-heading">
+    <header class="changelog-hero content-panel">
+      <p class="section-badge">{copy.eyebrow}</p>
+      <h1 id="changelog-heading">{copy.heading}</h1>
+      <p>{copy.intro}</p>
+      {currentRelease ? (
+        <div class="changelog-current" aria-label={copy.currentTitle}>
+          <span class="changelog-current-badge">{copy.currentLabel}</span>
+          <strong>v{currentRelease.version}</strong>
+          <ul class="changelog-points changelog-current-points">
+            {releaseListItems(currentRelease).map((item) => <li>{item[locale]}</li>)}
+          </ul>
+        </div>
+      ) : null}
+    </header>
+
+    <div class="changelog-list" aria-label={copy.historyLabel}>
+      {history.releases.map((release) => {
+        const isCurrent = release.version === currentVersion;
+        const image = release.image;
+
+        return (
+          <article class:list={["changelog-item", { "is-current": isCurrent }]}>
+            <div class="changelog-version">
+              {isCurrent ? <span>{copy.currentLabel}</span> : null}
+              <strong>v{release.version}</strong>
+              <time datetime={release.date}>{formatDate(release.date)}</time>
+            </div>
+            <div class="changelog-copy">
+              {shouldShowTitle(release) ? <h2>{releaseTitle(release)}</h2> : null}
+              <ul class="changelog-points">
+                {releaseListItems(release).map((item) => <li>{item[locale]}</li>)}
+              </ul>
+              {image?.src ? (
+                <figure class="changelog-media">
+                  <img src={withR2ImageQuality(image.src)} alt={imageAlt(image)} loading="lazy" decoding="async" />
+                  {imageCaption(image) ? <figcaption>{imageCaption(image)}</figcaption> : null}
+                </figure>
+              ) : null}
+            </div>
+          </article>
+        );
+      })}
+    </div>
+
+    <p class="changelog-updated">
+      {copy.updatedAt}: <time datetime={history.updatedAt}>{updatedAtDate(history.updatedAt)}</time>
+    </p>
+  </section>
+</BaseLayout>

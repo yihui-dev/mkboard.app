@@ -1,0 +1,88 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { getLocaleFromRequest } from "../lib/i18n";
+
+const locale = getLocaleFromRequest(Astro.request, Astro.url);
+const copyMap = {
+  zh: {
+    title: "服务条款 - MkBoard",
+    description: "MkBoard 开源桌面端与文档网站的使用说明。",
+    updated: "最后更新：2026 年 11 月 15 日",
+    heading: "服务条款",
+    intro:
+      "MkBoard 是基于 Apache-2.0 许可证开源的本地优先 AI 分镜工作台，不提供托管云账号、付费订阅或积分充值服务。",
+    sections: [
+      {
+        title: "本地运行与自有密钥（BYOK）",
+        body: [
+          "你的脚本、分镜表与多媒体素材保存在你自己的设备本地目录与 SQLite 数据库中。",
+          "使用第三方 AI 模型（如 OpenAI、Google Gemini、KIE、ElevenLabs 等）时，由你在本机自行配置 API Key 并直接向对应服务商发起请求，请遵守各模型服务商的使用条款。"
+        ]
+      },
+      {
+        title: "你的内容与开源许可",
+        body: [
+          "你完全拥有自己使用 MkBoard 创建或整理的所有脚本、分镜、图片、音视频与工程文件。",
+          "MkBoard 源代码遵循 Apache-2.0 开源许可证发布，完整安装包内置的独立开源视频组件（HyperFrames、Chrome Headless Shell、GPL FFmpeg）遵循各自对应的开源许可证。"
+        ]
+      },
+      {
+        title: "免责声明与责任限制",
+        body: [
+          "MkBoard 按“现状（AS IS）”免费开源提供，不附带任何明示或暗示的商业担保。在法律允许的最大范围内，贡献者不对间接、附带或后果性损害承担责任。"
+        ]
+      }
+    ]
+  },
+  en: {
+    title: "Terms of Service - MkBoard",
+    description: "Terms for the Apache-2.0 open-source MkBoard desktop app and documentation site.",
+    updated: "Last updated: November 15, 2026",
+    heading: "Terms of Service",
+    intro:
+      "MkBoard is an Apache-2.0 open-source, local-first AI storyboard studio. It provides no hosted cloud accounts, paid subscriptions, or credit packs.",
+    sections: [
+      {
+        title: "Local-First & Bring Your Own Key (BYOK)",
+        body: [
+          "Your scripts, storyboards, and media assets stay locally on your own machine inside local project folders and SQLite.",
+          "When using third-party AI providers (such as OpenAI, Google Gemini, KIE, or ElevenLabs), you configure your own API keys locally and connect directly to those providers under their respective terms."
+        ]
+      },
+      {
+        title: "Your Content & Open-Source Licenses",
+        body: [
+          "You retain full ownership of all scripts, storyboards, prompts, images, audio, and videos you create with MkBoard.",
+          "MkBoard source code is licensed under Apache-2.0. Bundled standalone runtime tools (HyperFrames, Chrome Headless Shell, and GPL FFmpeg) are governed by their respective open-source licenses."
+        ]
+      },
+      {
+        title: "Disclaimers & Limitation of Liability",
+        body: [
+          "MkBoard is provided free of charge on an 'AS IS' basis under Apache-2.0 without warranties of any kind. To the maximum extent permitted by law, contributors are not liable for indirect, incidental, or consequential damages."
+        ]
+      }
+    ]
+  }
+} as const;
+
+const copy = copyMap[locale];
+---
+
+<BaseLayout title={copy.title} description={copy.description}>
+  <section class="legal-page content-panel" aria-labelledby="legal-heading">
+    <p class="section-badge">{copy.updated}</p>
+    <h1 id="legal-heading">{copy.heading}</h1>
+    <p class="legal-intro">{copy.intro}</p>
+    <div class="legal-sections">
+      {
+        copy.sections.map((section) => (
+          <section>
+            <h2>{section.title}</h2>
+            {section.body.map((paragraph) => <p>{paragraph}</p>)}
+          </section>
+        ))
+      }
+    </div>
+  </section>
+</BaseLayout>

@@ -1,0 +1,9 @@
+{
+  "name": "mkboard-bundled-hyperframes-runtime",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Reproducible dependency lock for the MkBoard bundled HyperFrames runtime.",
+  "dependencies": {
+    "hyperframes": "0.7.48"
+  }
+}

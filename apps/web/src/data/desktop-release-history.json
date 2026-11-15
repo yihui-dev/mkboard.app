@@ -1,0 +1,851 @@
+{
+  "updatedAt": "2026-11-15",
+  "currentVersions": {
+    "production": "0.3.0",
+    "dev": "0.3.0"
+  },
+  "releases": [
+    {
+      "version": "0.3.0",
+      "date": "2026-11-15",
+      "title": {
+        "zh": "全面开源（Apache-2.0）：本地 BYOK 直连、多端 Web/手机协同与动态媒体项目卡片",
+        "en": "Open-Source Release (Apache-2.0): Local BYOK, Web/Mobile Companion & Dynamic Project Cards"
+      },
+      "summary": {
+        "zh": "MkBoard 正式在 GitHub 开源！移除所有云端账号与积分付费限制，全面升级为 100% 本地优先 BYOK 架构、多 Agent 协同、Web/手机扫码访问与动态封面卡片。",
+        "en": "MkBoard is now open-source on GitHub! Removed all cloud accounts and credit paywalls in favor of 100% local BYOK generation, multi-agent CLI & HTTP MCP, Web/Mobile Companion, and dynamic media project cards."
+      },
+      "sections": [
+        {
+          "title": {
+            "zh": "重大升级",
+            "en": "Highlights"
+          },
+          "items": [
+            {
+              "zh": "100% 本地 BYOK 直连生图、生视频与配音（OpenAI / Gemini / KIE / ElevenLabs），零云端抽成、零项目数量限制",
+              "en": "100% local BYOK image, video & speech generation (OpenAI / Gemini / KIE / ElevenLabs) with zero cloud fees or project limits"
+            },
+            {
+              "zh": "全新工作台 UI 与动态媒体项目卡片：自动展示首个 B-Roll 分镜图或视频首帧（悬停静音预览）",
+              "en": "Redesigned Studio UI and dynamic media project cards showing the first B-Roll shot image or video first frame with hover preview"
+            },
+            {
+              "zh": "内置 Web / 手机 Companion 服务（局域网二维码扫码即开）与多 Agent 注册表（Codex / Claude / Gemini / OpenCode + Streamable HTTP /mcp）",
+              "en": "Built-in Web/Mobile Companion server with LAN QR pairing, extensible CLI Agent Registry, and Streamable HTTP /mcp"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "0.2.9",
+      "date": "2026-11-08",
+      "title": {
+        "zh": "从外部 Agent 完成分镜全流程",
+        "en": "Complete the storyboard workflow from external agents"
+      },
+      "summary": {
+        "zh": "Claude Code 与 Codex 现在可以管理项目、分镜列和素材，生成配音，并通过 MkBoard 云端生成图片和视频。",
+        "en": "Claude Code and Codex can manage projects, storyboard columns and assets, generate voiceovers, and run image and video generation through MkBoard."
+      },
+      "sections": [
+        {
+          "title": {
+            "zh": "更新",
+            "en": "Updates"
+          },
+          "items": [
+            {
+              "zh": "支持重命名、归档、回收站恢复和导出项目，以及自定义分镜列与素材管理",
+              "en": "Rename, archive, restore and export projects, customize storyboard columns, and manage assets"
+            },
+            {
+              "zh": "支持查询 ElevenLabs 音色并生成整稿或逐镜配音",
+              "en": "List ElevenLabs voices and generate voiceover for scripts or individual shots"
+            },
+            {
+              "zh": "支持云端生图、生视频及生成前积分预估，可查询进度和停止视频生成",
+              "en": "Generate images and videos through the cloud with credit estimates, progress tracking and video cancellation"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "0.2.8",
+      "date": "2026-10-03",
+      "title": {
+        "zh": "外部 Agent 可新建项目和拆分镜",
+        "en": "External agents can create projects and split shots"
+      },
+      "summary": {
+        "zh": "Claude Code 与 Codex 现在可以新建 MkBoard 项目，并直接拆分镜或触发 MkBoard 的 AI 解析分镜；同时修复正式版连接不上外部 Agent 的问题。",
+        "en": "Claude Code and Codex can now create MkBoard projects and split scripts into shots, either themselves or with MkBoard's AI storyboard split. The release app also connects to external agents reliably again."
+      },
+      "sections": [
+        {
+          "title": {
+            "zh": "更新",
+            "en": "Updates"
+          },
+          "items": [
+            {
+              "zh": "外部 Agent 可以新建项目（可选模板、画幅和初始脚本），免费版项目数量限制照常生效",
+              "en": "External agents can create projects with an optional template, aspect ratio and starting script; the free plan project limit still applies"
+            },
+            {
+              "zh": "外部 Agent 可以读取项目的拆分镜规则自己拆分镜，也可以触发 MkBoard 的 AI 解析分镜，进度显示在侧边栏",
+              "en": "External agents can split shots themselves using the project's storyboard rules, or start MkBoard's AI storyboard split with progress in the sidebar"
+            },
+            {
+              "zh": "修复在同一台电脑上用过开发版后，正式版不再注册到 Claude Code 与 Codex 的问题",
+              "en": "Fixed the release app not registering with Claude Code and Codex on computers that had also run a development build"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "0.2.7",
+      "date": "2026-09-26",
+      "title": {
+        "zh": "在 Claude Code 与 Codex 中操作 MkBoard",
+        "en": "Work on MkBoard from Claude Code and Codex"
+      },
+      "summary": {
+        "zh": "MkBoard 可以连接本机 Claude Code 与 Codex，直接读写脚本、分镜和画面素材；同时修复配音重复生成，并支持把文件拖进分镜画面。",
+        "en": "MkBoard now connects to Claude Code and Codex on your computer so they can edit scripts, shots and frames directly. Voiceover no longer regenerates after switching tabs, and files can be dropped onto storyboard frames."
+      },
+      "sections": [
+        {
+          "title": {
+            "zh": "更新",
+            "en": "Updates"
+          },
+          "items": [
+            {
+              "zh": "新增外部 Agent 连接：自动为本机 Claude Code 与 Codex 注册 MkBoard 工具和分镜 skill，可读写脚本、拆分镜、修改单元格并导入画面，窗口实时刷新",
+              "en": "Added external agent connections: MkBoard registers its tools and storyboard skill with Claude Code and Codex, which can edit scripts, split shots, update cells and import frames with live window updates"
+            },
+            {
+              "zh": "外部 Agent 生成的画面按用户自己的 skill 决定风格，不套用项目视频风格；可在设置中连接或断开",
+              "en": "Frames made by external agents follow the user's own skills instead of the project style; connections can be turned on or off in Settings"
+            },
+            {
+              "zh": "修复切换页面后配音状态丢失的问题，同一段文本不会重复请求 ElevenLabs",
+              "en": "Fixed lost voiceover state after switching tabs; the same text is no longer requested from ElevenLabs twice"
+            },
+            {
+              "zh": "支持把文件从 Finder 直接拖进分镜画面格",
+              "en": "Files can now be dropped from Finder onto a storyboard frame cell"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "0.2.6",
+      "date": "2026-08-18",
+      "title": {
+        "zh": "ElevenLabs 配音与分镜演示",
+        "en": "ElevenLabs voiceover and storyboard playback"
+      },
+      "summary": {
+        "zh": "新增逐字稿朗读、分镜逐镜配音与自动演示，并通过 MkBoard 后端安全连接用户自己的 ElevenLabs 账号。",
+        "en": "Added script reading, shot-by-shot narration, and automatic storyboard playback through a secure MkBoard connection to each user's ElevenLabs account."
+      },
+      "sections": [
+        {
+          "title": {
+            "zh": "更新",
+            "en": "Updates"
+          },
+          "items": [
+            {
+              "zh": "新增 ElevenLabs 配音设置，可校验 API Key、浏览个人与内置音色并设置默认音色",
+              "en": "Added ElevenLabs voice settings for API key validation, personal and built-in voice browsing, and default voice selection"
+            },
+            {
+              "zh": "逐字稿支持悬浮朗读控制，并显示实际朗读时长",
+              "en": "Added floating script reading controls with actual spoken duration"
+            },
+            {
+              "zh": "分镜演示支持逐镜朗读、自动播放和 1x 至 2x 播放倍速",
+              "en": "Added shot narration, automatic playback, and 1x to 2x playback speed controls to storyboard presentation"
+            },
+            {
+              "zh": "ElevenLabs API Key 由已认证的 MkBoard API 加密保存与代理调用，不写入桌面客户端配置或安装包",
+              "en": "ElevenLabs API keys are encrypted and proxied by the authenticated MkBoard API instead of being stored in desktop settings or installers"
+            },
+            {
+              "zh": "优化 Agent 思考过程与桌面界面细节，并同步结构化输出契约测试",
+              "en": "Refined Agent reasoning and desktop interface details and synchronized structured-output contract tests"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "0.2.5",
+      "date": "2026-07-23",
+      "title": {
+        "zh": "Seedance 多比例生成与结果校验",
+        "en": "Seedance aspect ratios and output validation"
+      },
+      "summary": {
+        "zh": "修复 Seedance 与即梦 CLI 视频比例未跟随项目设置的问题，并支持用户明确指定视频比例及生成结果校验。",
+        "en": "Fixed Seedance and Dreamina CLI videos not following project aspect ratios, with explicit ratio overrides and output validation."
+      },
+      "sections": [
+        {
+          "title": {
+            "zh": "更新",
+            "en": "Updates"
+          },
+          "items": [
+            {
+              "zh": "Seedance API 与普通分镜视频生成默认使用当前项目比例，不再回落到横屏默认值",
+              "en": "Seedance API and standard storyboard video generation now default to the current project ratio instead of a landscape fallback"
+            },
+            {
+              "zh": "Agent 中明确指定 1:1、4:3、3:4、16:9、9:16 或 21:9 时，可覆盖项目比例",
+              "en": "Explicit 1:1, 4:3, 3:4, 16:9, 9:16, or 21:9 requests in Agent conversations can override the project ratio"
+            },
+            {
+              "zh": "即梦 CLI 视频命令会强制传入选定比例，并在导入前校验实际视频宽高比",
+              "en": "Dreamina CLI video commands now require the selected ratio and verify the actual video aspect ratio before import"
+            },
+            {
+              "zh": "Codex CLI 与 Claude Code 使用一致的项目比例、确认卡片和视频生成规则",
+              "en": "Codex CLI and Claude Code now share the same project-ratio context, confirmation details, and video-generation rules"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "0.2.4",
+      "date": "2026-07-21",
+      "title": {
+        "zh": "应用内更新、本地额度与预览优化",
+        "en": "In-app updates, local quotas, and preview improvements"
+      },
+      "summary": {
+        "zh": "新增桌面端应用内一键更新，并优化本地项目额度、项目比例、Agent 确认和竖版素材预览。",
+        "en": "Added one-click in-app desktop updates and improved local project quotas, project ratios, Agent confirmations, and portrait media previews."
+      },
+      "sections": [
+        {
+          "title": {
+            "zh": "更新",
+            "en": "Updates"
+          },
+          "items": [
+            {
+              "zh": "新增 Windows 与 macOS 应用内一键更新，支持下载进度、完整性校验和自动重启安装",
+              "en": "Added one-click in-app updates for Windows and macOS with download progress, integrity verification, and automatic restart installation"
+            },
+            {
+              "zh": "项目创建后会保存画面比例，重新打开项目时继续使用原来的比例",
+              "en": "Saved each project's aspect ratio so it is restored when the project is reopened"
+            },
+            {
+              "zh": "确认视频生成后，Agent 确认卡片会立即显示“已确认”，不再持续停留在执行中",
+              "en": "Updated the Agent confirmation card to show Confirmed immediately after approving video generation instead of remaining in a loading state"
+            },
+            {
+              "zh": "优化竖版图片和视频的完整预览、尺寸标签与 A-roll/B-roll 信息布局",
+              "en": "Improved full portrait media previews, dimension labels, and A-roll/B-roll metadata layout"
+            },
+            {
+              "zh": "修复本地优先项目额度判断：归档和回收站项目计入额度，云端同步记录不再造成误报",
+              "en": "Fixed local-first project quotas so archived and trashed projects count while cloud sync records no longer cause false limit warnings"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "0.2.3",
+      "date": "2026-07-18",
+      "title": {
+        "zh": "分镜模板与交互体验升级",
+        "en": "Storyboard templates and interaction improvements"
+      },
+      "sections": [
+        {
+          "title": {
+            "zh": "更新",
+            "en": "Updates"
+          },
+          "items": [
+            {
+              "zh": "重构分镜模板管理与创建流程，支持全部、官方和我的分类，以及模板复制和默认模板切换",
+              "en": "Reworked storyboard template management and creation with All, Official, and Mine categories, template duplication, and default-template switching"
+            },
+            {
+              "zh": "支持直接编辑分镜列名和列类型，并统一模板卡片、预览、创建流程和页面层级样式",
+              "en": "Added direct editing for storyboard column names and types, with consistent template cards, previews, creation steps, and page hierarchy"
+            },
+            {
+              "zh": "统一删除、恢复和生成确认弹框的 HeroUI 交互，并优化创建与设置项目中的项目类型和分镜模板选择器",
+              "en": "Unified delete, restore, and generation confirmation dialogs with HeroUI and refined project-type and storyboard-template selectors in project creation and settings"
+            },
+            {
+              "zh": "增强桌面端登录启动兼容性与积分流水缓存，减少登录回调和账户记录刷新异常",
+              "en": "Improved desktop sign-in launch compatibility and credit-ledger caching to reduce callback and account-history refresh failures"
+            }
+          ]
+        }
+      ],
+      "summary": {
+        "zh": "升级分镜模板的管理、创建和编辑体验，统一弹框与项目选择器，并增强登录和积分记录稳定性。",
+        "en": "Improved storyboard template management, creation, and editing, unified dialogs and project selectors, and strengthened sign-in and credit-history reliability."
+      }
+    },
+    {
+      "version": "0.2.2",
+      "date": "2026-07-17",
+      "title": {
+        "zh": "项目导出与生成任务隔离",
+        "en": "Project export and generation isolation"
+      },
+      "sections": [
+        {
+          "title": {
+            "zh": "更新",
+            "en": "Updates"
+          },
+          "items": [
+            {
+              "zh": "新增分镜 CSV 和项目素材 ZIP 导出，并完善导出失败提示",
+              "en": "Added storyboard CSV and project asset ZIP exports with clearer failure handling"
+            },
+            {
+              "zh": "修复切换项目后，旧项目的分镜解析、生图或生视频结果可能覆盖当前项目的问题",
+              "en": "Prevented storyboard parsing, image, and video results from an earlier project from overwriting the currently open project"
+            },
+            {
+              "zh": "支持高级会员在 Agent 对话中明确指定即梦 CLI 生成，并增强任务恢复和进度显示",
+              "en": "Added member-gated Dreamina CLI generation through Agent conversations with improved recovery and progress visibility"
+            },
+            {
+              "zh": "加强项目永久删除时的云端素材隔离，避免触碰其他项目或公共资源",
+              "en": "Hardened cloud asset isolation during permanent project deletion to protect other projects and public resources"
+            },
+            {
+              "zh": "修复重新打开项目后未恢复正在进行的分镜解析状态，避免重复启动生成任务",
+              "en": "Restored active storyboard parsing state after reopening a project to prevent duplicate generation tasks"
+            },
+            {
+              "zh": "优化 Codex 分镜解析的思考过程展示，支持输出详细推理摘要",
+              "en": "Improved Codex storyboard analysis visibility with detailed reasoning summaries"
+            }
+          ]
+        },
+        {
+          "title": {
+            "zh": "本次重发",
+            "en": "This reissue"
+          },
+          "items": [
+            {
+              "zh": "优化 Agent 思考过程的布局和 Markdown 渲染，并修复分镜图生成被误判为视频确认的问题",
+              "en": "Polished Agent thinking layout and Markdown rendering, and fixed storyboard image generation being misclassified as video confirmation"
+            }
+          ]
+        }
+      ],
+      "summary": {
+        "zh": "新增项目导出能力，修复分镜生成任务恢复与跨项目覆盖问题，并提升 Agent 生成过程的可见性。",
+        "en": "Added project exports, fixed storyboard task recovery and cross-project overwrites, and improved Agent generation visibility."
+      }
+    },
+    {
+      "version": "0.2.1",
+      "date": "2026-07-14",
+      "title": {
+        "zh": "HyperFrames 离线渲染与 Agent 稳定性",
+        "en": "HyperFrames offline rendering and Agent reliability"
+      },
+      "sections": [
+        {
+          "title": {
+            "zh": "更新",
+            "en": "Updates"
+          },
+          "items": [
+            {
+              "zh": "HyperFrames 项目改为完全离线、自包含渲染，避免远程脚本影响生成结果",
+              "en": "Made HyperFrames projects fully offline and self-contained to prevent remote scripts from disrupting renders"
+            },
+            {
+              "zh": "修复流程支持只返回实际修改的文件，并保留项目中其他有效内容",
+              "en": "Repair runs can now return only changed files while preserving the rest of the valid project"
+            },
+            {
+              "zh": "增强 Codex CLI 与 Claude Code 的结构化结果恢复和错误处理一致性",
+              "en": "Improved structured-result recovery and error-handling parity across Codex CLI and Claude Code"
+            },
+            {
+              "zh": "修复 Windows 开发启动路径和登录回调注册的兼容性问题",
+              "en": "Fixed Windows development launch paths and login callback registration compatibility"
+            }
+          ]
+        }
+      ],
+      "summary": {
+        "zh": "提升 HyperFrames 离线生成、项目修复和双 Agent 执行的稳定性，并改善 Windows 桌面体验。",
+        "en": "Improved HyperFrames offline generation, project repair, dual-Agent reliability, and the Windows desktop experience."
+      }
+    },
+    {
+      "version": "0.1.23",
+      "date": "2026-07-14",
+      "title": {
+        "zh": "Windows x64 测试版与内置运行时",
+        "en": "Windows x64 testing and bundled runtime"
+      },
+      "sections": [
+        {
+          "title": {
+            "zh": "更新",
+            "en": "Updates"
+          },
+          "items": [
+            {
+              "zh": "新增 Windows 10/11 x64 安装包，方便在 DEV 环境测试完整桌面流程",
+              "en": "Added a Windows 10/11 x64 installer for testing the complete desktop flow in DEV"
+            },
+            {
+              "zh": "安装包内置 HyperFrames、Node.js、Chrome 和 FFmpeg 运行时，不依赖系统预装工具",
+              "en": "Bundled HyperFrames, Node.js, Chrome, and FFmpeg so system-installed tools are not required"
+            },
+            {
+              "zh": "Windows 测试包当前未签名，安装时可能出现“未知发布者”或 SmartScreen 提示",
+              "en": "The Windows test build is currently unsigned and may show Unknown Publisher or SmartScreen prompts during installation"
+            }
+          ]
+        },
+        {
+          "title": {
+            "zh": "本次重新构建",
+            "en": "This rebuild"
+          },
+          "items": [
+            {
+              "zh": "生成结果传输失败后可重试恢复，不会重复生成或重复扣费",
+              "en": "Added delivery recovery for generated media without regenerating or charging again"
+            },
+            {
+              "zh": "完善项目与分镜操作的进行中状态，并修复空白单元格和文本粘贴体验",
+              "en": "Improved pending states for project and storyboard actions, blank cells, and text pasting"
+            },
+            {
+              "zh": "增强 Codex CLI 与 Claude Code 的会话恢复和 Agent 操作一致性",
+              "en": "Improved session recovery and Agent operation parity across Codex CLI and Claude Code"
+            }
+          ]
+        }
+      ],
+      "summary": {
+        "zh": "新增 Windows x64 测试安装包，并将视频生成所需运行时完整内置到桌面端。",
+        "en": "Added a Windows x64 test installer with the complete video-generation runtime bundled into the desktop app."
+      }
+    },
+    {
+      "version": "0.1.22",
+      "date": "2026-07-09",
+      "title": {
+        "zh": "分镜图片生成稳定性优化",
+        "en": "Storyboard image generation reliability"
+      },
+      "sections": [
+        {
+          "title": {
+            "zh": "更新",
+            "en": "Updates"
+          },
+          "items": [
+            {
+              "zh": "图片生成遇到临时网络超时时会继续等待结果",
+              "en": "Image generation keeps waiting when temporary network timeouts happen"
+            },
+            {
+              "zh": "长时间生成的分镜批次更不容易被过早标记失败",
+              "en": "Longer storyboard batches are less likely to be marked failed too early"
+            },
+            {
+              "zh": "云端图片生成提交和同步过程更稳定",
+              "en": "Cloud image submission and sync are more resilient"
+            }
+          ]
+        }
+      ],
+      "summary": {
+        "zh": "优化分镜图片生成的等待和重试体验，减少临时网络波动导致的误失败。",
+        "en": "Improved storyboard image generation waiting and retry behavior to reduce false failures from temporary network issues."
+      }
+    },
+    {
+      "version": "0.1.21",
+      "date": "2026-07-08",
+      "title": {
+        "zh": "HyperFrames 并发和分镜输入优化",
+        "en": "HyperFrames concurrency and storyboard input polish"
+      },
+      "sections": [
+        {
+          "title": {
+            "zh": "更新",
+            "en": "Updates"
+          },
+          "items": [
+            {
+              "zh": "可以在设置里调整 HyperFrames 默认视频生成并发",
+              "en": "Set the default HyperFrames video generation concurrency in settings"
+            },
+            {
+              "zh": "分镜单元格的空白提示、粘贴和换行输入更自然",
+              "en": "Storyboard cell placeholders, paste handling, and line breaks feel cleaner"
+            },
+            {
+              "zh": "A-ROLL 示例和生成中素材可以在同一画面格里一起显示",
+              "en": "A-roll samples and generating media can appear together in the same frame cell"
+            },
+            {
+              "zh": "同一素材可以复用到多个分镜，整理参考图更灵活",
+              "en": "Reuse the same asset across multiple shots for more flexible reference management"
+            }
+          ]
+        }
+      ],
+      "summary": {
+        "zh": "优化 HyperFrames 视频生成并发设置、分镜输入占位和素材复用体验。",
+        "en": "Improved HyperFrames video concurrency controls, storyboard input placeholders, and asset reuse."
+      }
+    },
+    {
+      "version": "0.1.20",
+      "date": "2026-07-04",
+      "title": {
+        "zh": "生成中继续编辑分镜",
+        "en": "Storyboard editing during generation"
+      },
+      "sections": [
+        {
+          "title": {
+            "zh": "更新",
+            "en": "Updates"
+          },
+          "items": [
+            {
+              "zh": "图片和视频生成时也可以继续插入、复制和整理分镜",
+              "en": "Insert, duplicate, and organize shots while image or video generation is running"
+            },
+            {
+              "zh": "缺失的图片和视频提示词会在生成前自动补齐",
+              "en": "Missing image and video prompts are filled automatically before generation"
+            },
+            {
+              "zh": "正在生成的分镜仍会避免重复提交和误删",
+              "en": "Generating shots remain protected from duplicate submission and accidental deletion"
+            }
+          ]
+        }
+      ],
+      "summary": {
+        "zh": "优化分镜生成期间的编辑体验，生成任务不中断，非危险操作可继续进行。",
+        "en": "Improved storyboard editing during generation so safe operations can continue without interrupting running tasks."
+      }
+    },
+    {
+      "version": "0.1.19",
+      "date": "2026-07-03",
+      "title": {
+        "zh": "分镜生成批次优化",
+        "en": "Storyboard generation batch handling"
+      },
+      "sections": [
+        {
+          "title": {
+            "zh": "更新",
+            "en": "Updates"
+          },
+          "items": [
+            {
+              "zh": "图片和视频生成可以更稳定地分批提交",
+              "en": "Image and video generation can be submitted in batches more reliably"
+            },
+            {
+              "zh": "正在生成的分镜行不会被新的选择批次打断",
+              "en": "Rows already generating are no longer interrupted by a new selection batch"
+            }
+          ]
+        }
+      ],
+      "summary": {
+        "zh": "优化分镜图片和视频生成的批次处理，减少重复提交和任务互相打断。",
+        "en": "Improved storyboard image and video batch handling to reduce duplicate submissions and interrupted tasks."
+      }
+    },
+    {
+      "version": "0.1.18",
+      "date": "2026-07-01",
+      "title": {
+        "zh": "更新提示按钮优化",
+        "en": "Update prompt button polish"
+      },
+      "sections": [
+        {
+          "title": {
+            "zh": "更新",
+            "en": "Updates"
+          },
+          "items": [
+            {
+              "zh": "更新弹框按钮更清楚",
+              "en": "Clearer update dialog buttons"
+            },
+            {
+              "zh": "按钮图标和文字对齐更稳定",
+              "en": "More stable icon and label alignment"
+            }
+          ]
+        }
+      ],
+      "summary": {
+        "zh": "优化更新弹框按钮尺寸、间距和图标文字对齐，更新操作更容易识别。",
+        "en": "Improved update dialog button size, spacing, and icon-label alignment for clearer update actions."
+      }
+    },
+    {
+      "version": "0.1.17",
+      "date": "2026-07-01",
+      "title": {
+        "zh": "HyperFrames 本机视频生成修复",
+        "en": "HyperFrames local video generation fixes"
+      },
+      "sections": [
+        {
+          "title": {
+            "zh": "更新",
+            "en": "Updates"
+          },
+          "items": [
+            {
+              "zh": "Claude Code 生成 HyperFrames 视频不再卡住等待",
+              "en": "Claude Code no longer hangs while generating HyperFrames videos"
+            },
+            {
+              "zh": "HyperFrames 生成进度会显示连接和生成错误",
+              "en": "HyperFrames progress now surfaces connection and generation errors"
+            },
+            {
+              "zh": "生成任务弹窗的本机视频状态更清楚",
+              "en": "Local video status is clearer in the generation task dialog"
+            }
+          ]
+        }
+      ],
+      "summary": {
+        "zh": "修复 Claude Code 生成 HyperFrames 视频卡住的问题，并让本机视频生成进度和错误提示更清楚。",
+        "en": "Fixed Claude Code hangs during HyperFrames video generation and made local video progress and errors clearer."
+      }
+    },
+    {
+      "version": "0.1.16",
+      "date": "2026-06-30",
+      "title": {
+        "zh": "本机 Agent 与引导修复",
+        "en": "Local Agent and onboarding fixes"
+      },
+      "sections": [
+        {
+          "title": {
+            "zh": "更新",
+            "en": "Updates"
+          },
+          "items": [
+            {
+              "zh": "Codex CLI 对话启动更稳定",
+              "en": "More reliable Codex CLI chat startup"
+            },
+            {
+              "zh": "本机 CLI 设置不会选中未安装工具",
+              "en": "Local CLI settings no longer select missing tools"
+            },
+            {
+              "zh": "HyperFrames 检查提示更清楚",
+              "en": "Clearer HyperFrames check messages"
+            },
+            {
+              "zh": "每日积分领取失败会恢复并提示",
+              "en": "Daily credit claim failures now recover with a message"
+            },
+            {
+              "zh": "新手引导和文件访问流程更顺畅",
+              "en": "Smoother onboarding and file access flow"
+            }
+          ]
+        }
+      ],
+      "summary": {
+        "zh": "修复 Codex CLI 对话启动、本机 CLI 选择、HyperFrames 检查、每日积分领取和新手引导相关问题。",
+        "en": "Fixed Codex CLI chat startup, local CLI selection, HyperFrames checks, daily credit claims, and onboarding issues."
+      }
+    },
+    {
+      "version": "0.1.15",
+      "date": "2026-06-24",
+      "title": {
+        "zh": "下载与版本检测同步",
+        "en": "Download and version checks"
+      },
+      "sections": [
+        {
+          "title": {
+            "zh": "更新",
+            "en": "Updates"
+          },
+          "items": [
+            {
+              "zh": "下载地址同步",
+              "en": "Synced installer links"
+            },
+            {
+              "zh": "升级提示一致",
+              "en": "Aligned upgrade prompts"
+            }
+          ]
+        }
+      ],
+      "summary": {
+        "zh": "更新了桌面端下载与版本检测信息，安装包地址和升级提示保持一致。",
+        "en": "Updated desktop download and version checks so installer links and upgrade prompts stay aligned."
+      }
+    },
+    {
+      "version": "0.1.11",
+      "date": "2026-06-22",
+      "title": {
+        "zh": "Agent 输出与状态反馈优化",
+        "en": "Agent output and status feedback"
+      },
+      "sections": [
+        {
+          "title": {
+            "zh": "更新",
+            "en": "Updates"
+          },
+          "items": [
+            {
+              "zh": "Agent 输出更清晰",
+              "en": "Clearer Agent output"
+            },
+            {
+              "zh": "进度状态更准确",
+              "en": "More accurate progress states"
+            }
+          ]
+        }
+      ],
+      "summary": {
+        "zh": "优化了 Agent 输出和桌面端状态反馈，分镜创作时更容易看清当前进度。",
+        "en": "Improved Agent output and desktop status feedback so storyboard work is easier to follow."
+      }
+    },
+    {
+      "version": "0.1.8",
+      "date": "2026-06-21",
+      "title": {
+        "zh": "安装引导优化",
+        "en": "Installation guidance"
+      },
+      "sections": [
+        {
+          "title": {
+            "zh": "更新",
+            "en": "Updates"
+          },
+          "items": [
+            {
+              "zh": "安装指引更完整",
+              "en": "Improved install guidance"
+            },
+            {
+              "zh": "下载说明更清楚",
+              "en": "Clearer download copy"
+            }
+          ]
+        }
+      ],
+      "summary": {
+        "zh": "完善了安装引导和下载说明，新用户能更快完成客户端安装。",
+        "en": "Improved installation guidance and download copy so new users can get set up faster."
+      }
+    },
+    {
+      "version": "0.1.2",
+      "date": "2026-06-18",
+      "title": {
+        "zh": "账号权益与下载入口调整",
+        "en": "Account access and download messaging"
+      },
+      "sections": [
+        {
+          "title": {
+            "zh": "更新",
+            "en": "Updates"
+          },
+          "items": [
+            {
+              "zh": "免费项目规则调整",
+              "en": "Updated free-project limits"
+            },
+            {
+              "zh": "下载入口说明优化",
+              "en": "Clearer download entry copy"
+            }
+          ]
+        }
+      ],
+      "summary": {
+        "zh": "调整了免费项目规则和下载页说明，账号权益与客户端入口更清晰。",
+        "en": "Refined free-project limits and download messaging so account access is clearer."
+      }
+    },
+    {
+      "version": "0.1.1",
+      "date": "2026-06-17",
+      "title": {
+        "zh": "首个桌面端公开版本",
+        "en": "First public desktop build"
+      },
+      "sections": [
+        {
+          "title": {
+            "zh": "更新",
+            "en": "Updates"
+          },
+          "items": [
+            {
+              "zh": "首个桌面端公开版本",
+              "en": "First public desktop build"
+            },
+            {
+              "zh": "开放 Apple 芯片 Mac 安装包",
+              "en": "Apple silicon Mac installer"
+            }
+          ]
+        }
+      ],
+      "summary": {
+        "zh": "首个桌面端公开版本，开放 Apple 芯片 Mac 安装体验。",
+        "en": "First public desktop build, with the Apple silicon Mac installer available."
+      }
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Long script icon illustration</title>
+  <desc id="desc">A Notion-style line icon showing a long script being turned into storyboard cards.</desc>
+  <defs>
+    <pattern id="dots" width="10" height="10" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.3" fill="#111111" opacity="0.32" />
+    </pattern>
+  </defs>
+  <rect width="512" height="512" rx="64" fill="#faf7ed" />
+  <path d="M137 88h208c22 0 40 18 40 40v210c0 22-18 40-40 40H137c-22 0-40-18-40-40V128c0-22 18-40 40-40Z" fill="#ffffff" stroke="#111111" stroke-width="12" />
+  <path d="M122 132h238" stroke="#111111" stroke-width="8" stroke-linecap="round" />
+  <circle cx="144" cy="111" r="6" fill="#111111" />
+  <circle cx="168" cy="111" r="6" fill="#111111" />
+  <circle cx="192" cy="111" r="6" fill="#111111" />
+  <path d="M146 162h116M146 193h88M146 224h108M146 255h72" stroke="#111111" stroke-width="8" stroke-linecap="round" />
+  <path d="M287 165h44v44h-44zM287 237h44v44h-44zM203 306h128" stroke="#111111" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+  <path d="M201 302h-58c-34 0-56 26-48 57 10 42 55 64 96 44 24-12 35-35 26-57l-16-44Z" fill="#ffffff" stroke="#111111" stroke-width="12" stroke-linejoin="round" />
+  <path d="M125 335c22 12 50 12 76 0" stroke="#f5b400" stroke-width="18" stroke-linecap="round" />
+  <path d="M214 332h102c17 0 31 14 31 31s-14 31-31 31H171" fill="none" stroke="#111111" stroke-width="12" stroke-linecap="round" />
+  <path d="M224 331h112v63H204c26-14 31-38 20-63Z" fill="url(#dots)" opacity="0.9" />
+  <path d="M288 164h43v45h-43zM288 238h43v43h-43z" fill="#ffd94a" opacity="0.9" />
+  <path d="M287 165h44v44h-44zM287 237h44v44h-44z" stroke="#111111" stroke-width="8" stroke-linejoin="round" fill="none" />
+  <path d="M360 102c28 6 48 30 48 59M87 383c-15-24-18-53-8-79" stroke="#111111" stroke-width="8" stroke-linecap="round" stroke-dasharray="1 18" />
+</svg>

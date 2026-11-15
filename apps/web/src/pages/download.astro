@@ -1,0 +1,22 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import DownloadContent from "../components/DownloadContent.astro";
+import { getLocaleFromRequest } from "../lib/i18n";
+
+const locale = getLocaleFromRequest(Astro.request, Astro.url);
+const windowsAvailable = true;
+const meta = {
+  zh: {
+    title: "下载 MkBoard 桌面端",
+    description: windowsAvailable ? "下载 MkBoard Apple 芯片 Mac 或 Windows 10/11 x64 客户端，在桌面上整理脚本、镜头和分镜素材。" : "下载 MkBoard Apple 芯片（M 系列）Mac 客户端，在桌面上整理脚本、镜头和分镜素材。Windows 版 Coming Soon，当前暂不开放下载。"
+  },
+  en: {
+    title: "Download MkBoard Desktop",
+    description: windowsAvailable ? "Download MkBoard for Apple silicon Mac or Windows 10/11 x64 to organize scripts, shots, and storyboard assets." : "Download MkBoard for Apple silicon Macs to organize scripts, shots, and storyboard assets. Windows is coming soon and is not available for download yet."
+  }
+}[locale];
+---
+
+<BaseLayout title={meta.title} description={meta.description}>
+  <DownloadContent locale={locale} variant="page" />
+</BaseLayout>

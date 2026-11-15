@@ -1,0 +1,17 @@
+#!/bin/sh
+
+set -eu
+
+macos_major="$(/usr/bin/sw_vers -productVersion | /usr/bin/cut -d. -f1)"
+if [ "$macos_major" -ge 26 ] && [ "${1:-}" = "--file-system" ]; then
+  case "${2:-}" in
+    /Volumes/MkBoard\ *)
+      # dmgbuild 1.2.5 blocks indefinitely in this syscall on macOS 26.
+      # hdiutil detach still performs the volume flush; release verification
+      # mounts and validates the resulting image before it can be published.
+      exit 0
+      ;;
+  esac
+fi
+
+exec /bin/sync "$@"

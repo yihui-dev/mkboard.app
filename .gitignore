@@ -1,0 +1,68 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output and framework caches
+dist/
+build/
+out/
+.astro/
+.vite/
+.turbo/
+.cache/
+.next/
+.output/
+.vercel/
+.netlify/
+*.tsbuildinfo
+
+# Test and coverage output
+coverage/
+playwright-report/
+test-results/
+blob-report/
+apps/desktop/src/main/generated-runtime-defaults.ts
+apps/desktop/runtime/current/
+apps/desktop/runtime/.work/
+
+# Local environment files
+.env
+.env.*
+!.env.example
+!.env.*.example
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+!.dev.vars.*.example
+.wrangler/
+
+# Local environment overrides
+crts/
+*.p8
+*.pfx
+*.p12
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS and editor metadata
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Local automation/browser state
+.playwright-mcp/
+
+
+manuarora700-playful-template-aceternity-63670b3899e9268b4dc9320888913792cc5c64ed
+
+apps/desktop/release/

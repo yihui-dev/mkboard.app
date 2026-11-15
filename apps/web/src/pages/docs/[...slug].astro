@@ -1,0 +1,249 @@
+---
+import { getCollection, render } from "astro:content";
+import type { CollectionEntry } from "astro:content";
+import { BookOpen, Download, PlayCircle } from "lucide-react";
+import DownloadContent from "../../components/DownloadContent.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import {
+  getDocsNavigation,
+  type DocsContentSlug
+} from "../../lib/docs-source";
+import { getLocaleFromRequest, localizePath, type Locale } from "../../lib/i18n";
+
+type Props = {
+  slug?: string;
+};
+
+const locale = getLocaleFromRequest(Astro.request, Astro.url);
+const { slug: rawSlug = "" } = Astro.params as Props;
+const normalizedSlug = rawSlug.replace(/\/+$/u, "");
+
+if (normalizedSlug === "local-cli") {
+  return Astro.redirect(localizePath("/docs/install", locale), 301);
+}
+
+if (normalizedSlug === "intro") {
+  return Astro.redirect(localizePath("/docs", locale), 301);
+}
+
+const contentSlug = normalizeDocsSlug(normalizedSlug);
+
+if (!contentSlug) {
+  return Astro.redirect(localizePath("/", locale), 302);
+}
+
+const entries: CollectionEntry<"docs">[] = await getCollection("docs");
+const entry =
+  entries.find((candidate) => docSlug(candidate) === contentSlug && candidate.data.locale === locale) ??
+  entries.find((candidate) => docSlug(candidate) === contentSlug);
+
+if (!entry) {
+  return Astro.redirect(localizePath("/", locale), 302);
+}
+
+const { Content } = await render(entry);
+const navigation = getDocsNavigation(locale);
+const currentNavigationIndex = navigation.findIndex((item) => item.contentSlug === contentSlug);
+const previousNavigationItem = currentNavigationIndex > 0 ? navigation[currentNavigationIndex - 1] : null;
+const nextNavigationItem = currentNavigationIndex >= 0 && currentNavigationIndex < navigation.length - 1 ? navigation[currentNavigationIndex + 1] : null;
+const windowsAvailable = Boolean(import.meta.env.PUBLIC_WINDOWS_DOWNLOAD_URL);
+const docsCopy = {
+  zh: {
+    closeImagePreview: "关闭图片预览",
+    footerLabel: "文档页脚导航",
+    imagePreviewLabel: "文档图片预览",
+    installDownloadBody: windowsAvailable ? "请选择 Apple 芯片（M 系列）Mac 或 Windows 10/11 x64 完整安装包。" : "当前先下载 Apple 芯片（M 系列）Mac 安装包。Windows 版开放后，这里会同步更新。",
+    installDownloadTitle: "1. 下载",
+    installIntro: "按下面顺序准备环境。安装完成后回到 MkBoard 的“本机 CLI 配置连接”页面，点击顶部“重新扫描”即可。",
+    installTitle: "安装教程",
+    previous: "上一篇",
+    next: "下一篇",
+    sidebarLabel: "文档导航",
+    sidebarTitle: "MkBoard 文档"
+  },
+  en: {
+    closeImagePreview: "Close image preview",
+    footerLabel: "Documentation footer navigation",
+    imagePreviewLabel: "Documentation image preview",
+    installDownloadBody: windowsAvailable ? "Choose the full installer for Apple silicon Mac or Windows 10/11 x64." : "Download the Apple silicon Mac installer for now. This section will be updated when the Windows build is available.",
+    installDownloadTitle: "1. Download",
+    installIntro: "Prepare the environment in this order. After each step, return to MkBoard's local CLI settings page and click the top-level \"Rescan\" button.",
+    installTitle: "Installation Guide",
+    previous: "Previous",
+    next: "Next",
+    sidebarLabel: "Documentation navigation",
+    sidebarTitle: "MkBoard Docs"
+  }
+} as const;
+const copy = docsCopy[locale];
+const docsNavigationIcons = {
+  intro: BookOpen,
+  install: Download,
+  start: PlayCircle
+} as const;
+
+function normalizeDocsSlug(slug: string): DocsContentSlug | null {
+  if (slug === "") return "intro";
+  if (slug === "install") return "install";
+  if (slug === "start") return "start";
+  return null;
+}
+
+function docSlug(entry: CollectionEntry<"docs">) {
+  const fileName = entry.filePath?.split("/").pop() ?? entry.id;
+  return fileName.replace(/\.mdx?$/u, "").replace(/\.(zh|en)$/u, "");
+}
+
+function docPath(path: string | undefined, activeLocale: Locale) {
+  if (!path) return "";
+  if (/^https?:\/\//iu.test(path)) return path;
+  return localizePath(path, activeLocale);
+}
+
+const ctaHref = docPath(entry.data.ctaHref, locale);
+---
+
+<BaseLayout title={entry.data.title} description={entry.data.description}>
+  <div class="docs-shell">
+    <aside class="docs-sidebar" aria-label={copy.sidebarLabel}>
+      <div class="docs-sidebar-header">
+        <span>{copy.sidebarTitle}</span>
+      </div>
+      <nav class="docs-sidebar-nav">
+        {
+          navigation.map((item) => {
+            const Icon = docsNavigationIcons[item.contentSlug];
+
+            return (
+              <a
+                class:list={["docs-sidebar-link", { "is-active": item.contentSlug === contentSlug }]}
+                href={item.href}
+                aria-current={item.contentSlug === contentSlug ? "page" : undefined}
+              >
+                <Icon className="docs-sidebar-icon" size={17} strokeWidth={2.35} aria-hidden="true" />
+                <span>{item.label}</span>
+              </a>
+            );
+          })
+        }
+      </nav>
+    </aside>
+
+    <article class="docs-page">
+      <header class="docs-hero">
+        {entry.data.eyebrow ? <p class="section-badge">{entry.data.eyebrow}</p> : null}
+        <h1>{entry.data.title}</h1>
+        <p>{entry.data.description}</p>
+        {entry.data.ctaLabel && ctaHref ? <a class="button primary" href={ctaHref}>{entry.data.ctaLabel}</a> : null}
+      </header>
+
+      <div class="docs-markdown">
+        {contentSlug === "install" ? (
+          <>
+            <h2>{copy.installTitle}</h2>
+            <p>{copy.installIntro}</p>
+            <h3>{copy.installDownloadTitle}</h3>
+            <p>{copy.installDownloadBody}</p>
+            <DownloadContent locale={locale} variant="embedded" />
+          </>
+        ) : null}
+        <Content />
+      </div>
+
+      <footer class="docs-footer-nav" aria-label={copy.footerLabel}>
+        {previousNavigationItem ? (
+          <a class="docs-footer-nav-link is-previous" href={previousNavigationItem.href}>
+            <span>{copy.previous}</span>
+            <strong>{previousNavigationItem.label}</strong>
+          </a>
+        ) : <span aria-hidden="true"></span>}
+
+        {nextNavigationItem ? (
+          <a class="docs-footer-nav-link is-next" href={nextNavigationItem.href}>
+            <span>{copy.next}</span>
+            <strong>{nextNavigationItem.label}</strong>
+          </a>
+        ) : null}
+      </footer>
+    </article>
+  </div>
+
+  <div class="docs-image-lightbox" data-docs-image-lightbox hidden aria-hidden="true">
+    <button
+      class="docs-image-lightbox-backdrop"
+      type="button"
+      data-docs-lightbox-close
+      aria-label={copy.closeImagePreview}
+    ></button>
+    <figure class="docs-image-lightbox-frame" role="dialog" aria-modal="true" aria-label={copy.imagePreviewLabel}>
+      <button class="docs-image-lightbox-close" type="button" data-docs-lightbox-close aria-label={copy.closeImagePreview}>
+        <span aria-hidden="true">×</span>
+      </button>
+      <img data-docs-lightbox-image src="" alt="" />
+    </figure>
+  </div>
+</BaseLayout>
+
+<script>
+  const lightbox = document.querySelector<HTMLElement>("[data-docs-image-lightbox]");
+  const lightboxImage = lightbox?.querySelector<HTMLImageElement>("[data-docs-lightbox-image]");
+  const closeTriggers = lightbox?.querySelectorAll<HTMLElement>("[data-docs-lightbox-close]");
+  const closeButton = lightbox?.querySelector<HTMLElement>(".docs-image-lightbox-close");
+  const docsImages = document.querySelectorAll<HTMLImageElement>(".docs-markdown img[alt]:not([alt=''])");
+  let activeTrigger: HTMLElement | null = null;
+
+  function closeLightbox() {
+    if (!lightbox || !lightboxImage || lightbox.hasAttribute("hidden")) return;
+
+    lightbox.setAttribute("hidden", "");
+    lightbox.setAttribute("aria-hidden", "true");
+    document.documentElement.classList.remove("docs-lightbox-open");
+    lightboxImage.setAttribute("src", "");
+    lightboxImage.setAttribute("alt", "");
+
+    if (activeTrigger instanceof HTMLElement) {
+      activeTrigger.focus();
+    }
+
+    activeTrigger = null;
+  }
+
+  function openLightbox(source: HTMLImageElement) {
+    if (!lightbox || !lightboxImage || !(source instanceof HTMLImageElement)) return;
+
+    const sourceUrl = source.currentSrc || source.src;
+    if (!sourceUrl) return;
+
+    activeTrigger = source;
+    lightboxImage.setAttribute("src", sourceUrl);
+    lightboxImage.setAttribute("alt", source.alt);
+    lightbox.removeAttribute("hidden");
+    lightbox.setAttribute("aria-hidden", "false");
+    document.documentElement.classList.add("docs-lightbox-open");
+
+    if (closeButton instanceof HTMLElement) {
+      closeButton.focus();
+    }
+  }
+
+  docsImages.forEach((image) => {
+    if (!(image instanceof HTMLImageElement) || image.closest(".download-hero")) return;
+
+    image.setAttribute("role", "button");
+    image.setAttribute("tabindex", "0");
+    image.addEventListener("click", () => openLightbox(image));
+    image.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      openLightbox(image);
+    });
+  });
+
+  closeTriggers?.forEach((trigger) => {
+    trigger.addEventListener("click", closeLightbox);
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeLightbox();
+  });
+</script>

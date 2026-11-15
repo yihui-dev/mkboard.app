@@ -1,0 +1,66 @@
+/* Hallmark · pre-emit critique: P5 H4 E4 S4 R4 V4
+ * macrostructure: Workbench · H7 hero knobs: clip-side=right, aspect=16/10, frame=hairline
+ * theme: custom · vibe: "product workbench, warm yellow, exact" · paper: oklch(97% 0.014 90) · accent: oklch(86% 0.17 91)
+ * display: Bricolage Grotesque · body: Geist · axes: light / geometric-sans / chromatic-amber
+ * studied: yes · DNA-source: url · source-url: https://www.usehallmark.com/ · observed-fonts: Anton + Albert Sans + Geist + Space Grotesk + more · rhythm: unknown (URL mode)
+ */
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@500;600&display=swap");
+
+:root {
+  --font-display: "Bricolage Grotesque", "PingFang SC", "Microsoft YaHei", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Geist", "PingFang SC", "Microsoft YaHei", ui-sans-serif, system-ui, sans-serif;
+  --font-label: "Geist Mono", "SFMono-Regular", ui-monospace, monospace;
+
+  --color-paper: oklch(97% 0.014 90);
+  --color-paper-2: oklch(94.5% 0.018 90);
+  --color-paper-3: oklch(99% 0.008 92);
+  --color-ink: oklch(19% 0.014 82);
+  --color-ink-2: oklch(28% 0.014 82);
+  --color-muted: oklch(46% 0.018 82);
+  --color-neutral: oklch(61% 0.015 85);
+  --color-rule: oklch(84% 0.018 88);
+  --color-rule-2: oklch(90% 0.014 88);
+  --color-accent: oklch(86% 0.17 91);
+  --color-accent-strong: oklch(77% 0.18 88);
+  --color-accent-soft: oklch(94% 0.075 92);
+  --color-focus: oklch(68% 0.19 88);
+  --color-success: oklch(48% 0.12 145);
+  --color-warning: oklch(58% 0.15 62);
+
+  --space-3xs: 0.125rem;
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2.5rem;
+  --space-2xl: 4rem;
+  --space-3xl: 6rem;
+  --space-4xl: 9rem;
+
+  --text-xs: 0.72rem;
+  --text-sm: 0.84rem;
+  --text-base: 1rem;
+  --text-md: 1.2rem;
+  --text-lg: 1.45rem;
+  --text-xl: 1.9rem;
+  --text-2xl: 2.45rem;
+  --text-3xl: 3.1rem;
+  --text-display-s: clamp(2.5rem, 4vw + 0.8rem, 4.4rem);
+  --text-display: clamp(3rem, 5vw + 0.6rem, 5.2rem);
+
+  --radius-ui: 8px;
+  --radius-panel: 16px;
+  --radius-pill: 999px;
+  --rule-hair: 1px;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-micro: 120ms;
+  --dur-short: 220ms;
+  --dur-long: 420ms;
+
+  --shadow-soft: 0 18px 50px oklch(24% 0.018 82 / 0.1);
+  --shadow-panel: 0 26px 80px oklch(24% 0.018 82 / 0.14);
+}

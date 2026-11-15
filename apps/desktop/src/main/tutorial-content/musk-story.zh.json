@@ -1,0 +1,440 @@
+{
+  "locale": "zh",
+  "projectName": "马斯克的故事 · 教程项目",
+  "scriptHtml": "\n  <h1>马斯克的故事</h1>\n  <p>很多人提到马斯克，第一反应是火箭、电动车，或者那些听起来有点疯狂的计划。</p>\n  <p>故事从南非开始：一个喜欢读书和电脑的男孩，很早就发现代码可以把想法变成真实的东西。十几岁时，他写过小游戏，后来离开南非，先到加拿大，再到美国读书和创业。</p>\n  <p>他的第一段创业是 Zip2，后来又参与创办了变成 PayPal 的在线支付公司。PayPal 被收购后，很多人可能会选择退休。但马斯克把钱投进了三个更难的方向：太空、电动车和新能源。</p>\n  <p>SpaceX 一开始几乎没有退路。前三次火箭发射都失败了，钱也快烧完了。2008 年，Falcon 1 在第四次发射中终于进入轨道，SpaceX 活了下来。</p>\n  <p>后来，SpaceX 把可回收火箭从实验变成高频运行的基础设施。到 2025 年，它完成了 165 次轨道发射；Starlink 全年新增超过 460 万活跃用户，并完成了第一代直连手机星座的部署。2025 年 8 月，Starship 第十次飞行测试也完成主要目标，包括模拟卫星部署、太空中发动机重新点火，以及受控溅落。</p>\n  <p>同一时期，Tesla 也走在危险边缘。电动车当时并不是主流，很多人不相信它能成为大众选择。但马斯克坚持把电动车做成性能产品，而不是妥协产品。后来，Model S、Model 3 和超级充电网络，让更多人重新理解电动车。</p>\n  <p>到 2025 年，Tesla 全年交付超过 163 万辆车，储能部署达到 46.7 GWh。进入 2026 年第一季度，它又生产超过 40 万辆车、部署 8.8 GWh 储能，并继续推进 Megapack 3、Tesla Semi、Cybercab 和更密集的超级充电网络。Tesla 的故事也从电动车，延伸到能源、出行和 AI。</p>\n  <p>当然，马斯克的故事并不只是成功。他的目标经常太大，节奏太快，也伴随争议和质疑。但这个故事真正值得记住的，是一种方法：把看起来不可能的问题拆成工程任务，然后从今天能做的一小步开始。</p>\n",
+  "legacyScriptHtml": [
+    "\n  <h1>马斯克的故事</h1>\n  <p>很多人提到马斯克，第一反应是火箭、电动车，或者那些听起来有点疯狂的计划。</p>\n  <p>但他的故事，可以从一个更普通的画面开始：一个出生在南非的男孩，喜欢读书，也喜欢电脑。他很早就发现，代码可以把脑子里的想法变成真实的东西。十几岁时，他写过小游戏，后来离开南非，先到加拿大，再到美国读书和创业。</p>\n  <p>他的第一段创业，是互联网时代的地图和城市信息服务 Zip2。公司卖掉以后，他没有停下来，又参与创办了后来变成 PayPal 的在线支付公司。PayPal 被收购后，很多人可能会选择退休。但马斯克把钱投进了三个更难的方向：太空、电动车和新能源。</p>\n  <p>SpaceX 一开始并不顺利。前三次火箭发射都失败了，钱也快烧完了。第四次发射如果再失败，公司可能就没有下一次机会。2008 年，Falcon 1 终于进入轨道，SpaceX 活了下来。</p>\n  <p>同一时期，Tesla 也走在危险边缘。电动车当时并不是主流，很多人不相信它能成为大众选择。但马斯克坚持把电动车做成性能产品，而不是妥协产品。后来，Model S、Model 3 和超级充电网络，让更多人重新理解电动车。</p>\n  <p>当然，马斯克的故事并不只是成功。他的目标经常太大，节奏太快，也伴随争议和质疑。但这正是这个故事值得被讲述的地方：一个人把“看起来不可能”的问题拆成工程任务，然后一遍遍试错。</p>\n  <p>如果说这段故事有什么启发，也许不是要模仿他的性格，而是记住一个方法：先把未来想清楚，再从今天能做的一小步开始。</p>\n"
+  ],
+  "rows": [
+    {
+      "id": "tutorial-shot-01",
+      "shot": "1",
+      "scene": "A-ROLL",
+      "duration": "8",
+      "content": "很多人提到马斯克，第一反应是火箭、电动车，或者那些听起来有点疯狂的计划。",
+      "note": "口播开场，语气保持克制但有好奇心。",
+      "customValues": {
+        "custom-1": "—",
+        "custom-2": "—",
+        "custom-3": ""
+      }
+    },
+    {
+      "id": "tutorial-shot-02",
+      "shot": "2",
+      "scene": "B-ROLL",
+      "duration": "10",
+      "content": "故事从南非的童年开始：一个喜欢读书和电脑的男孩，发现代码可以把想法变成真实的东西。",
+      "note": "书桌、旧电脑、少年学习编程的氛围，不使用真实人物肖像。",
+      "customValues": {
+        "custom-1": "南非少年房间里的旧电脑和摊开的科幻书，桌面有手写代码草稿，清晨自然光，纪录片风格，真实但不出现可识别真人。",
+        "custom-2": "镜头缓慢推近旧电脑屏幕和书本，代码字符微微闪烁，表现一个少年第一次理解编程的力量。",
+        "custom-3": "Seedance 2.0"
+      },
+      "imageAssetIds": [
+        "musk-story-zh-seedance-shot-02-image",
+        "musk-story-zh-seedance-shot-02-video"
+      ]
+    },
+    {
+      "id": "tutorial-shot-03",
+      "shot": "3",
+      "scene": "B-ROLL",
+      "duration": "9",
+      "content": "十几岁时，他写过小游戏，后来离开南非，先到加拿大，再到美国读书和创业。",
+      "note": "迁徙路线、机场、校园和早期创业感。",
+      "customValues": {
+        "custom-1": "世界地图上从南非到加拿大再到美国的发光路径，旁边叠加学生证、机场登机牌和早期电脑界面，干净的科技纪录片视觉。",
+        "custom-2": "用 HyperFrames 做地图路径动画，路线从南非延伸到加拿大和美国，配合登机牌、校园、代码窗口的简洁动态图形，不出现字幕。",
+        "custom-3": "Hyperframes"
+      },
+      "imageAssetIds": [
+        "musk-story-zh-hyperframes-shot-03"
+      ]
+    },
+    {
+      "id": "tutorial-shot-04",
+      "shot": "4",
+      "scene": "B-ROLL",
+      "duration": "10",
+      "content": "他的第一段创业是 Zip2，后来又参与创办了变成 PayPal 的在线支付公司。",
+      "note": "互联网早期、城市地图、网页和支付流转的抽象表现。",
+      "customValues": {
+        "custom-1": "1990 年代互联网创业办公室，CRT 显示器上是抽象城市地图和网页布局，纸质商业计划散落，真实纪实风格，无品牌标识。",
+        "custom-2": "城市地图线条转成在线支付流动节点，网页窗口和金额符号用简洁动态图形连接，表现从 Zip2 到 PayPal 的创业过渡。",
+        "custom-3": "Seedance 2.0"
+      },
+      "imageAssetIds": [
+        "musk-story-zh-seedance-shot-04-image",
+        "musk-story-zh-seedance-shot-04-video"
+      ]
+    },
+    {
+      "id": "tutorial-shot-05",
+      "shot": "5",
+      "scene": "A-ROLL",
+      "duration": "8",
+      "content": "PayPal 被收购后，很多人可能会选择退休。但马斯克把钱投进了三个更难的方向。",
+      "note": "口播转折，强调选择更难的问题。",
+      "customValues": {
+        "custom-1": "—",
+        "custom-2": "—",
+        "custom-3": ""
+      }
+    },
+    {
+      "id": "tutorial-shot-06",
+      "shot": "6",
+      "scene": "B-ROLL",
+      "duration": "11",
+      "content": "这三个方向是太空、电动车和新能源，每一个在当时都像是不太可能成功的赌注。",
+      "note": "三分屏：火箭、电动车、电池/太阳能。",
+      "customValues": {
+        "custom-1": "三联画构图：火箭发射台、电动车底盘、太阳能与电池储能系统，深色科技纪录片风格，黄色线条连接三个方向。",
+        "custom-2": "HyperFrames 三分屏信息图动画，火箭、电动车、电池图标依次亮起，最后汇聚成一个工程路线图，画面只包含视觉元素不加标题文字。",
+        "custom-3": "Hyperframes"
+      },
+      "imageAssetIds": [
+        "musk-story-zh-hyperframes-shot-06"
+      ]
+    },
+    {
+      "id": "tutorial-shot-07",
+      "shot": "7",
+      "scene": "B-ROLL",
+      "duration": "10",
+      "content": "SpaceX 前三次火箭发射都失败了，钱也快烧完了。第四次发射几乎是最后机会。",
+      "note": "失败与倒计时的张力。",
+      "customValues": {
+        "custom-1": "夜色中的火箭测试场，工程师控制室剪影，屏幕上只有抽象倒计时光点，紧张纪录片氛围，不出现真实公司标志。",
+        "custom-2": "镜头在控制室和火箭发射台之间切换，前三次失败用熄灭的红色光点表现，第四个光点开始闪烁倒计时。",
+        "custom-3": "Seedance 2.0"
+      },
+      "imageAssetIds": [
+        "musk-story-zh-seedance-shot-07-image",
+        "musk-story-zh-seedance-shot-07-video"
+      ]
+    },
+    {
+      "id": "tutorial-shot-08",
+      "shot": "8",
+      "scene": "B-ROLL",
+      "duration": "9",
+      "content": "2008 年，Falcon 1 终于进入轨道，SpaceX 活了下来。",
+      "note": "成功进入轨道的释放感。",
+      "customValues": {
+        "custom-1": "一枚小型火箭穿过云层进入近地轨道，地球弧线在背景中出现，电影感科技纪录片画面，无品牌标识。",
+        "custom-2": "火箭从云层上方掠过，镜头拉开看到地球弧线，控制室灯光由暗转亮，节奏从紧张转为释放。",
+        "custom-3": "Seedance 2.0"
+      },
+      "imageAssetIds": [
+        "musk-story-zh-seedance-shot-08-image",
+        "musk-story-zh-seedance-shot-08-video"
+      ]
+    },
+    {
+      "id": "tutorial-shot-09",
+      "shot": "9",
+      "scene": "B-ROLL",
+      "duration": "10",
+      "content": "后来 SpaceX 把可回收火箭变成高频发射系统。到 2025 年，它完成了 165 次轨道发射。",
+      "note": "火箭复用和高频发射节奏。",
+      "customValues": {
+        "custom-1": "可回收火箭一级降落在海上无人船，远处是多次发射形成的时间轴光点，科技纪录片风格，无品牌标识。",
+        "custom-2": "火箭一级从云层下降到无人船，画面叠加抽象发射次数时间轴，光点快速累积，表现高频复用。",
+        "custom-3": "Seedance 2.0"
+      },
+      "imageAssetIds": [
+        "musk-story-zh-seedance-shot-09-image",
+        "musk-story-zh-seedance-shot-09-video"
+      ]
+    },
+    {
+      "id": "tutorial-shot-10",
+      "shot": "10",
+      "scene": "B-ROLL",
+      "duration": "9",
+      "content": "Starlink 继续扩张，2025 年新增超过 460 万活跃用户，直连手机星座也完成第一代部署。",
+      "note": "卫星互联网覆盖和直连手机。",
+      "customValues": {
+        "custom-1": "地球夜景上方的低轨卫星星座，偏远地区和海面出现联网光点，手机信号图形从卫星投向地面，干净科技风格。",
+        "custom-2": "HyperFrames 地球轨道动画，卫星光点围绕地球移动，地面连接点逐个亮起，最后出现手机信号波纹，不加文字。",
+        "custom-3": "Hyperframes"
+      },
+      "imageAssetIds": [
+        "musk-story-zh-hyperframes-shot-10"
+      ]
+    },
+    {
+      "id": "tutorial-shot-11",
+      "shot": "11",
+      "scene": "B-ROLL",
+      "duration": "10",
+      "content": "Starship 第十次飞行测试完成主要目标，说明目标已经从进入太空，变成反复使用大型太空运输系统。",
+      "note": "Starship 试飞、部署模拟载荷、受控溅落。",
+      "customValues": {
+        "custom-1": "巨型不带品牌标识的银色火箭从海边发射场升空，分离后飞船在高空释放小型模拟载荷，电影感纪录片画面。",
+        "custom-2": "火箭升空、级间分离、模拟载荷释放、飞船受控溅落的四段连续镜头，表现大型可复用航天系统的验证。",
+        "custom-3": "Seedance 2.0"
+      },
+      "imageAssetIds": [
+        "musk-story-zh-seedance-shot-11-image",
+        "musk-story-zh-seedance-shot-11-video"
+      ]
+    },
+    {
+      "id": "tutorial-shot-12",
+      "shot": "12",
+      "scene": "B-ROLL",
+      "duration": "10",
+      "content": "同一时期，Tesla 也在危险边缘。马斯克坚持把电动车做成性能产品，而不是妥协产品。",
+      "note": "电动车从怀疑到性能感。",
+      "customValues": {
+        "custom-1": "深色测试跑道上一辆无品牌电动车轮廓，工程师查看电池模组和性能曲线，冷色灯光，现代汽车纪录片风格。",
+        "custom-2": "电动车在测试跑道上加速，电池模组线框和性能曲线以半透明图形叠加，突出速度与工程感。",
+        "custom-3": "Seedance 2.0"
+      },
+      "imageAssetIds": [
+        "musk-story-zh-seedance-shot-12-image",
+        "musk-story-zh-seedance-shot-12-video"
+      ]
+    },
+    {
+      "id": "tutorial-shot-13",
+      "shot": "13",
+      "scene": "B-ROLL",
+      "duration": "11",
+      "content": "到 2025 年，Tesla 交付超过 163 万辆车，储能部署达到 46.7 GWh，并继续推进 Semi、Cybercab、Megapack 3 和超级充电网络。",
+      "note": "Tesla 从汽车扩展到能源、出行和 AI。",
+      "customValues": {
+        "custom-1": "城市和电网的复合科技画面：无品牌电动车、巨型电池储能柜、重卡充电站、自动驾驶测试道路和超级充电网络光点连接。",
+        "custom-2": "HyperFrames 信息图动画，电动车、储能柜、重卡、自动驾驶座舱和充电桩图标依次亮起，最后连成能源与出行网络。",
+        "custom-3": "Hyperframes"
+      },
+      "imageAssetIds": [
+        "musk-story-zh-hyperframes-shot-13"
+      ]
+    },
+    {
+      "id": "tutorial-shot-14",
+      "shot": "14",
+      "scene": "A-ROLL",
+      "duration": "10",
+      "content": "马斯克的故事并不只是成功，也伴随争议和质疑。真正值得记住的是方法：把未来想清楚，再从今天能做的一小步开始。",
+      "note": "口播收束，避免神化人物，落到方法论。",
+      "customValues": {
+        "custom-1": "—",
+        "custom-2": "—",
+        "custom-3": ""
+      }
+    }
+  ],
+  "mediaAssets": [
+    {
+      "id": "musk-story-zh-seedance-shot-02-image",
+      "rowId": "tutorial-shot-02",
+      "kind": "image",
+      "fileName": "musk-story-zh-shot-02-seedance-image.webp",
+      "url": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/zh/seedance/musk-story-zh-shot-02-seedance-image.webp?sha=f8312a97ed24bb488f90366683ed98325940e6ab597be78b041f7efd40f85e36",
+      "fileSize": 89626,
+      "sha256": "f8312a97ed24bb488f90366683ed98325940e6ab597be78b041f7efd40f85e36"
+    },
+    {
+      "id": "musk-story-zh-seedance-shot-02-video",
+      "rowId": "tutorial-shot-02",
+      "kind": "video",
+      "fileName": "musk-story-zh-shot-02-seedance-video.webm",
+      "url": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/zh/seedance/musk-story-zh-shot-02-seedance-video.webm?sha=3c78edee5810bc75015eeffb33e01620a19c48cb5ba036de8da94420951ace3e",
+      "fileSize": 2479687,
+      "sha256": "3c78edee5810bc75015eeffb33e01620a19c48cb5ba036de8da94420951ace3e",
+      "posterFileName": "musk-story-zh-shot-02-seedance-video-poster.webp",
+      "posterUrl": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/zh/seedance/musk-story-zh-shot-02-seedance-video-poster.webp?sha=328c0d894035ee14740b6de6c82f2119d864802cb3c03953deca3b5dd82f40e1",
+      "posterFileSize": 31530,
+      "posterSha256": "328c0d894035ee14740b6de6c82f2119d864802cb3c03953deca3b5dd82f40e1"
+    },
+    {
+      "id": "musk-story-zh-hyperframes-shot-03",
+      "rowId": "tutorial-shot-03",
+      "kind": "video",
+      "fileName": "musk-story-zh-shot-03-hyperframes.webm",
+      "url": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/zh/hyperframes/musk-story-zh-shot-03-hyperframes.webm?sha=ddca003dfc355f7b5e91e5265bc7e79c1a56fa9d8ca36a445b6d2654fa373a93",
+      "fileSize": 186650,
+      "sha256": "ddca003dfc355f7b5e91e5265bc7e79c1a56fa9d8ca36a445b6d2654fa373a93",
+      "posterFileName": "musk-story-zh-shot-03-hyperframes-poster.webp",
+      "posterUrl": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/zh/hyperframes/musk-story-zh-shot-03-hyperframes-poster.webp?sha=3a307e6ed85b8b84de7c3c4b843623060817e90db83f01248ded630dab2fb8a4",
+      "posterFileSize": 11706,
+      "posterSha256": "3a307e6ed85b8b84de7c3c4b843623060817e90db83f01248ded630dab2fb8a4"
+    },
+    {
+      "id": "musk-story-zh-seedance-shot-04-image",
+      "rowId": "tutorial-shot-04",
+      "kind": "image",
+      "fileName": "musk-story-zh-shot-04-seedance-image.webp",
+      "url": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/zh/seedance/musk-story-zh-shot-04-seedance-image.webp?sha=c9a619133aaa46a1b6dc20f052e75c3d83cfa2d1954ed8b2e422892b74204d8d",
+      "fileSize": 105462,
+      "sha256": "c9a619133aaa46a1b6dc20f052e75c3d83cfa2d1954ed8b2e422892b74204d8d"
+    },
+    {
+      "id": "musk-story-zh-seedance-shot-04-video",
+      "rowId": "tutorial-shot-04",
+      "kind": "video",
+      "fileName": "musk-story-zh-shot-04-seedance-video.webm",
+      "url": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/zh/seedance/musk-story-zh-shot-04-seedance-video.webm?sha=17f38ec302d57760e9fcc8b3960a794969ff03fcd575830894939d810a42f5d4",
+      "fileSize": 1261063,
+      "sha256": "17f38ec302d57760e9fcc8b3960a794969ff03fcd575830894939d810a42f5d4",
+      "posterFileName": "musk-story-zh-shot-04-seedance-video-poster.webp",
+      "posterUrl": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/zh/seedance/musk-story-zh-shot-04-seedance-video-poster.webp?sha=3354e0e35733c1b79085ae9c37534ad75af9dba18d102b59893c616794c97076",
+      "posterFileSize": 30618,
+      "posterSha256": "3354e0e35733c1b79085ae9c37534ad75af9dba18d102b59893c616794c97076"
+    },
+    {
+      "id": "musk-story-zh-hyperframes-shot-06",
+      "rowId": "tutorial-shot-06",
+      "kind": "video",
+      "fileName": "musk-story-zh-shot-06-hyperframes.webm",
+      "url": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/zh/hyperframes/musk-story-zh-shot-06-hyperframes.webm?sha=b92bc93b506d6a6eb5ae4355ca922a557c276baec6d5c75b0011081598901b08",
+      "fileSize": 230105,
+      "sha256": "b92bc93b506d6a6eb5ae4355ca922a557c276baec6d5c75b0011081598901b08",
+      "posterFileName": "musk-story-zh-shot-06-hyperframes-poster.webp",
+      "posterUrl": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/zh/hyperframes/musk-story-zh-shot-06-hyperframes-poster.webp?sha=38c4579096b09c42f16d90130234b4f3e0476e20034cae11f8ce3a4b58051859",
+      "posterFileSize": 14170,
+      "posterSha256": "38c4579096b09c42f16d90130234b4f3e0476e20034cae11f8ce3a4b58051859"
+    },
+    {
+      "id": "musk-story-zh-seedance-shot-07-image",
+      "rowId": "tutorial-shot-07",
+      "kind": "image",
+      "fileName": "musk-story-zh-shot-07-seedance-image.webp",
+      "url": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/zh/seedance/musk-story-zh-shot-07-seedance-image.webp?sha=82c1abc425953b8255c7eb4ec38fce2343759fa5983f8c5a1f13cb1f95aac62f",
+      "fileSize": 37606,
+      "sha256": "82c1abc425953b8255c7eb4ec38fce2343759fa5983f8c5a1f13cb1f95aac62f"
+    },
+    {
+      "id": "musk-story-zh-seedance-shot-07-video",
+      "rowId": "tutorial-shot-07",
+      "kind": "video",
+      "fileName": "musk-story-zh-shot-07-seedance-video.webm",
+      "url": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/zh/seedance/musk-story-zh-shot-07-seedance-video.webm?sha=f87d6d8ca541bbe2d0ef6b9026ad180c6cb30711e88374265bac8f6902f59fe9",
+      "fileSize": 1364835,
+      "sha256": "f87d6d8ca541bbe2d0ef6b9026ad180c6cb30711e88374265bac8f6902f59fe9",
+      "posterFileName": "musk-story-zh-shot-07-seedance-video-poster.webp",
+      "posterUrl": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/zh/seedance/musk-story-zh-shot-07-seedance-video-poster.webp?sha=45634e9b4790456e0f607234304212f9933fde52547cb23a066ab59bb058c36f",
+      "posterFileSize": 23708,
+      "posterSha256": "45634e9b4790456e0f607234304212f9933fde52547cb23a066ab59bb058c36f"
+    },
+    {
+      "id": "musk-story-zh-seedance-shot-08-image",
+      "rowId": "tutorial-shot-08",
+      "kind": "image",
+      "fileName": "musk-story-zh-shot-08-seedance-image.webp",
+      "url": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/zh/seedance/musk-story-zh-shot-08-seedance-image.webp?sha=af81dfa392d318bb5d2f794d6455b636d9cbc0fe4edffbe9985ca74b1e1a9c60",
+      "fileSize": 69252,
+      "sha256": "af81dfa392d318bb5d2f794d6455b636d9cbc0fe4edffbe9985ca74b1e1a9c60"
+    },
+    {
+      "id": "musk-story-zh-seedance-shot-08-video",
+      "rowId": "tutorial-shot-08",
+      "kind": "video",
+      "fileName": "musk-story-zh-shot-08-seedance-video.webm",
+      "url": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/zh/seedance/musk-story-zh-shot-08-seedance-video.webm?sha=bf84bbc335ec17eeb29e8037cbe2fc81504997edff56407127c509aa9e1752c2",
+      "fileSize": 1921843,
+      "sha256": "bf84bbc335ec17eeb29e8037cbe2fc81504997edff56407127c509aa9e1752c2",
+      "posterFileName": "musk-story-zh-shot-08-seedance-video-poster.webp",
+      "posterUrl": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/zh/seedance/musk-story-zh-shot-08-seedance-video-poster.webp?sha=07694bae9e60a4b55faa02c42bf727833cc2844cdf06b03081077e440c8ccf79",
+      "posterFileSize": 55348,
+      "posterSha256": "07694bae9e60a4b55faa02c42bf727833cc2844cdf06b03081077e440c8ccf79"
+    },
+    {
+      "id": "musk-story-zh-seedance-shot-09-image",
+      "rowId": "tutorial-shot-09",
+      "kind": "image",
+      "fileName": "musk-story-zh-shot-09-seedance-image.webp",
+      "url": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/zh/seedance/musk-story-zh-shot-09-seedance-image.webp?sha=3e8e9e952098c60210860a0c3057627c8b127b4afaf2d630d934d0d75c54b91f",
+      "fileSize": 47718,
+      "sha256": "3e8e9e952098c60210860a0c3057627c8b127b4afaf2d630d934d0d75c54b91f"
+    },
+    {
+      "id": "musk-story-zh-seedance-shot-09-video",
+      "rowId": "tutorial-shot-09",
+      "kind": "video",
+      "fileName": "musk-story-zh-shot-09-seedance-video.webm",
+      "url": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/zh/seedance/musk-story-zh-shot-09-seedance-video.webm?sha=ab0c1b39a49d6c66f37ced12463e03fe67748b3556a79848c0089fc9a1a3fd55",
+      "fileSize": 1960660,
+      "sha256": "ab0c1b39a49d6c66f37ced12463e03fe67748b3556a79848c0089fc9a1a3fd55",
+      "posterFileName": "musk-story-zh-shot-09-seedance-video-poster.webp",
+      "posterUrl": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/zh/seedance/musk-story-zh-shot-09-seedance-video-poster.webp?sha=615d302ae6b5008f25210af273bf63b9e279c53e9aa2e7cc48c89b17637f28a7",
+      "posterFileSize": 28020,
+      "posterSha256": "615d302ae6b5008f25210af273bf63b9e279c53e9aa2e7cc48c89b17637f28a7"
+    },
+    {
+      "id": "musk-story-zh-hyperframes-shot-10",
+      "rowId": "tutorial-shot-10",
+      "kind": "video",
+      "fileName": "musk-story-zh-shot-10-hyperframes.webm",
+      "url": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/zh/hyperframes/musk-story-zh-shot-10-hyperframes.webm?sha=a661678f6119d26541606ebe9c53a2fe6476c55dafed2ac82b5c2034c9382491",
+      "fileSize": 392677,
+      "sha256": "a661678f6119d26541606ebe9c53a2fe6476c55dafed2ac82b5c2034c9382491",
+      "posterFileName": "musk-story-zh-shot-10-hyperframes-poster.webp",
+      "posterUrl": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/zh/hyperframes/musk-story-zh-shot-10-hyperframes-poster.webp?sha=82e4452d2f094700584bb1124d0e765ba2e9e91f6031fdd9afd83869aeac92ac",
+      "posterFileSize": 23798,
+      "posterSha256": "82e4452d2f094700584bb1124d0e765ba2e9e91f6031fdd9afd83869aeac92ac"
+    },
+    {
+      "id": "musk-story-zh-seedance-shot-11-image",
+      "rowId": "tutorial-shot-11",
+      "kind": "image",
+      "fileName": "musk-story-zh-shot-11-seedance-image.webp",
+      "url": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/zh/seedance/musk-story-zh-shot-11-seedance-image.webp?sha=4b13b0f2aaab6611d43c9b8771fa55e6eb56d066d5cdc39c33bf28fb1eaae8c1",
+      "fileSize": 65886,
+      "sha256": "4b13b0f2aaab6611d43c9b8771fa55e6eb56d066d5cdc39c33bf28fb1eaae8c1"
+    },
+    {
+      "id": "musk-story-zh-seedance-shot-11-video",
+      "rowId": "tutorial-shot-11",
+      "kind": "video",
+      "fileName": "musk-story-zh-shot-11-seedance-video.webm",
+      "url": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/zh/seedance/musk-story-zh-shot-11-seedance-video.webm?sha=4924b950d9d86ca50df5cbe2283d91d728e096799dc924f676b6417666753757",
+      "fileSize": 1581387,
+      "sha256": "4924b950d9d86ca50df5cbe2283d91d728e096799dc924f676b6417666753757",
+      "posterFileName": "musk-story-zh-shot-11-seedance-video-poster.webp",
+      "posterUrl": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/zh/seedance/musk-story-zh-shot-11-seedance-video-poster.webp?sha=b2705a8c12dc0fb2256552721d8770719b22424cf1320bdd77912bd30c291dcc",
+      "posterFileSize": 43458,
+      "posterSha256": "b2705a8c12dc0fb2256552721d8770719b22424cf1320bdd77912bd30c291dcc"
+    },
+    {
+      "id": "musk-story-zh-seedance-shot-12-image",
+      "rowId": "tutorial-shot-12",
+      "kind": "image",
+      "fileName": "musk-story-zh-shot-12-seedance-image.webp",
+      "url": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/zh/seedance/musk-story-zh-shot-12-seedance-image.webp?sha=6dab1485dc69c85522da5bc59449fa0441a6300a4760e75f8e91ea909baec118",
+      "fileSize": 59762,
+      "sha256": "6dab1485dc69c85522da5bc59449fa0441a6300a4760e75f8e91ea909baec118"
+    },
+    {
+      "id": "musk-story-zh-seedance-shot-12-video",
+      "rowId": "tutorial-shot-12",
+      "kind": "video",
+      "fileName": "musk-story-zh-shot-12-seedance-video.webm",
+      "url": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/zh/seedance/musk-story-zh-shot-12-seedance-video.webm?sha=658602526613e1e13e0a60244fc486828da290752b9acb2dfe2bc201f3d8ef71",
+      "fileSize": 2815644,
+      "sha256": "658602526613e1e13e0a60244fc486828da290752b9acb2dfe2bc201f3d8ef71",
+      "posterFileName": "musk-story-zh-shot-12-seedance-video-poster.webp",
+      "posterUrl": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/zh/seedance/musk-story-zh-shot-12-seedance-video-poster.webp?sha=30858c5c3e56d543bdcbb2d074c12f52143cbcd6197effdebc5a0076b36a4100",
+      "posterFileSize": 2190,
+      "posterSha256": "30858c5c3e56d543bdcbb2d074c12f52143cbcd6197effdebc5a0076b36a4100"
+    },
+    {
+      "id": "musk-story-zh-hyperframes-shot-13",
+      "rowId": "tutorial-shot-13",
+      "kind": "video",
+      "fileName": "musk-story-zh-shot-13-hyperframes.webm",
+      "url": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/zh/hyperframes/musk-story-zh-shot-13-hyperframes.webm?sha=af6f724307d48537a55dbf893f64faacf55c5c5b6cea6d92e742f779f3fad24f",
+      "fileSize": 216461,
+      "sha256": "af6f724307d48537a55dbf893f64faacf55c5c5b6cea6d92e742f779f3fad24f",
+      "posterFileName": "musk-story-zh-shot-13-hyperframes-poster.webp",
+      "posterUrl": "https://assets.mkboard.app/onboarding/musk-story/v2026-06-musk-story-v3/zh/hyperframes/musk-story-zh-shot-13-hyperframes-poster.webp?sha=c01b6eed69f2c63cea61452e97610f5536640f133ab55c0585bb7c0633708ff2",
+      "posterFileSize": 14984,
+      "posterSha256": "c01b6eed69f2c63cea61452e97610f5536640f133ab55c0585bb7c0633708ff2"
+    }
+  ]
+}

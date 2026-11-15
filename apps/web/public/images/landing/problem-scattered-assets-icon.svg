@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Scattered assets icon illustration</title>
+  <desc id="desc">A Notion-style line icon showing scattered assets being collected into a storyboard board.</desc>
+  <defs>
+    <pattern id="dots" width="10" height="10" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.3" fill="#111111" opacity="0.32" />
+    </pattern>
+  </defs>
+  <rect width="512" height="512" rx="64" fill="#faf7ed" />
+  <path d="M174 153h164c18 0 32 14 32 32v142c0 18-14 32-32 32H174c-18 0-32-14-32-32V185c0-18 14-32 32-32Z" fill="#ffffff" stroke="#111111" stroke-width="12" />
+  <path d="M170 195h172" stroke="#111111" stroke-width="8" stroke-linecap="round" />
+  <path d="M184 226h54v44h-54zM258 226h54v44h-54zM184 292h54v44h-54zM258 292h54v44h-54z" fill="#ffffff" stroke="#111111" stroke-width="8" stroke-linejoin="round" />
+  <path d="M184 226h54v44h-54zM258 292h54v44h-54z" fill="#ffd94a" opacity="0.95" />
+  <path d="M184 226h54v44h-54zM258 226h54v44h-54zM184 292h54v44h-54zM258 292h54v44h-54z" stroke="#111111" stroke-width="8" stroke-linejoin="round" fill="none" />
+  <path d="M64 176l78-26 18 54-78 26zM355 83l78 22-18 62-78-22zM74 317l76 23-17 57-76-23zM366 334l80-18 14 62-80 18z" fill="#ffffff" stroke="#111111" stroke-width="10" stroke-linejoin="round" />
+  <path d="M76 181l73-24 10 31-73 24zM368 92l57 16-9 31-57-16zM80 325l58 17-9 30-58-17zM376 338l70-16 8 34-70 16z" fill="url(#dots)" />
+  <path d="M104 203l19-29 23 17M382 121l24-13 10 28M92 352l31-10 10 28M397 361l24-30 25 25" stroke="#f5b400" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+  <path d="M153 177c-24 4-41 15-53 33M359 161c25 8 43 24 54 47M150 350c-27-4-47-17-62-38M360 350c26-8 45-23 59-44" stroke="#111111" stroke-width="8" stroke-linecap="round" stroke-dasharray="1 18" />
+  <path d="M246 116l10-26 10 26M404 249l26-10-26-10M256 422l-10-26h20l-10 26" stroke="#111111" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+</svg>

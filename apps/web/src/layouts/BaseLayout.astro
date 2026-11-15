@@ -1,0 +1,173 @@
+---
+import { Check, Download, Languages } from "lucide-react";
+import { getLocaleFromRequest, layoutCopy, localizePath, switchLocalePath } from "../lib/i18n";
+import "../styles/tokens.css";
+import "../styles/global.css";
+
+type Props = {
+  title: string;
+  description: string;
+  noindex?: boolean;
+  minimalChrome?: boolean;
+  keywords?: readonly string[];
+  image?: string;
+  structuredData?: Record<string, unknown> | Record<string, unknown>[];
+};
+
+const { title, description, noindex = false, minimalChrome = false, keywords = [], image, structuredData } = Astro.props;
+const origin = import.meta.env.PUBLIC_WEB_URL ?? Astro.url.origin;
+const githubRepoUrl = "https://github.com/yihui-dev/mkboard.app";
+const locale = getLocaleFromRequest(Astro.request, Astro.url);
+const copy = layoutCopy[locale];
+const currentPath = Astro.request.headers.get("x-mkboard-original-path") ?? Astro.url.pathname;
+const currentSearch = Astro.url.search;
+const canonical = new URL(currentPath, origin).toString();
+const zhAlternate = new URL(switchLocalePath(currentPath, "zh"), origin).toString();
+const enAlternate = new URL(switchLocalePath(currentPath, "en"), origin).toString();
+const zhSwitchPath = `${switchLocalePath(currentPath, "zh")}${currentSearch}`;
+const enSwitchPath = `${switchLocalePath(currentPath, "en")}${currentSearch}`;
+const ogImage = image ? new URL(image, origin).toString() : new URL("/og/mkboard-home.png", origin).toString();
+const socialLabel = locale === "en" ? "Social links" : "社媒链接";
+const xSocialLabel = locale === "en" ? "Follow Yihui on X" : "在 X 关注 Yihui";
+const feishuSocialLabel = locale === "en" ? "Join the MkBoard Feishu group" : "加入 MkBoard 飞书交流群";
+const feishuQrAlt = locale === "en" ? "MkBoard Feishu group QR code" : "MkBoard 飞书交流群二维码";
+const feishuQrCaption = locale === "en" ? "Feishu group" : "飞书交流群";
+const languageOptions = [
+  { locale: "zh", label: copy.language.zh, href: zhSwitchPath, lang: "zh-CN" },
+  { locale: "en", label: copy.language.en, href: enSwitchPath, lang: "en" }
+] as const;
+const footerGroups = [
+  {
+    title: copy.footer.explore,
+    links: [
+      { href: localizePath("/", locale), label: copy.footer.home },
+      { href: localizePath("/download", locale), label: copy.footer.download },
+      { href: githubRepoUrl, label: copy.footer.github }
+    ]
+  },
+  {
+    title: copy.footer.resources,
+    links: [
+      { href: localizePath("/docs", locale), label: copy.footer.docs },
+      { href: localizePath("/changelog", locale), label: copy.footer.changelog }
+    ]
+  },
+  {
+    title: copy.footer.legal,
+    links: [
+      { href: localizePath("/privacy-policy", locale), label: copy.footer.privacyPolicy },
+      { href: localizePath("/terms-of-service", locale), label: copy.footer.termsOfService }
+    ]
+  }
+] as const;
+---
+
+<!doctype html>
+<html lang={locale === "en" ? "en" : "zh-CN"}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    {keywords.length > 0 && <meta name="keywords" content={keywords.join(",")} />}
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang="zh-CN" href={zhAlternate} />
+    <link rel="alternate" hreflang="en" href={enAlternate} />
+    <link rel="alternate" hreflang="x-default" href={enAlternate} />
+    <link rel="icon" href="/favicon.png" type="image/png" />
+    <link rel="apple-touch-icon" href="/images/brand/mkboard-icon.png" />
+    <meta name="theme-color" content="#ffd94a" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:site_name" content="MkBoard" />
+    <meta property="og:locale" content={locale === "en" ? "en_US" : "zh_CN"} />
+    <meta property="og:image" content={ogImage} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    {noindex && <meta name="robots" content="noindex,nofollow" />}
+    {!noindex && <meta name="robots" content="index,follow,max-image-preview:large" />}
+    {structuredData && <script is:inline type="application/ld+json" set:html={JSON.stringify(structuredData)} />}
+  </head>
+  <body>
+    <div class={minimalChrome ? "site-shell site-shell-minimal" : "site-shell"}>
+      <header class="site-header">
+        <nav class="site-nav" aria-label={copy.navLabel}>
+          <a class="brand" href={localizePath("/", locale)}>
+            <img class="brand-logo" src="/images/brand/mkboard-icon.png" alt="" width="34" height="34" decoding="async" />
+            <span class="brand-name">MkBoard</span>
+            <span class="brand-beta">OSS</span>
+          </a>
+          {!minimalChrome && (
+            <div class="nav-links">
+              <a href={localizePath("/", locale)}>{copy.nav.home}</a>
+              <a class="docs-nav-link" href={localizePath("/docs", locale)}>{copy.nav.docs}</a>
+              <a href={githubRepoUrl} target="_blank" rel="noopener noreferrer">{copy.nav.github}</a>
+              <details class="language-menu-static">
+                <summary class="language-menu-trigger" aria-label={copy.language.label}>
+                  <Languages className="language-menu-icon" aria-hidden="true" />
+                </summary>
+                <div class="language-menu-list">
+                  {languageOptions.map((option) => (
+                    <a class:list={["language-menu-option", { "is-active": option.locale === locale }]} href={option.href} hreflang={option.lang} lang={option.lang} aria-current={option.locale === locale ? "page" : undefined}>
+                      <span>{option.label}</span>
+                      {option.locale === locale && <Check className="language-menu-check" aria-hidden="true" />}
+                    </a>
+                  ))}
+                </div>
+              </details>
+              <a class="nav-download-link" href={localizePath("/download", locale)}>
+                <Download className="nav-download-icon" size={16} strokeWidth={2.5} aria-hidden="true" />
+                <span>{copy.nav.download}</span>
+              </a>
+            </div>
+          )}
+        </nav>
+      </header>
+      <main class="page">
+        <slot />
+      </main>
+      {!minimalChrome && (
+        <footer class="site-footer">
+          <div class="footer-inner">
+            <div class="footer-brand">
+              <a class="brand" href={localizePath("/", locale)}>
+                <img class="brand-logo" src="/images/brand/mkboard-icon.png" alt="" width="34" height="34" loading="lazy" decoding="async" />
+                <span>MkBoard</span>
+              </a>
+              <div class="footer-socials" aria-label={socialLabel}>
+                <a class="footer-social-link" href="https://x.com/yihui_indie" target="_blank" rel="noopener noreferrer" aria-label={xSocialLabel}>
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M18.2 2h3.3l-7.2 8.2L22.7 22h-6.6l-5.2-6.8L5 22H1.7l7.7-8.8L1.3 2h6.8l4.7 6.2L18.2 2Zm-1.2 18h1.8L7.1 3.9H5.2L17 20Z" />
+                  </svg>
+                </a>
+                <div class="footer-social-popover">
+                  <button class="footer-social-link" type="button" aria-label={feishuSocialLabel} aria-describedby="footer-feishu-qr">
+                    <img class="footer-social-icon-img" src="/images/icons/feishu.svg" alt="" width="16" height="16" loading="lazy" decoding="async" />
+                  </button>
+                  <div class="footer-social-qr" id="footer-feishu-qr" role="tooltip">
+                    <img src="/images/social/feishu-group-qr.png" alt={feishuQrAlt} width="170" height="168" loading="lazy" decoding="async" />
+                    <span>{feishuQrCaption}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="footer-links" aria-label={copy.footerLabel}>
+              {
+                footerGroups.map((group) => (
+                  <nav class="footer-column" aria-label={group.title}>
+                    <h2>{group.title}</h2>
+                    {group.links.map((link) => <a href={link.href}>{link.label}</a>)}
+                  </nav>
+                ))
+              }
+            </div>
+          </div>
+        </footer>
+      )}
+    </div>
+  </body>
+</html>

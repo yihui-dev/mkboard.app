@@ -1,0 +1,20 @@
+{
+  "name": "mkboard",
+  "private": true,
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yihui-dev/mkboard.app.git"
+  },
+  "scripts": {
+    "dev": "node tools/run-dev.mjs",
+    "dev:desktop": "pnpm --filter @mkboard/desktop dev",
+    "dev:web-companion": "pnpm --filter @mkboard/desktop start:web",
+    "dev:site": "pnpm --filter @mkboard/web dev",
+    "debug:desktop": "pnpm --filter @mkboard/desktop dev:debug",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test"
+  }
+}

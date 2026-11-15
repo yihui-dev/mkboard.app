@@ -1,0 +1,350 @@
+---
+import { localizePath, type Locale } from "../lib/i18n";
+
+type Props = {
+  locale: Locale;
+  variant?: "page" | "embedded";
+};
+
+const { locale, variant = "page" } = Astro.props;
+
+const copyMap = {
+  zh: {
+    title: "下载 MkBoard 桌面端",
+    heading: "下载 MkBoard 客户端",
+    guideLink: "查看安装教程",
+    features: [
+      { title: "本地优先", body: "脚本、镜头与素材都保存在本机，断网也能继续创作。" },
+      { title: "连接本地 Agent 工具", body: "复用你本机已登录的 Agent 额度，没有额外费用压力。" },
+      { title: "视频工具内置", body: "HyperFrames、Chrome 与 FFmpeg 随安装包提供，无需另外安装。" }
+    ]
+  },
+  en: {
+    title: "Download MkBoard Desktop",
+    heading: "Download MkBoard",
+    guideLink: "View installation guide",
+    features: [
+      { title: "Local-first", body: "Scripts, shots, and assets stay on your machine. Keep working even offline." },
+      { title: "Connect local Agent tools", body: "Reuse the Agent quota already logged in on your machine, without extra billing pressure." },
+      { title: "Video tools included", body: "HyperFrames, Chrome, and FFmpeg ship with the installer—no separate setup required." }
+    ]
+  }
+} as const;
+
+const copy = copyMap[locale];
+const guideHref = localizePath("/docs/install", locale);
+const macDownloadUrl = import.meta.env.PUBLIC_MAC_DOWNLOAD_URL || "https://github.com/yihui-dev/mkboard.app/releases/latest/download/MkBoard-0.3.0-mac-arm64.dmg";
+const windowsDownloadUrl = import.meta.env.PUBLIC_WINDOWS_DOWNLOAD_URL || "https://github.com/yihui-dev/mkboard.app/releases/latest/download/MkBoard-Setup-0.3.0-win-x64.exe";
+const showHeading = variant === "page";
+const showGuideLink = variant === "page";
+const showFeatures = variant === "page";
+
+const downloadCopyMap = {
+  zh: {
+    title: "下载 MkBoard 桌面端",
+    detecting: "正在识别你的系统...",
+    currentSystem: "本系统",
+    macTitle: "Mac 版（Apple 芯片）",
+    macCopy: "适用于 M 系列芯片 Mac",
+    windowsTitle: "Windows 版",
+    windowsCopy: "即将开放",
+    macPackage: "Apple 芯片专用 .dmg",
+    windowsPackage: "Windows x64 · 需约 1.5 GB 安装空间",
+    macButton: "下载 M 系列 Mac 版",
+    windowsButton: "Coming Soon",
+    macHint: "已识别为 macOS。点击下载 Apple 芯片（M 系列）Mac 安装包。",
+    macAutoHint: "已识别为 macOS，已自动开始下载 Apple 芯片（M 系列）Mac 安装包。",
+    windowsHint: "Windows 版即将开放，目前请使用 Apple 芯片（M 系列）Mac 版。",
+    windowsAutoHint: "Windows 版即将开放，目前请使用 Apple 芯片（M 系列）Mac 版。",
+    windowsAvailableCopy: "适用于 Windows 10/11 x64",
+    windowsAvailableButton: "下载 Windows x64 版",
+    windowsAvailableHint: "已识别为 Windows。点击下载 Windows 10/11 x64 安装包。",
+    windowsAvailableAutoHint: "已识别为 Windows，已自动开始下载 Windows 10/11 x64 安装包。",
+    unknownHint: "暂未识别系统，请选择适合你的安装包。"
+  },
+  en: {
+    title: "Download MkBoard Desktop",
+    detecting: "Detecting your system...",
+    currentSystem: "This system",
+    macTitle: "Mac version (Apple silicon)",
+    macCopy: "For Apple silicon Macs",
+    windowsTitle: "Windows version",
+    windowsCopy: "Coming soon",
+    macPackage: "Apple silicon .dmg",
+    windowsPackage: "Windows x64 · about 1.5 GB disk space",
+    macButton: "Download for Apple silicon Mac",
+    windowsButton: "Coming Soon",
+    macHint: "Detected macOS. Click to download the Apple silicon Mac installer.",
+    macAutoHint: "Detected macOS. The Apple silicon Mac installer download has started automatically.",
+    windowsHint: "Windows is coming soon. Use the Apple silicon Mac build for now.",
+    windowsAutoHint: "Windows is coming soon. Use the Apple silicon Mac build for now.",
+    windowsAvailableCopy: "For Windows 10/11 x64",
+    windowsAvailableButton: "Download for Windows x64",
+    windowsAvailableHint: "Detected Windows. Click to download the Windows 10/11 x64 installer.",
+    windowsAvailableAutoHint: "Detected Windows. The Windows 10/11 x64 installer download has started automatically.",
+    unknownHint: "System not detected. Choose the installer for your platform."
+  }
+} as const;
+
+const downloadCopy = downloadCopyMap[locale];
+const downloadCards = [
+  {
+    id: "mac",
+    href: macDownloadUrl,
+    iconClassName: "mac-icon",
+    iconSrc: "/images/icons/macos-download.svg",
+    title: downloadCopy.macTitle,
+    body: downloadCopy.macCopy,
+    packageLabel: downloadCopy.macPackage,
+    action: downloadCopy.macButton,
+    hint: downloadCopy.macHint,
+    unavailable: false
+  },
+  {
+    id: "windows",
+    href: windowsDownloadUrl,
+    iconClassName: "windows-icon",
+    iconSrc: "/images/icons/windows-download.svg",
+    title: downloadCopy.windowsTitle,
+    body: windowsDownloadUrl ? downloadCopy.windowsAvailableCopy : downloadCopy.windowsCopy,
+    packageLabel: downloadCopy.windowsPackage,
+    action: windowsDownloadUrl ? downloadCopy.windowsAvailableButton : downloadCopy.windowsButton,
+    hint: windowsDownloadUrl ? downloadCopy.windowsAvailableHint : downloadCopy.windowsHint,
+    unavailable: !windowsDownloadUrl
+  }
+] as const;
+---
+
+<section
+  class:list={["download-hero", { "is-embedded": variant === "embedded", "landing-section": variant === "page" }]}
+  aria-labelledby={showHeading ? "download-heading" : undefined}
+  aria-label={showHeading ? undefined : copy.heading}
+>
+  {showHeading ? (
+    <div class="download-heading">
+      <h1 id="download-heading">{copy.heading}</h1>
+    </div>
+  ) : null}
+
+  <div
+    class="download-platform-block"
+    data-download-platform-block
+    data-auto-download-current-system={variant === "page" ? "true" : "false"}
+    data-detecting-hint={downloadCopy.detecting}
+    data-mac-hint={downloadCopy.macHint}
+    data-mac-auto-hint={downloadCopy.macAutoHint}
+    data-windows-hint={windowsDownloadUrl ? downloadCopy.windowsAvailableHint : downloadCopy.windowsHint}
+    data-windows-auto-hint={windowsDownloadUrl ? downloadCopy.windowsAvailableAutoHint : downloadCopy.windowsAutoHint}
+    data-unknown-hint={downloadCopy.unknownHint}
+  >
+    <p class="download-platform-hint" aria-live="polite">{downloadCopy.detecting}</p>
+    <div class="download-options" aria-label={downloadCopy.title}>
+      {downloadCards.map((card) => (
+        card.unavailable ? (
+          <button
+            class="download-option platform-card is-unavailable"
+            type="button"
+            disabled
+            data-platform-card={card.id}
+            data-platform-hint={card.hint}
+          >
+            <span class="current-system-pill">{downloadCopy.currentSystem}</span>
+            <span class:list={["platform-icon", card.iconClassName]} aria-hidden="true">
+              <img src={card.iconSrc} alt="" loading="eager" />
+            </span>
+            <strong>{card.title}</strong>
+            <span>{card.body}</span>
+            <em>{card.packageLabel}</em>
+            <span class="platform-action">{card.action}</span>
+          </button>
+        ) : (
+          <a
+            class="download-option platform-card"
+            href={card.href}
+            data-platform-card={card.id}
+            data-platform-hint={card.hint}
+          >
+            <span class="current-system-pill">{downloadCopy.currentSystem}</span>
+            <span class:list={["platform-icon", card.iconClassName]} aria-hidden="true">
+              <img src={card.iconSrc} alt="" loading="eager" />
+            </span>
+            <strong>{card.title}</strong>
+            <span>{card.body}</span>
+            <em>{card.packageLabel}</em>
+            <span class="platform-action">{card.action}</span>
+          </a>
+        )
+      ))}
+    </div>
+  </div>
+  {showGuideLink ? <a class="download-guide-link" href={guideHref}>{copy.guideLink}</a> : null}
+
+  {showFeatures ? (
+    <ul class="download-features" aria-label={copy.heading}>
+      {copy.features.map((feature, index) => (
+        <li class="download-feature">
+          <span class="download-feature-index" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+          <strong>{feature.title}</strong>
+          <span>{feature.body}</span>
+        </li>
+      ))}
+    </ul>
+  ) : null}
+</section>
+
+<script>
+  type Platform = "mac" | "windows" | "unknown";
+
+  const mkBoardAutoDownloadStorageKeyPrefix = "mkboard.download.autoDownloadMacStarted:";
+
+  function detectMkBoardDownloadPlatform(): Platform {
+    const nav = navigator as Navigator & { userAgentData?: { platform?: string } };
+    const platform = `${nav.userAgentData?.platform || ""}`.toLowerCase();
+    const userAgent = navigator.userAgent.toLowerCase();
+
+    if (platform.includes("mac") || userAgent.includes("mac os")) return "mac";
+    if (platform.includes("win") || userAgent.includes("windows")) return "windows";
+    return "unknown";
+  }
+
+  function getMkBoardAutoDownloadStorageKey(url: string) {
+    return `${mkBoardAutoDownloadStorageKeyPrefix}${url}`;
+  }
+
+  function hasMkBoardAutoDownloadStarted(url: string) {
+    const key = getMkBoardAutoDownloadStorageKey(url);
+    try {
+      if (window.localStorage.getItem(key) === "true") return true;
+    } catch {
+      // Ignore blocked persistent storage and fall back to the per-tab check below.
+    }
+
+    try {
+      return window.sessionStorage.getItem(key) === "true";
+    } catch {
+      return false;
+    }
+  }
+
+  function markMkBoardAutoDownloadStarted(url: string) {
+    const key = getMkBoardAutoDownloadStorageKey(url);
+    try {
+      window.localStorage.setItem(key, "true");
+      return;
+    } catch {
+      // Ignore blocked persistent storage and fall back to the per-tab marker below.
+    }
+
+    try {
+      window.sessionStorage.setItem(key, "true");
+    } catch {
+      // The per-block flag still prevents duplicate starts during this page lifecycle.
+    }
+  }
+
+  function startMkBoardDownload(url: string) {
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "";
+    link.rel = "noopener noreferrer";
+    link.style.display = "none";
+    document.body.append(link);
+    link.click();
+    link.remove();
+  }
+
+  function getMkBoardDownloadCard(block: HTMLElement, platform: Platform) {
+    if (platform === "unknown") return null;
+    return block.querySelector<HTMLAnchorElement>(`a[data-platform-card="${platform}"]`);
+  }
+
+  function getMkBoardCurrentSystemDownloadCard() {
+    const platform = detectMkBoardDownloadPlatform();
+    for (const block of document.querySelectorAll<HTMLElement>("[data-download-platform-block]")) {
+      const card = getMkBoardDownloadCard(block, platform);
+      if (card) return card;
+    }
+    return null;
+  }
+
+  function isMkBoardDownloadPage() {
+    const pathname = window.location.pathname.replace(/\/$/, "");
+    return pathname === "/download" || pathname === "/zh/download" || pathname === "/en/download";
+  }
+
+  function handleMkBoardDownloadNavClick(event: MouseEvent) {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+    const target = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>(".nav-download-link") : null;
+    if (!target || !isMkBoardDownloadPage()) return;
+
+    const currentSystemCard = getMkBoardCurrentSystemDownloadCard();
+    if (!currentSystemCard) return;
+
+    event.preventDefault();
+    startMkBoardDownload(currentSystemCard.href);
+  }
+
+  function updateMkBoardDownloadCards() {
+    const platform = detectMkBoardDownloadPlatform();
+
+    document.querySelectorAll<HTMLElement>("[data-download-platform-block]").forEach((block) => {
+      const hint = block.querySelector<HTMLElement>(".download-platform-hint");
+      const autoDownloadCurrentSystem = block.dataset.autoDownloadCurrentSystem === "true";
+      const currentSystemCard = getMkBoardDownloadCard(block, platform);
+      const shouldAutoDownloadCurrentSystem =
+        autoDownloadCurrentSystem &&
+        currentSystemCard !== null &&
+        block.dataset.autoDownloadStarted !== "true" &&
+        !hasMkBoardAutoDownloadStarted(currentSystemCard.href);
+      const activeHint =
+        platform === "mac"
+          ? shouldAutoDownloadCurrentSystem
+            ? block.dataset.macAutoHint
+            : block.dataset.macHint
+          : platform === "windows"
+            ? shouldAutoDownloadCurrentSystem
+              ? block.dataset.windowsAutoHint
+              : block.dataset.windowsHint
+            : block.dataset.unknownHint;
+
+      if (hint) hint.textContent = activeHint || block.dataset.detectingHint || "";
+
+      block.querySelectorAll<HTMLElement>("[data-platform-card]").forEach((card) => {
+        const isCurrentSystem = card.dataset.platformCard === platform;
+        card.classList.toggle("is-current-system", isCurrentSystem);
+        if (isCurrentSystem) {
+          const cardHint = card.dataset.platformHint;
+          const title = card.querySelector("strong")?.textContent?.trim();
+          if (title && cardHint) card.setAttribute("aria-label", `${title}, ${cardHint}`);
+        } else {
+          card.removeAttribute("aria-label");
+        }
+      });
+
+      if (shouldAutoDownloadCurrentSystem) {
+        if (!currentSystemCard) return;
+        block.dataset.autoDownloadStarted = "true";
+        markMkBoardAutoDownloadStarted(currentSystemCard.href);
+        window.setTimeout(() => startMkBoardDownload(currentSystemCard.href), 250);
+      }
+    });
+  }
+
+  const downloadWindow = window as Window & { __mkboardDownloadCardsInitialized?: boolean };
+
+  if (!downloadWindow.__mkboardDownloadCardsInitialized) {
+    downloadWindow.__mkboardDownloadCardsInitialized = true;
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", updateMkBoardDownloadCards, { once: true });
+    } else {
+      updateMkBoardDownloadCards();
+    }
+
+    document.addEventListener("astro:page-load", updateMkBoardDownloadCards);
+    document.addEventListener("click", handleMkBoardDownloadNavClick);
+  } else {
+    updateMkBoardDownloadCards();
+  }
+</script>

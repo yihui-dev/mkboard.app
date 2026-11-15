@@ -1,0 +1,82 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { getLocaleFromRequest } from "../lib/i18n";
+
+const locale = getLocaleFromRequest(Astro.request, Astro.url);
+const copyMap = {
+  zh: {
+    title: "隐私说明 - MkBoard 开源版",
+    description: "了解 MkBoard 开源版纯本地优先、自带 API Key (BYOK) 的数据与隐私架构。",
+    updated: "最后更新：2026 年 11 月 15 日",
+    heading: "隐私说明（开源本地优先版）",
+    intro: "MkBoard 是 100% 本地优先的开源应用（Apache-2.0），不提供任何云端账号、积分充值或后端代存服务。",
+    sections: [
+      {
+        title: "纯本地存储",
+        body: [
+          "你的所有脚本、分镜表、SQLite 数据库与音视频素材全部保存在你自己的设备本地目录（默认 ~/Documents/MkBoard Projects）。断网环境也可完整查看与编辑。"
+        ]
+      },
+      {
+        title: "自带 API Key (BYOK)",
+        body: [
+          "你在应用内填写的第三方模型密钥（KIE、OpenAI、Gemini、ElevenLabs 等）仅以受限权限（0600）保存在本机数据目录或通过系统环境变量读取，并由你的设备直接请求对应上游官方接口，绝不经过任何 MkBoard 服务器。"
+        ]
+      },
+      {
+        title: "局域网多端协同",
+        body: [
+          "内置的 Web Companion 默认仅监听本机回环地址（127.0.0.1）。仅当你主动切换为局域网/Tailscale 可访问模式时才会向内网开放，并通过 256-bit 随机配对令牌保护。"
+        ]
+      }
+    ]
+  },
+  en: {
+    title: "Privacy Policy - MkBoard Open Source",
+    description: "Learn how MkBoard Open Source keeps your projects and BYOK credentials 100% local on your machine.",
+    updated: "Last updated: November 15, 2026",
+    heading: "Privacy Policy (Local-First Open Source)",
+    intro: "MkBoard is a 100% local-first open-source application (Apache-2.0) with zero MkBoard cloud accounts, zero payment gateways, and zero backend telemetry.",
+    sections: [
+      {
+        title: "100% Local Storage",
+        body: [
+          "All scripts, storyboards, SQLite databases, and media files live strictly on your own device (~/Documents/MkBoard Projects by default)."
+        ]
+      },
+      {
+        title: "Bring Your Own Key (BYOK)",
+        body: [
+          "API keys you configure (KIE, OpenAI, Gemini, ElevenLabs) are stored locally in 0600-permission files or read from environment variables, and connect directly from your machine to the upstream provider."
+        ]
+      },
+      {
+        title: "LAN & Tailscale Companion",
+        body: [
+          "The Web Companion server binds to 127.0.0.1 by default and only opens to LAN/Tailscale interfaces when you explicitly opt in, protected by a random 256-bit session token."
+        ]
+      }
+    ]
+  }
+} as const;
+
+const copy = copyMap[locale];
+---
+
+<BaseLayout title={copy.title} description={copy.description}>
+  <section class="legal-page content-panel" aria-labelledby="legal-heading">
+    <p class="section-badge">{copy.updated}</p>
+    <h1 id="legal-heading">{copy.heading}</h1>
+    <p class="legal-intro">{copy.intro}</p>
+    <div class="legal-sections">
+      {
+        copy.sections.map((section) => (
+          <section>
+            <h2>{section.title}</h2>
+            {section.body.map((paragraph) => <p>{paragraph}</p>)}
+          </section>
+        ))
+      }
+    </div>
+  </section>
+</BaseLayout>
