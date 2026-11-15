@@ -13,6 +13,7 @@ import OpenAIIcon from "@lobehub/icons/es/OpenAI/components/Mono";
 import tasteMediaUrlMap from "./data/taste-media.json";
 import tastePreviewImageUrlMap from "./data/taste-preview-images.json";
 import { SkillryMotionHub } from "./components/SkillryMotionHub";
+import { SkillCreateActionCard, SkillGalleryCard } from "./components/SkillGalleryCard";
 import {
   AlertTriangle,
   Archive,
@@ -8418,10 +8419,23 @@ function SkillsScreen({
                 {searchQuery.trim() ? <p>{t("skills.emptyFilteredDescription", { query: searchQuery.trim() })}</p> : null}
               </div>
             ) : (
-              <div className="skills-card-grid" aria-label={t("skills.cardGridLabel")}>
+              <div className="skg-grid" aria-label={t("skills.cardGridLabel")}>
                 {filteredSkills.map((skill) => (
-                  <SkillCard key={skill.id} skill={skill} onSelect={openSkill} />
+                  <SkillGalleryCard
+                    key={skill.id}
+                    skill={skill}
+                    locale={locale}
+                    iconNode={<SkillVisualIcon className="skg-avatar-icon" iconId={skill.iconId} gradientId={skill.gradientId} />}
+                    onSelect={openSkill}
+                  />
                 ))}
+                {activeFilter !== "system" && !searchQuery.trim() ? (
+                  <SkillCreateActionCard
+                    locale={locale}
+                    onCreate={startCreateSkill}
+                    onImportGithub={() => setImportModalOpen(true)}
+                  />
+                ) : null}
               </div>
             )}
           </section>
@@ -8939,6 +8953,92 @@ function TasteScreen({
                       }}
                     />
                   ))}
+
+                  {([
+                    {
+                      key: "oss-swiss-klein",
+                      titleZh: "瑞士克莱因网格",
+                      titleEn: "Swiss Klein Grid",
+                      specimen: "International\nKlein Blue.",
+                      descZh: "开源瑞士网格主义海报规范，高饱和克莱因蓝配极简留白卡片。",
+                      descEn: "Open-source Swiss grid poster system with Klein Blue & crisp card geometry.",
+                      preview: { background: "#0B3B9E", foreground: "#F8FAFC", accent: "#60A5FA" },
+                      rules: "# Swiss Klein Grid\n- Background: #0B3B9E\n- Text: #F8FAFC\n- Accent: #60A5FA\n- Typography: Crisp grotesque display + strict 12-column Swiss alignment."
+                    },
+                    {
+                      key: "oss-warm-editorial",
+                      titleZh: "暖纸画报社论风",
+                      titleEn: "Warm Editorial Print",
+                      specimen: "Editorial\nPaper Studio.",
+                      descZh: "温润米白纸感底色与信号橙点缀，适合深度人文、商业拆解与知识口播。",
+                      descEn: "Warm editorial paper tone with signal-orange callouts for narrative explainers.",
+                      preview: { background: "#F6F1E7", foreground: "#1C1917", accent: "#EA580C" },
+                      rules: "# Warm Editorial Print\n- Background: #F6F1E7\n- Text: #1C1917\n- Accent: #EA580C\n- Layout: Generous editorial margins, high-contrast serif/sans hierarchy."
+                    },
+                    {
+                      key: "oss-noir-console",
+                      titleZh: "黑金极客控制台",
+                      titleEn: "Noir Dev Console",
+                      specimen: "Noir\nConsole.",
+                      descZh: "深邃暗色终端底板搭配荧光绿高亮，适合 AI 工具、开发者产品与硬核科技。",
+                      descEn: "Deep obsidian terminal surface with neon emerald highlights for AI & dev tools.",
+                      preview: { background: "#111317", foreground: "#F4F6FB", accent: "#34D399" },
+                      rules: "# Noir Dev Console\n- Background: #111317\n- Text: #F4F6FB\n- Accent: #34D399\n- Layout: Monospace metrics, subtle hairline borders, glowing terminal accents."
+                    }
+                  ] as const)
+                    .filter((starter) => !customTastes.some((ct) => ct.name === starter.titleZh || ct.name === starter.titleEn))
+                    .map((starter) => (
+                      <button
+                        key={starter.key}
+                        type="button"
+                        className="taste-card taste-oss-starter-card"
+                        disabled={quickImporting}
+                        onClick={async () => {
+                          const created = await onCreateTaste({
+                            name: isEn ? starter.titleEn : starter.titleZh,
+                            description: isEn ? starter.descEn : starter.descZh,
+                            content: starter.rules,
+                            preview: starter.preview
+                          });
+                          setDefaultTaste(created.id);
+                        }}
+                      >
+                        <div
+                          className="taste-card-preview taste-swiss-poster"
+                          style={{ background: starter.preview.background, color: starter.preview.foreground }}
+                        >
+                          <div className="taste-swiss-top">
+                            <span className="taste-swiss-kicker">OPEN-SOURCE PRESET</span>
+                            <span
+                              className="taste-swiss-pill"
+                              style={{ background: starter.preview.accent, color: "#fff" }}
+                            >
+                              {isEn ? "+ Add & Use" : "+ 一键添加"}
+                            </span>
+                          </div>
+                          <div className="taste-swiss-mid">
+                            <strong className="taste-swiss-display">{starter.specimen}</strong>
+                            <span
+                              className="taste-swiss-geo"
+                              style={{ background: starter.preview.accent }}
+                              aria-hidden="true"
+                            />
+                          </div>
+                          <div className="taste-swiss-bottom">
+                            <span className="taste-swiss-hex">{starter.preview.background}</span>
+                            <div className="taste-card-swatches" aria-hidden="true">
+                              <span className="taste-card-swatch-dot" style={{ background: starter.preview.background }} />
+                              <span className="taste-card-swatch-dot" style={{ background: starter.preview.foreground }} />
+                              <span className="taste-card-swatch-dot" style={{ background: starter.preview.accent }} />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="taste-card-copy">
+                          <strong>{isEn ? starter.titleEn : starter.titleZh}</strong>
+                          <small className="taste-card-desc-line">{isEn ? starter.descEn : starter.descZh}</small>
+                        </div>
+                      </button>
+                    ))}
 
                   <button
                     type="button"
@@ -9873,20 +9973,30 @@ function TasteCardContent({
         {previewImageUrl ? (
           <img className="taste-card-preview-image" src={previewImageUrl} alt="" loading="lazy" decoding="async" />
         ) : (
-          <>
-            <div className="taste-card-specimen-top">
-              <span className="taste-card-accent" style={{ background: taste.preview.accent }} aria-hidden="true" />
-              <span className="taste-card-source-tag" style={{ borderColor: `${taste.preview.foreground}24` }}>
+          <div className="taste-swiss-poster-inner">
+            <div className="taste-swiss-top">
+              <span className="taste-swiss-kicker">VISUAL SYSTEM</span>
+              <span className="taste-card-source-tag" style={{ borderColor: `${taste.preview.foreground}28` }}>
                 {isAutoSystem ? "AUTO" : isGithubSource ? t("taste.githubBadge") : t("taste.customBadge")}
               </span>
             </div>
-            <strong className="taste-card-specimen-title">{tasteName}</strong>
-            <div className="taste-card-swatches" aria-hidden="true">
-              <span className="taste-card-swatch-dot" style={{ background: taste.preview.background }} title={taste.preview.background} />
-              <span className="taste-card-swatch-dot" style={{ background: taste.preview.foreground }} title={taste.preview.foreground} />
-              <span className="taste-card-swatch-dot" style={{ background: taste.preview.accent }} title={taste.preview.accent} />
+            <div className="taste-swiss-mid">
+              <strong className="taste-swiss-display">{tasteName}</strong>
+              <span
+                className="taste-swiss-geo"
+                style={{ background: taste.preview.accent }}
+                aria-hidden="true"
+              />
             </div>
-          </>
+            <div className="taste-swiss-bottom">
+              <span className="taste-swiss-hex">{taste.preview.accent}</span>
+              <div className="taste-card-swatches" aria-hidden="true">
+                <span className="taste-card-swatch-dot" style={{ background: taste.preview.background }} title={taste.preview.background} />
+                <span className="taste-card-swatch-dot" style={{ background: taste.preview.foreground }} title={taste.preview.foreground} />
+                <span className="taste-card-swatch-dot" style={{ background: taste.preview.accent }} title={taste.preview.accent} />
+              </div>
+            </div>
+          </div>
         )}
       </div>
       <div className="taste-card-copy">
