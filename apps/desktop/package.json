@@ -69,5 +69,8 @@
     "electron-vite": "^4.0.1",
     "typescript": "^5.9.3",
     "vite": "^7.2.6"
-  }
+  },
+  "description": "MkBoard Open-Source Local-First AI Storyboard & Video Studio",
+  "author": "MkBoard Contributors <yihui-dev@users.noreply.github.com>",
+  "homepage": "https://mkboard.app"
 }

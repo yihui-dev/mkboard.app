@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-14
+          - os: macos-15
             platform: mac-x64
             script: dist:mac:x64:oss
           - os: ubuntu-24.04

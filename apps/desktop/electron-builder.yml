@@ -65,6 +65,7 @@ nsis:
   deleteAppDataOnUninstall: false
 
 linux:
+  executableName: mkboard
   icon: resources/icon.png
   category: Video
   maintainer: MkBoard Contributors
