@@ -63,6 +63,8 @@ import {
   KeyRound,
   Languages,
   Layers,
+  LayoutGrid,
+  List,
   ListChecks,
   Lightbulb,
   LoaderCircle,
@@ -5721,6 +5723,21 @@ function ProjectsScreen({
 }) {
   const { locale, t } = useI18n();
   const [projectSearchQuery, setProjectSearchQuery] = useState("");
+  const [projectViewMode, setProjectViewMode] = useState<"grid" | "list">(() => {
+    try {
+      return window.localStorage.getItem("mkboard.projectsViewMode") === "list" ? "list" : "grid";
+    } catch {
+      return "grid";
+    }
+  });
+  const handleProjectViewModeChange = (nextMode: "grid" | "list") => {
+    setProjectViewMode(nextMode);
+    try {
+      window.localStorage.setItem("mkboard.projectsViewMode", nextMode);
+    } catch {
+      // ignore storage errors
+    }
+  };
   const currentProjects = archiveFilter === "archived" ? archivedProjects : projects;
   const normalizedProjectSearchQuery = projectSearchQuery.trim().toLocaleLowerCase();
 	  const visibleProjects = normalizedProjectSearchQuery
@@ -5768,60 +5785,151 @@ function ProjectsScreen({
       </header>
 
       <div className="library-page-content projects-page-content">
+        <div className="projects-toolbar-row">
+          <div className="project-archive-tabs" role="tablist" aria-label={t("project.archiveFilterLabel")}>
+            <button
+              className={cn("project-archive-tab", archiveFilter === "active" && "active")}
+              type="button"
+              role="tab"
+              aria-selected={archiveFilter === "active"}
+              onClick={() => onArchiveFilterChange("active")}
+            >
+              <Flag aria-hidden="true" />
+              <span>{t("project.activeProjects")}</span>
+            </button>
+            <button
+              className={cn("project-archive-tab", archiveFilter === "archived" && "active")}
+              type="button"
+              role="tab"
+              aria-selected={archiveFilter === "archived"}
+              onClick={() => onArchiveFilterChange("archived")}
+            >
+              <Archive aria-hidden="true" />
+              <span>{t("project.archivedProjects")}</span>
+            </button>
+          </div>
 
-
-        <div className="project-archive-tabs" role="tablist" aria-label={t("project.archiveFilterLabel")}>
-          <button className={cn("project-archive-tab", archiveFilter === "active" && "active")} type="button" role="tab" aria-selected={archiveFilter === "active"} onClick={() => onArchiveFilterChange("active")}>
-            <Flag aria-hidden="true" />
-            <span>{t("project.activeProjects")}</span>
-          </button>
-          <button className={cn("project-archive-tab", archiveFilter === "archived" && "active")} type="button" role="tab" aria-selected={archiveFilter === "archived"} onClick={() => onArchiveFilterChange("archived")}>
-            <Archive aria-hidden="true" />
-            <span>{t("project.archivedProjects")}</span>
-          </button>
+          <div className="project-archive-tabs project-view-mode-tabs" role="group" aria-label={t("project.viewModeLabel")}>
+            <button
+              className={cn("project-archive-tab project-view-mode-tab", projectViewMode === "grid" && "active")}
+              type="button"
+              aria-pressed={projectViewMode === "grid"}
+              onClick={() => handleProjectViewModeChange("grid")}
+            >
+              <LayoutGrid aria-hidden="true" />
+              <span>{t("project.viewModeGrid")}</span>
+            </button>
+            <button
+              className={cn("project-archive-tab project-view-mode-tab", projectViewMode === "list" && "active")}
+              type="button"
+              aria-pressed={projectViewMode === "list"}
+              onClick={() => handleProjectViewModeChange("list")}
+            >
+              <List aria-hidden="true" />
+              <span>{t("project.viewModeList")}</span>
+            </button>
+          </div>
         </div>
 
-        <div className="project-grid" aria-label={t("project.list")}>
-          {!isArchivedView ? (
-            <Button className="project-card create-card onboarding-create-project-target" variant="ghost" onPress={onCreate}>
-              <div className="folder-empty">
-                <span className="create-card-plus-badge">
+        {projectViewMode === "grid" ? (
+          <div className="project-grid" aria-label={t("project.list")}>
+            {!isArchivedView ? (
+              <Button className="project-card create-card onboarding-create-project-target" variant="ghost" onPress={onCreate}>
+                <div className="folder-empty">
+                  <span className="create-card-plus-badge">
+                    <Plus aria-hidden="true" />
+                  </span>
+                </div>
+                <div className="project-card-meta">
+                  <span className="project-card-title-line">
+                    <strong>{t("project.createNew")}</strong>
+                  </span>
+                  <small>{t("project.createNewHint")}</small>
+                </div>
+              </Button>
+            ) : null}
+            {visibleProjects.map((project) => (
+              <ProjectCard
+                isArchived={isArchivedView}
+                project={project}
+                key={project.id}
+                onArchiveProject={onArchiveProject}
+                onEditProject={onEditProject}
+                onOpenProject={onOpenProject}
+                onTrashProject={onTrashProject}
+                onUnarchiveProject={onUnarchiveProject}
+              />
+            ))}
+            {isSearchingProjects && visibleProjects.length === 0 ? (
+              <div className="project-search-empty" role="status">
+                <Search aria-hidden="true" />
+                <strong>{t("project.searchEmptyTitle")}</strong>
+              </div>
+            ) : null}
+            {!isSearchingProjects && isArchivedView && visibleProjects.length === 0 ? (
+              <div className="project-search-empty project-archive-empty" role="status">
+                <Archive aria-hidden="true" />
+                <strong>{t("project.archivedEmptyTitle")}</strong>
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <div className="project-list-shell" aria-label={t("project.list")}>
+            {!isArchivedView ? (
+              <Button className="project-list-create-row onboarding-create-project-target" variant="ghost" onPress={onCreate}>
+                <span className="project-list-create-icon">
                   <Plus aria-hidden="true" />
                 </span>
-              </div>
-              <div className="project-card-meta">
-                <span className="project-card-title-line">
+                <span className="project-list-create-copy">
                   <strong>{t("project.createNew")}</strong>
+                  <small>{t("project.createNewHint")}</small>
                 </span>
-                <small>{t("project.createNewHint")}</small>
+              </Button>
+            ) : null}
+
+            {visibleProjects.length > 0 ? (
+              <div className="project-list-table" role="table" aria-label={t("project.list")}>
+                <div className="project-list-header" role="row">
+                  <span role="columnheader">{t("project.columnName")}</span>
+                  <span className="project-list-col-ratio" role="columnheader">{t("project.columnRatio")}</span>
+                  <span className="project-list-col-stats" role="columnheader">{t("project.columnStats")}</span>
+                  <span className="project-list-col-updated" role="columnheader">{t("project.columnUpdatedAt")}</span>
+                  <span className="project-list-col-created" role="columnheader">{t("project.columnCreatedAt")}</span>
+                  <span className="project-list-col-actions" role="columnheader">
+                    <span className="sr-only">{t("project.columnActions")}</span>
+                  </span>
+                </div>
+                <div className="project-list-body" role="rowgroup">
+                  {visibleProjects.map((project) => (
+                    <ProjectListRow
+                      isArchived={isArchivedView}
+                      project={project}
+                      key={project.id}
+                      onArchiveProject={onArchiveProject}
+                      onEditProject={onEditProject}
+                      onOpenProject={onOpenProject}
+                      onTrashProject={onTrashProject}
+                      onUnarchiveProject={onUnarchiveProject}
+                    />
+                  ))}
+                </div>
               </div>
-            </Button>
-          ) : null}
-          {visibleProjects.map((project) => (
-            <ProjectCard
-              isArchived={isArchivedView}
-              project={project}
-              key={project.id}
-              onArchiveProject={onArchiveProject}
-              onEditProject={onEditProject}
-              onOpenProject={onOpenProject}
-              onTrashProject={onTrashProject}
-              onUnarchiveProject={onUnarchiveProject}
-            />
-          ))}
-          {isSearchingProjects && visibleProjects.length === 0 ? (
-            <div className="project-search-empty" role="status">
-              <Search aria-hidden="true" />
-              <strong>{t("project.searchEmptyTitle")}</strong>
-            </div>
-          ) : null}
-          {!isSearchingProjects && isArchivedView && visibleProjects.length === 0 ? (
-            <div className="project-search-empty project-archive-empty" role="status">
-              <Archive aria-hidden="true" />
-              <strong>{t("project.archivedEmptyTitle")}</strong>
-            </div>
-          ) : null}
-        </div>
+            ) : null}
+
+            {isSearchingProjects && visibleProjects.length === 0 ? (
+              <div className="project-search-empty project-list-empty" role="status">
+                <Search aria-hidden="true" />
+                <strong>{t("project.searchEmptyTitle")}</strong>
+              </div>
+            ) : null}
+            {!isSearchingProjects && isArchivedView && visibleProjects.length === 0 ? (
+              <div className="project-search-empty project-archive-empty project-list-empty" role="status">
+                <Archive aria-hidden="true" />
+                <strong>{t("project.archivedEmptyTitle")}</strong>
+              </div>
+            ) : null}
+          </div>
+        )}
       </div>
 
       <div className="floating-tools" aria-label={t("project.floatingTools")}>
@@ -6941,11 +7049,11 @@ function ProjectCard({
           </div>
         </div>
         <div className="project-card-meta">
-          <span className="project-card-title-line">
+          <span className="project-card-title-line" title={project.name}>
             <span className="project-card-mini-icon">
               <ProjectMarkIcon value={project.icon} />
             </span>
-            <strong>{project.name}</strong>
+            <strong title={project.name}>{project.name}</strong>
           </span>
           <small>{tutorialProject ? t("project.tutorialDescription") : t("project.createdAt", { date: formatProjectDate(project.createdAt, t) })}</small>
         </div>
@@ -6986,6 +7094,229 @@ function ProjectCard({
       </Popover>
       )}
     </article>
+  );
+}
+
+function ProjectListRow({
+  isArchived,
+  project,
+  onArchiveProject,
+  onEditProject,
+  onOpenProject,
+  onTrashProject,
+  onUnarchiveProject
+}: {
+  isArchived: boolean;
+  project: ProjectSummary;
+  onArchiveProject: (project: ProjectSummary) => void;
+  onEditProject: (project: ProjectSummary) => void;
+  onOpenProject: (project: ProjectSummary) => void;
+  onTrashProject: (project: ProjectSummary) => void;
+  onUnarchiveProject: (project: ProjectSummary) => void;
+}) {
+  const { t } = useI18n();
+  const [actionsOpen, setActionsOpen] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const [coverImageFailed, setCoverImageFailed] = useState(false);
+  const tutorialProject = isTutorialProject(project);
+  const coverPreview = project.coverPreview ?? null;
+  const shotCount = project.shotCount ?? 0;
+  const videoCount = project.videoCount ?? 0;
+
+  useEffect(() => {
+    setCoverImageFailed(false);
+  }, [coverPreview?.url, coverPreview?.videoUrl]);
+
+  useEffect(() => {
+    if (!actionsOpen) return;
+
+    function closeOnOutsidePointerDown(event: PointerEvent) {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      if (target.closest(".project-card-actions-trigger, .project-card-actions-popover")) return;
+      setActionsOpen(false);
+    }
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setActionsOpen(false);
+    }
+
+    document.addEventListener("pointerdown", closeOnOutsidePointerDown, true);
+    document.addEventListener("keydown", closeOnEscape, true);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsidePointerDown, true);
+      document.removeEventListener("keydown", closeOnEscape, true);
+    };
+  }, [actionsOpen]);
+
+  function openProjectForEditing() {
+    setActionsOpen(false);
+    onEditProject(project);
+  }
+
+  function trashProject() {
+    setActionsOpen(false);
+    onTrashProject(project);
+  }
+
+  function toggleProjectArchive() {
+    setActionsOpen(false);
+    if (isArchived) {
+      onUnarchiveProject(project);
+    } else {
+      onArchiveProject(project);
+    }
+  }
+
+  const hasVisualCover = Boolean(coverPreview && (!coverImageFailed || coverPreview.videoUrl || coverPreview.fallbackUrl));
+
+  return (
+    <div
+      className={cn("project-list-row", tutorialProject && "is-tutorial", actionsOpen && "actions-open")}
+      role="row"
+      onPointerEnter={() => setIsHovered(true)}
+      onPointerLeave={() => setIsHovered(false)}
+    >
+      <Button className="project-list-row-main" variant="ghost" onPress={() => onOpenProject(project)}>
+        <span className="project-list-name-cell" role="cell">
+          <span className={cn("project-list-thumb", hasVisualCover ? "has-media" : "is-slate")}>
+            {coverPreview?.kind === "video-first-frame" ? (
+              coverPreview.isRemoteVideo || coverImageFailed ? (
+                <video
+                  className="project-list-thumb-media"
+                  src={coverPreview.videoUrl ? `${coverPreview.videoUrl}#t=0.05` : coverPreview.url}
+                  poster={coverPreview.fallbackUrl ?? undefined}
+                  preload="metadata"
+                  muted
+                  loop
+                  playsInline
+                  autoPlay={isHovered}
+                />
+              ) : (
+                <>
+                  <img
+                    className="project-list-thumb-media"
+                    src={coverPreview.url}
+                    alt=""
+                    loading="lazy"
+                    onError={() => setCoverImageFailed(true)}
+                  />
+                  {isHovered && coverPreview.videoUrl ? (
+                    <video
+                      className="project-list-thumb-media project-list-thumb-hover-video"
+                      src={coverPreview.videoUrl}
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                    />
+                  ) : null}
+                </>
+              )
+            ) : coverPreview?.kind === "broll-image" && !coverImageFailed ? (
+              <img
+                className="project-list-thumb-media"
+                src={coverPreview.url}
+                alt=""
+                loading="lazy"
+                onError={() => setCoverImageFailed(true)}
+              />
+            ) : (
+              <span className="project-list-thumb-empty">
+                <ProjectMarkIcon value={project.icon} />
+              </span>
+            )}
+          </span>
+
+          <span className="project-list-title-stack">
+            <span className="project-list-title-main">
+              <span className="project-card-mini-icon">
+                <ProjectMarkIcon value={project.icon} />
+              </span>
+              <strong className="project-list-title" title={project.name}>{project.name}</strong>
+              {tutorialProject ? (
+                <span className="project-list-badge is-tutorial">{t("project.tutorialBadge")}</span>
+              ) : coverPreview?.kind === "video-first-frame" ? (
+                <span className="project-list-badge is-video">
+                  <Film aria-hidden="true" />
+                  <span>{t("project.coverVideoBadge")}</span>
+                  {coverPreview.shotNumber ? <em>#{coverPreview.shotNumber}</em> : null}
+                </span>
+              ) : coverPreview?.kind === "broll-image" ? (
+                <span className="project-list-badge is-broll">
+                  <Image aria-hidden="true" />
+                  <span>{t("project.coverBRollBadge")}</span>
+                  {coverPreview.shotNumber ? <em>#{coverPreview.shotNumber}</em> : null}
+                </span>
+              ) : null}
+            </span>
+          </span>
+        </span>
+
+        <span className="project-list-cell project-list-col-ratio" role="cell">
+          <span className="project-list-ratio-pill">{project.imageRatio}</span>
+        </span>
+
+        <span className="project-list-cell project-list-col-stats" role="cell">
+          {shotCount > 0 ? (
+            <span className="project-list-stats">
+              {t("project.shotsCount", { count: String(shotCount) })}
+              {videoCount > 0 ? ` · ${t("project.videosCount", { count: String(videoCount) })}` : ""}
+            </span>
+          ) : (
+            <span className="project-list-stats is-empty">{t("project.coverEmptyHint")}</span>
+          )}
+        </span>
+
+        <span className="project-list-cell project-list-col-updated" role="cell">
+          <span className="project-list-date">{formatProjectDate(project.updatedAt, t)}</span>
+        </span>
+
+        <span className="project-list-cell project-list-col-created" role="cell">
+          <span className="project-list-date is-muted">
+            {tutorialProject ? t("project.tutorialDescription") : formatProjectDate(project.createdAt, t)}
+          </span>
+        </span>
+      </Button>
+
+      <div className="project-list-actions-cell project-list-col-actions" role="cell">
+        {tutorialProject ? (
+          <span className="project-list-lock" aria-label={t("project.tutorialLocked")} title={t("project.tutorialLocked")}>
+            <Lock aria-hidden="true" />
+          </span>
+        ) : (
+          <Popover isOpen={actionsOpen} onOpenChange={setActionsOpen}>
+            <Popover.Trigger>
+              <Button
+                aria-label={t("project.actionsLabel", { name: project.name })}
+                className={cn("project-card-actions-trigger project-list-actions-trigger", actionsOpen && "open")}
+                variant="ghost"
+              >
+                <Ellipsis aria-hidden="true" />
+              </Button>
+            </Popover.Trigger>
+            <Popover.Content className="project-card-actions-popover" isNonModal offset={8} placement="bottom end">
+              <Popover.Dialog>
+                <div className="project-card-actions-menu" aria-label={t("project.actionsLabel", { name: project.name })}>
+                  <Button className="project-card-actions-menu-item" variant="ghost" onPress={openProjectForEditing}>
+                    <Pencil aria-hidden="true" />
+                    <span>{t("project.editProject")}</span>
+                  </Button>
+                  <Button className="project-card-actions-menu-item" variant="ghost" onPress={toggleProjectArchive}>
+                    {isArchived ? <ArchiveRestore aria-hidden="true" /> : <Archive aria-hidden="true" />}
+                    <span>{t(isArchived ? "project.unarchiveProject" : "project.archiveProject")}</span>
+                  </Button>
+                  <Button className="project-card-actions-menu-item destructive" variant="ghost" onPress={trashProject}>
+                    <Trash2 aria-hidden="true" />
+                    <span>{t("project.deleteProject")}</span>
+                  </Button>
+                </div>
+              </Popover.Dialog>
+            </Popover.Content>
+          </Popover>
+        )}
+      </div>
+    </div>
   );
 }
 
