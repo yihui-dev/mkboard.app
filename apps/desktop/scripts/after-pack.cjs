@@ -1,4 +1,5 @@
 const { createHash } = require("node:crypto");
+const { spawnSync } = require("node:child_process");
 const { createReadStream } = require("node:fs");
 const fs = require("node:fs/promises");
 const path = require("node:path");
@@ -10,6 +11,9 @@ module.exports = async function afterPack(context) {
     const manifestPath = path.join(runtimeRoot, "manifest.json");
     const hasManifest = await fs.access(manifestPath).then(() => true, () => false);
     if (!hasManifest) {
+      if (context.electronPlatformName === "darwin") {
+        adHocSignMacBundle(path.join(context.appOutDir, "MkBoard.app"));
+      }
       if (context.electronPlatformName === "win32") {
         await fs.rm(path.join(context.appOutDir, "resources", "app.asar.unpacked", "node_modules", "fsevents"), {
           recursive: true,
@@ -41,6 +45,7 @@ module.exports = async function afterPack(context) {
       await packMacHyperframesRuntime(runtimeRoot, manifest, codeSignatureProtected);
       manifest.codeSignatureProtected = codeSignatureProtected;
       await fs.writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+      adHocSignMacBundle(path.join(context.appOutDir, "MkBoard.app"));
     }
   }
 
@@ -112,4 +117,11 @@ async function isMachO(file) {
   } finally {
     await handle.close();
   }
+}
+
+function adHocSignMacBundle(appBundlePath) {
+  if (process.platform !== "darwin") return;
+  const res = spawnSync("codesign", ["--force", "--deep", "--sign", "-", appBundlePath], { stdio: "inherit" });
+  if (res.error) throw res.error;
+  if (res.status !== 0) throw new Error(`Ad-hoc codesign failed with exit code ${res.status}`);
 }
