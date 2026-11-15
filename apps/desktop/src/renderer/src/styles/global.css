@@ -26529,3 +26529,258 @@ button.skg-card:hover .skg-footer-cta svg {
   width: 22px;
   height: 22px;
 }
+
+/* =========================================================================
+   Unified Grid Pack Cards & Single-Row Toolbars (Skills + Styles)
+   ========================================================================= */
+
+.sry-unified-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sry-unified-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 2px;
+}
+
+.sry-unified-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sry-taste-subbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.skg-pack-card:hover,
+.skg-pack-card:focus-visible {
+  transform: translateY(-3px);
+  border-color: rgba(15, 23, 42, 0.24);
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.09);
+  outline: none;
+}
+
+:root[data-theme="dark"] .skg-pack-card:hover,
+:root[data-theme="dark"] .skg-pack-card:focus-visible {
+  border-color: rgba(255, 255, 255, 0.24);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.42);
+}
+
+.skg-cover-video.hover-overlay {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 220ms ease,
+    transform 320ms ease;
+}
+
+.skg-cover-video.hover-overlay.playing {
+  opacity: 1;
+}
+
+.skg-pack-card:hover .skg-cover-img,
+.skg-pack-card:hover .skg-cover-video {
+  transform: scale(1.035);
+}
+
+.skg-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 23px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+}
+
+.skg-status-pill svg {
+  width: 11.5px;
+  height: 11.5px;
+  flex-shrink: 0;
+}
+
+.skg-status-pill.ready {
+  background: rgba(16, 185, 129, 0.9);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+}
+
+.skg-status-pill.free {
+  background: rgba(15, 23, 42, 0.78);
+  color: #f8fafc;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.skg-pack-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.skg-pack-avatar svg {
+  width: 17px;
+  height: 17px;
+}
+
+.skg-pack-avatar.creator {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #b45309;
+  border: 1px solid rgba(217, 119, 6, 0.22);
+}
+
+.skg-pack-avatar.launch {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  color: #1d4ed8;
+  border: 1px solid rgba(37, 99, 235, 0.22);
+}
+
+.skg-footer-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 25px;
+  padding: 0 9px;
+  border-radius: 7px;
+  border: 1px solid var(--line, rgba(15, 23, 42, 0.14));
+  background: var(--surface, #ffffff);
+  color: var(--text, #334155);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease;
+}
+
+.skg-footer-pill-btn svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.skg-footer-pill-btn:hover {
+  background: rgba(15, 23, 42, 0.055);
+  border-color: rgba(15, 23, 42, 0.28);
+}
+
+:root[data-theme="dark"] .skg-footer-pill-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #e2e8f0;
+}
+
+:root[data-theme="dark"] .skg-footer-pill-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.skg-pack-card:hover .skg-footer-cta svg {
+  transform: translateX(2px);
+}
+
+/* Unified Skillry Style Pack Card in .taste-card-grid-library */
+.taste-card-preview.taste-pack-preview {
+  position: relative;
+  display: flex !important;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 10px 12px !important;
+  background: #0f172a;
+  color: #ffffff;
+  overflow: hidden;
+}
+
+.taste-card-preview.taste-pack-preview > .skg-cover-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.taste-pack-card:hover .taste-pack-preview > .skg-cover-img,
+.taste-pack-card:hover .taste-pack-preview > .skg-cover-video {
+  transform: scale(1.035);
+}
+
+.taste-pack-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(9, 13, 22, 0.56) 0%,
+    rgba(9, 13, 22, 0.06) 46%,
+    rgba(9, 13, 22, 0.68) 100%
+  );
+  pointer-events: none;
+}
+
+.taste-pack-kicker {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: rgba(248, 250, 252, 0.92);
+  padding: 2.5px 7px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.66);
+  backdrop-filter: blur(6px);
+}
+
+.taste-pack-pill {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2.5px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #0f172a;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.taste-pack-bottom {
+  border-top-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+.taste-pack-theme-count {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: rgba(248, 250, 252, 0.92);
+}
+
+.sry-unified-toolbar .skills-search-field {
+  width: 224px;
+  flex: 0 0 224px;
+  min-height: 36px;
+  height: 36px;
+  padding: 0 13px;
+}
+
+.sry-unified-toolbar-right {
+  flex-wrap: nowrap;
+}
+
+@media (max-width: 960px) {
+  .sry-unified-toolbar-right {
+    flex-wrap: wrap;
+  }
+}

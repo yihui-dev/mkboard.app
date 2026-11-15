@@ -132,6 +132,12 @@ export interface SkillryMotionHubProps {
   onApplyVisualThemeAsTaste?: (input: CreateTasteInput) => Promise<Taste>;
   onOpenExternal: (url: string) => void;
   onDrillDownChange?: (isDrilledDown: boolean) => void;
+  renderUnifiedGrid?: (ctx: {
+    packs: SkillryPackStatus[];
+    accountControls: React.ReactNode;
+    openPackGallery: (slug: SkillryPackId) => void;
+    openPackPullModal: (pack: SkillryPackStatus) => void;
+  }) => React.ReactNode;
 }
 
 type ModalTarget =
@@ -156,7 +162,8 @@ export function SkillryMotionHub({
   onOpenSkillInEditor,
   onApplyVisualThemeAsTaste,
   onOpenExternal,
-  onDrillDownChange
+  onDrillDownChange,
+  renderUnifiedGrid
 }: SkillryMotionHubProps) {
   const isEn = locale === "en";
   const packs = catalog?.packs?.length ? catalog.packs : DEFAULT_FALLBACK_PACKS;
@@ -327,23 +334,8 @@ export function SkillryMotionHub({
   const activeThemes = activePack?.themes ?? [];
   const selectedTheme = activeThemes.find((t) => t.id === selectedThemeId) ?? activeThemes[0] ?? null;
 
-  return (
-    <div className="sry-hub-root">
-      {/* Shared Account & Entitlement Connection Bar */}
-      <div className="sry-account-bar">
-        <div className="sry-account-bar-left">
-          <span className="sry-brand-badge">
-            <Sparkles aria-hidden="true" />
-            <span>SKILLRY MOTION COLLECTIONS</span>
-          </span>
-          <span className="sry-showcase-note">
-            {isEn
-              ? "Preview all sub-effects freely · Connect Skillry & verify Pro / purchase to pull via npm"
-              : "集合与子效果仅供预览展示 · 下载使用需连接 Skillry 账号并验证权限后通过 npm 拉取"}
-          </span>
-        </div>
-
-        <div className="sry-account-bar-right">
+  const accountControlsNode = (
+    <div className="sry-account-bar-right">
           {account.connected ? (
             <>
               <span className={cx("sry-entitlement-pill", account.entitlement === "premium" ? "pro" : "free")}>
@@ -414,7 +406,27 @@ export function SkillryMotionHub({
             </>
           )}
         </div>
-      </div>
+  );
+
+  return (
+    <div className="sry-hub-root">
+      {/* Shared Account & Entitlement Connection Bar (shown in drill-down gallery or standalone mode) */}
+      {activePackSlug || !renderUnifiedGrid ? (
+        <div className="sry-account-bar">
+          <div className="sry-account-bar-left">
+            <span className="sry-brand-badge">
+              <Sparkles aria-hidden="true" />
+              <span>SKILLRY MOTION COLLECTIONS</span>
+            </span>
+            <span className="sry-showcase-note">
+              {isEn
+                ? "Preview all sub-effects freely · Connect Skillry & verify Pro / purchase to pull via npm"
+                : "集合与子效果仅供预览展示 · 下载使用需连接 Skillry 账号并验证权限后通过 npm 拉取"}
+            </span>
+          </div>
+          {accountControlsNode}
+        </div>
+      ) : null}
 
       {/* Inline OAuth Device Authorization Banner */}
       {authSession && authSession.status !== "not_started" ? (
@@ -485,8 +497,15 @@ export function SkillryMotionHub({
         </div>
       ) : null}
 
-      {/* MODE 1: COLLECTION OVERVIEW CARDS */}
-      {!activePackSlug ? (
+      {/* MODE 1: UNIFIED GRID OR COLLECTION OVERVIEW CARDS */}
+      {!activePackSlug && renderUnifiedGrid ? (
+        renderUnifiedGrid({
+          packs,
+          accountControls: accountControlsNode,
+          openPackGallery: (slug) => setActivePackSlug(slug),
+          openPackPullModal: (pack) => setModalTarget({ kind: "bundle", pack })
+        })
+      ) : !activePackSlug ? (
         <div className="sry-collection-grid">
           {packs.map((pack) => {
             const isCreator = pack.slug === "bs-creatormotion";
@@ -666,7 +685,7 @@ export function SkillryMotionHub({
                 onClick={() => setActivePackSlug(null)}
               >
                 <ArrowLeft aria-hidden="true" />
-                <span>{isEn ? "Collections" : "返回集合"}</span>
+                <span>{isEn ? (surface === "skills" ? "All Skills" : "All Styles") : surface === "skills" ? "返回全部技能" : "返回全部风格"}</span>
               </button>
               <div className="sry-gallery-heading">
                 <h2>{activePack.title}</h2>

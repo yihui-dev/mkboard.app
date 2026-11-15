@@ -13,7 +13,12 @@ import OpenAIIcon from "@lobehub/icons/es/OpenAI/components/Mono";
 import tasteMediaUrlMap from "./data/taste-media.json";
 import tastePreviewImageUrlMap from "./data/taste-preview-images.json";
 import { SkillryMotionHub } from "./components/SkillryMotionHub";
-import { SkillCreateActionCard, SkillGalleryCard } from "./components/SkillGalleryCard";
+import {
+  SkillCreateActionCard,
+  SkillGalleryCard,
+  SkillryPackGalleryCard,
+  SkillryTastePackCard
+} from "./components/SkillGalleryCard";
 import {
   AlertTriangle,
   Archive,
@@ -8001,7 +8006,6 @@ function SkillsScreen({
 }) {
   const { locale, t } = useI18n();
   const [skillView, setSkillView] = useState<"list" | "editor">("list");
-  const [hubDrilledDown, setHubDrilledDown] = useState(false);
   const [selectedSkillId, setSelectedSkillId] = useState("");
   const [activeFilter, setActiveFilter] = useState<SkillFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -8342,104 +8346,126 @@ function SkillsScreen({
           onSkillsChanged={onReloadSkills}
           onOpenSkillInEditor={openSkill}
           onOpenExternal={onOpenExternal}
-          onDrillDownChange={setHubDrilledDown}
-        />
+          renderUnifiedGrid={({ packs, accountControls, openPackGallery, openPackPullModal }) => {
+            const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
+            const visiblePacks = packs.filter((pack) => {
+              if (activeFilter === "user" && !pack.syncedToMkboard) return false;
+              if (!normalizedQuery) return true;
+              const hay = `${pack.title} ${pack.subtitle} ${pack.categoryTagsZh.join(" ")} ${pack.categoryTagsEn.join(" ")}`.toLocaleLowerCase();
+              return hay.includes(normalizedQuery);
+            });
+            const packSkillIds = new Set(packs.map((pack) => pack.mkboardSkillId));
+            const dedupedSkills = filteredSkills.filter((sk) => !packSkillIds.has(sk.id));
+            const systemSkills = dedupedSkills.filter((sk) => sk.locked);
+            const customSkills = dedupedSkills.filter((sk) => !sk.locked);
+            const totalVisibleCards = systemSkills.length + visiblePacks.length + customSkills.length;
 
-        {!hubDrilledDown ? (
-          <section className="sry-local-section">
-            <div className="sry-section-divider">
-              <div>
-                <h2>{locale === "en" ? "Local & Custom Skills" : "本机与自定义分镜技能"}</h2>
-                <p>
-                  {locale === "en"
-                    ? "Skills pulled from Skillry, imported from GitHub, or authored locally."
-                    : "已从 Skillry 拉取、从 GitHub 导入或在本地创建的分镜技能。"}
-                </p>
-              </div>
-            </div>
+            return (
+              <section className="sry-unified-section">
+                <div className="skills-toolbar sry-unified-toolbar">
+                  <div className="skills-filter-tabs" role="tablist" aria-label={t("skills.filterLabel")}>
+                    {([
+                      ["all", t("skills.filter.all")],
+                      ["system", t("skills.filter.system")],
+                      ["user", t("skills.filter.user")]
+                    ] as Array<[SkillFilter, string]>).map(([filter, label]) => (
+                      <button
+                        className={cn("skills-filter-tab", activeFilter === filter && "active")}
+                        key={filter}
+                        type="button"
+                        role="tab"
+                        aria-selected={activeFilter === filter}
+                        onClick={() => setActiveFilter(filter)}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
 
-            <div className="skills-toolbar">
-              <div className="skills-filter-tabs" role="tablist" aria-label={t("skills.filterLabel")}>
-                {([
-                  ["all", t("skills.filter.all")],
-                  ["system", t("skills.filter.system")],
-                  ["user", t("skills.filter.user")]
-                ] as Array<[SkillFilter, string]>).map(([filter, label]) => (
-                  <button
-                    className={cn("skills-filter-tab", activeFilter === filter && "active")}
-                    key={filter}
-                    type="button"
-                    role="tab"
-                    aria-selected={activeFilter === filter}
-                    onClick={() => setActiveFilter(filter)}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-              <label className="skills-search-field">
-                <Search aria-hidden="true" />
-                <input
-                  type="search"
-                  value={searchQuery}
-                  placeholder={t("skills.searchPlaceholder")}
-                  aria-label={t("skills.searchPlaceholder")}
-                  onChange={(event) => setSearchQuery(event.target.value)}
-                />
-              </label>
-            </div>
+                  <div className="sry-unified-toolbar-right">
+                    {accountControls}
+                    <label className="skills-search-field">
+                      <Search aria-hidden="true" />
+                      <input
+                        type="search"
+                        value={searchQuery}
+                        placeholder={t("skills.searchPlaceholder")}
+                        aria-label={t("skills.searchPlaceholder")}
+                        onChange={(event) => setSearchQuery(event.target.value)}
+                      />
+                    </label>
+                  </div>
+                </div>
 
-            {loading ? (
-              <div className="skills-loading-note">
-                <LoaderCircle className="spinning" aria-hidden="true" />
-                <span>{t("skills.loading")}</span>
-              </div>
-            ) : null}
-
-            {error ? (
-              <div className="skill-editor-empty-state skills-library-message">
-                <AlertTriangle aria-hidden="true" />
-                <strong>{t("skills.loadFailed")}</strong>
-                <p>{error}</p>
-                <button type="button" className="hub-btn hub-btn-outline" disabled={loading} onClick={() => void onReloadSkills()}>
-                  {loading ? <LoaderCircle className="spinning" aria-hidden="true" /> : <RefreshCw aria-hidden="true" />}
-                  <span>{t("skills.retry")}</span>
-                </button>
-              </div>
-            ) : !loading && skills.length === 0 ? (
-              <div className="skill-editor-empty-state skills-library-message">
-                <Lightbulb aria-hidden="true" />
-                <strong>{t("skills.noSkillsTitle")}</strong>
-                <p>{t("skills.noSkillsDescription")}</p>
-              </div>
-            ) : filteredSkills.length === 0 ? (
-              <div className="skill-editor-empty-state skills-library-message">
-                <Search aria-hidden="true" />
-                <strong>{t("skills.emptyFilteredTitle")}</strong>
-                {searchQuery.trim() ? <p>{t("skills.emptyFilteredDescription", { query: searchQuery.trim() })}</p> : null}
-              </div>
-            ) : (
-              <div className="skg-grid" aria-label={t("skills.cardGridLabel")}>
-                {filteredSkills.map((skill) => (
-                  <SkillGalleryCard
-                    key={skill.id}
-                    skill={skill}
-                    locale={locale}
-                    iconNode={<SkillVisualIcon className="skg-avatar-icon" iconId={skill.iconId} gradientId={skill.gradientId} />}
-                    onSelect={openSkill}
-                  />
-                ))}
-                {activeFilter !== "system" && !searchQuery.trim() ? (
-                  <SkillCreateActionCard
-                    locale={locale}
-                    onCreate={startCreateSkill}
-                    onImportGithub={() => setImportModalOpen(true)}
-                  />
+                {loading ? (
+                  <div className="skills-loading-note">
+                    <LoaderCircle className="spinning" aria-hidden="true" />
+                    <span>{t("skills.loading")}</span>
+                  </div>
                 ) : null}
-              </div>
-            )}
-          </section>
-        ) : null}
+
+                {error ? (
+                  <div className="skill-editor-empty-state skills-library-message">
+                    <AlertTriangle aria-hidden="true" />
+                    <strong>{t("skills.loadFailed")}</strong>
+                    <p>{error}</p>
+                    <button type="button" className="hub-btn hub-btn-outline" disabled={loading} onClick={() => void onReloadSkills()}>
+                      {loading ? <LoaderCircle className="spinning" aria-hidden="true" /> : <RefreshCw aria-hidden="true" />}
+                      <span>{t("skills.retry")}</span>
+                    </button>
+                  </div>
+                ) : !loading && totalVisibleCards === 0 && Boolean(normalizedQuery) ? (
+                  <div className="skill-editor-empty-state skills-library-message">
+                    <Search aria-hidden="true" />
+                    <strong>{t("skills.emptyFilteredTitle")}</strong>
+                    {searchQuery.trim() ? <p>{t("skills.emptyFilteredDescription", { query: searchQuery.trim() })}</p> : null}
+                  </div>
+                ) : (
+                  <div className="skg-grid" aria-label={t("skills.cardGridLabel")}>
+                    {systemSkills.map((skill) => (
+                      <SkillGalleryCard
+                        key={skill.id}
+                        skill={skill}
+                        locale={locale}
+                        iconNode={<SkillVisualIcon className="skg-avatar-icon" iconId={skill.iconId} gradientId={skill.gradientId} />}
+                        onSelect={openSkill}
+                      />
+                    ))}
+
+                    {visiblePacks.map((pack) => (
+                      <SkillryPackGalleryCard
+                        key={pack.slug}
+                        pack={pack}
+                        locale={locale}
+                        onOpenGallery={() => openPackGallery(pack.slug)}
+                        onPullPack={() => openPackPullModal(pack)}
+                        onEditSyncedSkill={openSkill}
+                      />
+                    ))}
+
+                    {customSkills.map((skill) => (
+                      <SkillGalleryCard
+                        key={skill.id}
+                        skill={skill}
+                        locale={locale}
+                        iconNode={<SkillVisualIcon className="skg-avatar-icon" iconId={skill.iconId} gradientId={skill.gradientId} />}
+                        onSelect={openSkill}
+                      />
+                    ))}
+
+                    {activeFilter !== "system" && !normalizedQuery ? (
+                      <SkillCreateActionCard
+                        locale={locale}
+                        onCreate={startCreateSkill}
+                        onImportGithub={() => setImportModalOpen(true)}
+                      />
+                    ) : null}
+                  </div>
+                )}
+              </section>
+            );
+          }}
+        />
       </div>
 
       <SourceImportModal
@@ -8758,7 +8784,6 @@ function TasteScreen({
   const [quickImportError, setQuickImportError] = useState<string | null>(null);
   const [defaultNoticeTasteId, setDefaultNoticeTasteId] = useState<string | null>(null);
   const [pendingDeleteTaste, setPendingDeleteTaste] = useState<Taste | null>(null);
-  const [hubDrilledDown, setHubDrilledDown] = useState(false);
 
   useEffect(() => {
     if (!defaultNoticeTasteId) return undefined;
@@ -8853,7 +8878,6 @@ function TasteScreen({
               </div>
             ) : null}
 
-            {/* Collection Showcase + Drill-down Sub-Effects & Visual Themes Gallery */}
             <SkillryMotionHub
               surface="taste"
               locale={locale}
@@ -8864,200 +8888,199 @@ function TasteScreen({
               onSkillsChanged={onSkillsChanged}
               onApplyVisualThemeAsTaste={onCreateTaste}
               onOpenExternal={onOpenExternal}
-              onDrillDownChange={setHubDrilledDown}
-            />
-
-            {/* Custom & Open-Source GitHub Visual Styles Section */}
-            {!hubDrilledDown ? (
-              <section className="sry-local-section" aria-label={isEn ? "Custom & Open-Source Styles" : "开源模板与自定义风格"}>
-                <div className="sry-section-divider">
-                  <div>
-                    <h2>{isEn ? "Open-Source & Custom Styles" : "导入开源设计系统 / 我的自定义风格"}</h2>
-                    <p>
-                      {isEn
-                        ? "Import color tokens & design rules from any GitHub repo, local directory, or build your own visual style."
-                        : "支持粘贴任意 GitHub 开源仓库或本地目录自动提取配色与排版规范，也可手动新建专属视觉风格。"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="sry-github-import-strip">
-                  <form className="taste-github-bar" onSubmit={(e) => void handleQuickGithubImport(e)}>
-                    <span className="taste-github-bar-icon" aria-hidden="true">
-                      <Globe />
-                    </span>
-                    <input
-                      type="text"
-                      className="taste-github-bar-input"
-                      value={quickGithubUrl}
-                      readOnly={quickImporting}
-                      placeholder={t("taste.emptyGithubPlaceholder")}
-                      onChange={(e) => setQuickGithubUrl(e.target.value)}
-                    />
-                    <button
-                      type="submit"
-                      className="hub-btn hub-btn-dark taste-github-bar-submit"
-                      disabled={!quickGithubUrl.trim() || quickImporting}
-                    >
-                      {quickImporting ? <LoaderCircle className="spinning" aria-hidden="true" /> : <Download aria-hidden="true" />}
-                      <span>{quickImporting ? t("taste.importing") : t("taste.emptyQuickImport")}</span>
-                    </button>
-                  </form>
-
-                  <div className="taste-preset-chips">
-                    <span className="taste-preset-label">{isEn ? "Quick Try:" : "开源示例："}</span>
-                    <button
-                      type="button"
-                      className="taste-preset-chip"
-                      disabled={quickImporting}
-                      onClick={() => void runGithubImportUrl("https://github.com/nexu-io/open-design")}
-                    >
-                      <span>nexu-io/open-design</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="taste-preset-chip"
-                      disabled={quickImporting}
-                      onClick={() => void runGithubImportUrl("https://github.com/shadcn-ui/ui")}
-                    >
-                      <span>shadcn-ui/ui</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="taste-preset-chip action"
-                      disabled={quickImporting}
-                      onClick={() => setImportModalState({ open: true, sourceType: "local", url: "" })}
-                    >
-                      <FolderOpen aria-hidden="true" />
-                      <span>{t("taste.emptyLocalFolder")}</span>
-                    </button>
-                  </div>
-
-                  {quickImportError ? (
-                    <div className="skillry-status-banner error" role="alert">
-                      <AlertTriangle aria-hidden="true" />
-                      <span>{quickImportError}</span>
-                    </div>
-                  ) : null}
-                </div>
-
-                <div className="taste-card-grid taste-card-grid-library taste-studio-grid">
-                  {customTastes.map((taste) => (
-                    <TastePreviewCard
-                      key={taste.id}
-                      taste={taste}
-                      defaultTaste={taste.id === defaultTasteId}
-                      onPreview={(id) => {
-                        const found = customTastes.find((item) => item.id === id);
-                        if (found) setEditingTaste(found);
-                      }}
-                    />
-                  ))}
-
-                  {([
-                    {
-                      key: "oss-swiss-klein",
-                      titleZh: "瑞士克莱因网格",
-                      titleEn: "Swiss Klein Grid",
-                      specimen: "International\nKlein Blue.",
-                      descZh: "开源瑞士网格主义海报规范，高饱和克莱因蓝配极简留白卡片。",
-                      descEn: "Open-source Swiss grid poster system with Klein Blue & crisp card geometry.",
-                      preview: { background: "#0B3B9E", foreground: "#F8FAFC", accent: "#60A5FA" },
-                      rules: "# Swiss Klein Grid\n- Background: #0B3B9E\n- Text: #F8FAFC\n- Accent: #60A5FA\n- Typography: Crisp grotesque display + strict 12-column Swiss alignment."
-                    },
-                    {
-                      key: "oss-warm-editorial",
-                      titleZh: "暖纸画报社论风",
-                      titleEn: "Warm Editorial Print",
-                      specimen: "Editorial\nPaper Studio.",
-                      descZh: "温润米白纸感底色与信号橙点缀，适合深度人文、商业拆解与知识口播。",
-                      descEn: "Warm editorial paper tone with signal-orange callouts for narrative explainers.",
-                      preview: { background: "#F6F1E7", foreground: "#1C1917", accent: "#EA580C" },
-                      rules: "# Warm Editorial Print\n- Background: #F6F1E7\n- Text: #1C1917\n- Accent: #EA580C\n- Layout: Generous editorial margins, high-contrast serif/sans hierarchy."
-                    },
-                    {
-                      key: "oss-noir-console",
-                      titleZh: "黑金极客控制台",
-                      titleEn: "Noir Dev Console",
-                      specimen: "Noir\nConsole.",
-                      descZh: "深邃暗色终端底板搭配荧光绿高亮，适合 AI 工具、开发者产品与硬核科技。",
-                      descEn: "Deep obsidian terminal surface with neon emerald highlights for AI & dev tools.",
-                      preview: { background: "#111317", foreground: "#F4F6FB", accent: "#34D399" },
-                      rules: "# Noir Dev Console\n- Background: #111317\n- Text: #F4F6FB\n- Accent: #34D399\n- Layout: Monospace metrics, subtle hairline borders, glowing terminal accents."
-                    }
-                  ] as const)
-                    .filter((starter) => !customTastes.some((ct) => ct.name === starter.titleZh || ct.name === starter.titleEn))
-                    .map((starter) => (
+              renderUnifiedGrid={({ packs, accountControls, openPackGallery }) => (
+                <section className="sry-unified-section" aria-label={isEn ? "Visual Styles & Motion Collections" : "视觉风格与动效合集"}>
+                  <div className="sry-github-import-strip">
+                    <form className="taste-github-bar" onSubmit={(e) => void handleQuickGithubImport(e)}>
+                      <span className="taste-github-bar-icon" aria-hidden="true">
+                        <Globe />
+                      </span>
+                      <input
+                        type="text"
+                        className="taste-github-bar-input"
+                        value={quickGithubUrl}
+                        readOnly={quickImporting}
+                        placeholder={t("taste.emptyGithubPlaceholder")}
+                        onChange={(e) => setQuickGithubUrl(e.target.value)}
+                      />
                       <button
-                        key={starter.key}
-                        type="button"
-                        className="taste-card taste-oss-starter-card"
-                        disabled={quickImporting}
-                        onClick={async () => {
-                          const created = await onCreateTaste({
-                            name: isEn ? starter.titleEn : starter.titleZh,
-                            description: isEn ? starter.descEn : starter.descZh,
-                            content: starter.rules,
-                            preview: starter.preview
-                          });
-                          setDefaultTaste(created.id);
-                        }}
+                        type="submit"
+                        className="hub-btn hub-btn-dark taste-github-bar-submit"
+                        disabled={!quickGithubUrl.trim() || quickImporting}
                       >
-                        <div
-                          className="taste-card-preview taste-swiss-poster"
-                          style={{ background: starter.preview.background, color: starter.preview.foreground }}
-                        >
-                          <div className="taste-swiss-top">
-                            <span className="taste-swiss-kicker">OPEN-SOURCE PRESET</span>
-                            <span
-                              className="taste-swiss-pill"
-                              style={{ background: starter.preview.accent, color: "#fff" }}
-                            >
-                              {isEn ? "+ Add & Use" : "+ 一键添加"}
-                            </span>
-                          </div>
-                          <div className="taste-swiss-mid">
-                            <strong className="taste-swiss-display">{starter.specimen}</strong>
-                            <span
-                              className="taste-swiss-geo"
-                              style={{ background: starter.preview.accent }}
-                              aria-hidden="true"
-                            />
-                          </div>
-                          <div className="taste-swiss-bottom">
-                            <span className="taste-swiss-hex">{starter.preview.background}</span>
-                            <div className="taste-card-swatches" aria-hidden="true">
-                              <span className="taste-card-swatch-dot" style={{ background: starter.preview.background }} />
-                              <span className="taste-card-swatch-dot" style={{ background: starter.preview.foreground }} />
-                              <span className="taste-card-swatch-dot" style={{ background: starter.preview.accent }} />
-                            </div>
-                          </div>
-                        </div>
-                        <div className="taste-card-copy">
-                          <strong>{isEn ? starter.titleEn : starter.titleZh}</strong>
-                          <small className="taste-card-desc-line">{isEn ? starter.descEn : starter.descZh}</small>
-                        </div>
+                        {quickImporting ? <LoaderCircle className="spinning" aria-hidden="true" /> : <Download aria-hidden="true" />}
+                        <span>{quickImporting ? t("taste.importing") : t("taste.emptyQuickImport")}</span>
                       </button>
+                    </form>
+
+                    <div className="sry-taste-subbar">
+                      <div className="taste-preset-chips">
+                        <span className="taste-preset-label">{isEn ? "Quick Try:" : "开源示例："}</span>
+                        <button
+                          type="button"
+                          className="taste-preset-chip"
+                          disabled={quickImporting}
+                          onClick={() => void runGithubImportUrl("https://github.com/nexu-io/open-design")}
+                        >
+                          <span>nexu-io/open-design</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="taste-preset-chip"
+                          disabled={quickImporting}
+                          onClick={() => void runGithubImportUrl("https://github.com/shadcn-ui/ui")}
+                        >
+                          <span>shadcn-ui/ui</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="taste-preset-chip action"
+                          disabled={quickImporting}
+                          onClick={() => setImportModalState({ open: true, sourceType: "local", url: "" })}
+                        >
+                          <FolderOpen aria-hidden="true" />
+                          <span>{t("taste.emptyLocalFolder")}</span>
+                        </button>
+                      </div>
+
+                      {accountControls}
+                    </div>
+
+                    {quickImportError ? (
+                      <div className="skillry-status-banner error" role="alert">
+                        <AlertTriangle aria-hidden="true" />
+                        <span>{quickImportError}</span>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div className="taste-card-grid taste-card-grid-library taste-studio-grid">
+                    {customTastes.map((taste) => (
+                      <TastePreviewCard
+                        key={taste.id}
+                        taste={taste}
+                        defaultTaste={taste.id === defaultTasteId}
+                        onPreview={(id) => {
+                          const found = customTastes.find((item) => item.id === id);
+                          if (found) setEditingTaste(found);
+                        }}
+                      />
                     ))}
 
-                  <button
-                    type="button"
-                    className="taste-studio-action-card create"
-                    onClick={() => setEditingTaste("new")}
-                  >
-                    <div className="taste-studio-canvas dot-matrix">
-                      <span className="taste-studio-plus-badge" aria-hidden="true">
-                        <Plus />
-                      </span>
-                    </div>
-                    <div className="taste-studio-card-meta">
-                      <strong>{t("taste.createCustomButton")}</strong>
-                      <span>{t("taste.rulesPlaceholder")}</span>
-                    </div>
-                  </button>
-                </div>
-              </section>
-            ) : null}
+                    {packs.map((pack) => (
+                      <SkillryTastePackCard
+                        key={pack.slug}
+                        pack={pack}
+                        locale={locale}
+                        onOpenGallery={() => openPackGallery(pack.slug)}
+                      />
+                    ))}
+
+                    {([
+                      {
+                        key: "oss-swiss-klein",
+                        titleZh: "瑞士克莱因网格",
+                        titleEn: "Swiss Klein Grid",
+                        specimen: "International\nKlein Blue.",
+                        descZh: "开源瑞士网格主义海报规范，高饱和克莱因蓝配极简留白卡片。",
+                        descEn: "Open-source Swiss grid poster system with Klein Blue & crisp card geometry.",
+                        preview: { background: "#0B3B9E", foreground: "#F8FAFC", accent: "#60A5FA" },
+                        rules: "# Swiss Klein Grid\n- Background: #0B3B9E\n- Text: #F8FAFC\n- Accent: #60A5FA\n- Typography: Crisp grotesque display + strict 12-column Swiss alignment."
+                      },
+                      {
+                        key: "oss-warm-editorial",
+                        titleZh: "暖纸画报社论风",
+                        titleEn: "Warm Editorial Print",
+                        specimen: "Editorial\nPaper Studio.",
+                        descZh: "温润米白纸感底色与信号橙点缀，适合深度人文、商业拆解与知识口播。",
+                        descEn: "Warm editorial paper tone with signal-orange callouts for narrative explainers.",
+                        preview: { background: "#F6F1E7", foreground: "#1C1917", accent: "#EA580C" },
+                        rules: "# Warm Editorial Print\n- Background: #F6F1E7\n- Text: #1C1917\n- Accent: #EA580C\n- Layout: Generous editorial margins, high-contrast serif/sans hierarchy."
+                      },
+                      {
+                        key: "oss-noir-console",
+                        titleZh: "黑金极客控制台",
+                        titleEn: "Noir Dev Console",
+                        specimen: "Noir\nConsole.",
+                        descZh: "深邃暗色终端底板搭配荧光绿高亮，适合 AI 工具、开发者产品与硬核科技。",
+                        descEn: "Deep obsidian terminal surface with neon emerald highlights for AI & dev tools.",
+                        preview: { background: "#111317", foreground: "#F4F6FB", accent: "#34D399" },
+                        rules: "# Noir Dev Console\n- Background: #111317\n- Text: #F4F6FB\n- Accent: #34D399\n- Layout: Monospace metrics, subtle hairline borders, glowing terminal accents."
+                      }
+                    ] as const)
+                      .filter((starter) => !customTastes.some((ct) => ct.name === starter.titleZh || ct.name === starter.titleEn))
+                      .map((starter) => (
+                        <button
+                          key={starter.key}
+                          type="button"
+                          className="taste-card taste-oss-starter-card"
+                          disabled={quickImporting}
+                          onClick={async () => {
+                            const created = await onCreateTaste({
+                              name: isEn ? starter.titleEn : starter.titleZh,
+                              description: isEn ? starter.descEn : starter.descZh,
+                              content: starter.rules,
+                              preview: starter.preview
+                            });
+                            setDefaultTaste(created.id);
+                          }}
+                        >
+                          <div
+                            className="taste-card-preview taste-swiss-poster"
+                            style={{ background: starter.preview.background, color: starter.preview.foreground }}
+                          >
+                            <div className="taste-swiss-top">
+                              <span className="taste-swiss-kicker">OPEN-SOURCE PRESET</span>
+                              <span
+                                className="taste-swiss-pill"
+                                style={{ background: starter.preview.accent, color: "#fff" }}
+                              >
+                                {isEn ? "+ Add & Use" : "+ 一键添加"}
+                              </span>
+                            </div>
+                            <div className="taste-swiss-mid">
+                              <strong className="taste-swiss-display">{starter.specimen}</strong>
+                              <span
+                                className="taste-swiss-geo"
+                                style={{ background: starter.preview.accent }}
+                                aria-hidden="true"
+                              />
+                            </div>
+                            <div className="taste-swiss-bottom">
+                              <span className="taste-swiss-hex">{starter.preview.background}</span>
+                              <div className="taste-card-swatches" aria-hidden="true">
+                                <span className="taste-card-swatch-dot" style={{ background: starter.preview.background }} />
+                                <span className="taste-card-swatch-dot" style={{ background: starter.preview.foreground }} />
+                                <span className="taste-card-swatch-dot" style={{ background: starter.preview.accent }} />
+                              </div>
+                            </div>
+                          </div>
+                          <div className="taste-card-copy">
+                            <strong>{isEn ? starter.titleEn : starter.titleZh}</strong>
+                            <small className="taste-card-desc-line">{isEn ? starter.descEn : starter.descZh}</small>
+                          </div>
+                        </button>
+                      ))}
+
+                    <button
+                      type="button"
+                      className="taste-studio-action-card create"
+                      onClick={() => setEditingTaste("new")}
+                    >
+                      <div className="taste-studio-canvas dot-matrix">
+                        <span className="taste-studio-plus-badge" aria-hidden="true">
+                          <Plus />
+                        </span>
+                      </div>
+                      <div className="taste-studio-card-meta">
+                        <strong>{t("taste.createCustomButton")}</strong>
+                        <span>{t("taste.rulesPlaceholder")}</span>
+                      </div>
+                    </button>
+                  </div>
+                </section>
+              )}
+            />
           </div>
         )}
       </section>
