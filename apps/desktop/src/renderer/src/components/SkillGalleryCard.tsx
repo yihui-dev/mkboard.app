@@ -3,12 +3,22 @@ import {
   Check,
   Code2,
   Compass,
+  Film,
+  Images,
   Layers,
+  Megaphone,
   Rocket,
   Sparkles,
+  TableProperties,
   WandSparkles
 } from "lucide-react";
-import type { InterfaceLanguage, Skill, SkillryPackStatus, Taste } from "../../../shared";
+import type { InterfaceLanguage, ProjectTemplate, Skill, SkillryPackStatus, StoryboardColumn, Taste } from "../../../shared";
+import {
+  getSystemStoryboardSkillArchetype,
+  getSystemStoryboardSkillFamily,
+  getSystemTemplateSeed,
+  type StoryboardArchetypeId
+} from "../../../storyboard-presets";
 
 type DetectedSkillKind =
   | "system-storyboard"
@@ -61,18 +71,169 @@ function getCleanIllustrationPalette(seed: number) {
   const palettes = [
     { bg: "#F4F4F2", cardBg: "#FFFFFF", accent: "#2563EB" },
     { bg: "#F3F5F3", cardBg: "#FFFFFF", accent: "#059669" },
-    { bg: "#F6F3F0", cardBg: "#FFFFFF", accent: "#EA580C" },
-    { bg: "#F4F3F7", cardBg: "#FFFFFF", accent: "#7C3AED" }
+    { bg: "#F6F3F0", cardBg: "#FFFFFF", accent: "#D97706" },
+    { bg: "#F4F3F7", cardBg: "#FFFFFF", accent: "#4F46E5" }
   ];
   return palettes[seed % palettes.length]!;
 }
 
+const ARCHETYPE_SURFACES: Record<StoryboardArchetypeId, { bg: string; accent: string }> = {
+  default: { bg: "#F4F4F5", accent: "#18181B" },
+  "minimal-keyframe": { bg: "#F6F4EF", accent: "#D97706" },
+  "creator-explainer": { bg: "#F1F5F8", accent: "#0284C7" },
+  "product-launch": { bg: "#F2F3F9", accent: "#4F46E5" },
+  "cinematic-story": { bg: "#F7F2F3", accent: "#E11D48" },
+  "social-hook": { bg: "#F1F6F3", accent: "#059669" }
+};
+
 /**
- * OpenDesign-inspired pure visual storyboard canvas specimen (zero text clutter, zero locks).
+ * OpenDesign-inspired pure geometric storyboard skill specimens (zero text clutter, zero locks).
+ * Each built-in storyboard skill family renders a distinct, calm architectural miniature.
  */
-function MinimalStoryboardArtwork() {
+function MinimalStoryboardArtwork({ archetype = "default" }: { archetype?: StoryboardArchetypeId }) {
+  const surface = ARCHETYPE_SURFACES[archetype] ?? ARCHETYPE_SURFACES.default;
+  const cssVars = {
+    "--sb-stage-bg": surface.bg,
+    "--sb-accent": surface.accent
+  } as React.CSSProperties;
+
+  if (archetype === "minimal-keyframe") {
+    return (
+      <div className="od-art-storyboard" style={cssVars} aria-hidden="true">
+        <div className="od-art-sb-sheet minimal">
+          <div className="od-art-sb-topbar">
+            <span className="od-art-accent-dot" />
+            <span className="od-art-sb-bar short" />
+          </div>
+          <div className="od-art-keyframe-strip">
+            <div className="od-art-kf-frame">
+              <span className="od-art-kf-horizon" />
+              <span className="od-art-kf-sun" />
+            </div>
+            <div className="od-art-kf-frame active">
+              <span className="od-art-kf-subject" />
+            </div>
+            <div className="od-art-kf-frame">
+              <span className="od-art-kf-horizon low" />
+            </div>
+          </div>
+          <div className="od-art-minimal-ticks">
+            <i className="active" />
+            <i />
+            <i />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (archetype === "creator-explainer") {
+    return (
+      <div className="od-art-storyboard" style={cssVars} aria-hidden="true">
+        <div className="od-art-sb-sheet explainer">
+          <div className="od-art-sb-topbar">
+            <span className="od-art-accent-dot" />
+            <span className="od-art-sb-bar" />
+          </div>
+          <div className="od-art-explainer-split">
+            <div className="od-art-explainer-left">
+              <span className="od-art-sb-avatar" />
+              <span className="od-art-sb-line w85 dark" />
+              <span className="od-art-sb-line w55" />
+            </div>
+            <div className="od-art-explainer-right">
+              <span className="od-art-callout-pill" />
+              <div className="od-art-explainer-bars">
+                <i style={{ height: "38%" }} />
+                <i style={{ height: "66%" }} />
+                <i className="hi" style={{ height: "96%" }} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (archetype === "product-launch") {
+    return (
+      <div className="od-art-storyboard" style={cssVars} aria-hidden="true">
+        <div className="od-art-sb-sheet launch">
+          <div className="od-art-sb-topbar">
+            <span className="od-art-sb-dots">
+              <i />
+              <i />
+              <i />
+            </span>
+            <span className="od-art-accent-pill" />
+          </div>
+          <div className="od-art-launch-body">
+            <div className="od-art-launch-hero">
+              <span className="od-art-sb-line w68 dark" />
+              <span className="od-art-sb-line w45" />
+              <span className="od-art-launch-cta" />
+            </div>
+            <div className="od-art-launch-cards">
+              <div className="od-art-launch-tile" />
+              <div className="od-art-launch-tile active" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (archetype === "cinematic-story") {
+    return (
+      <div className="od-art-storyboard" style={cssVars} aria-hidden="true">
+        <div className="od-art-sb-sheet cinema">
+          <div className="od-art-cinema-grid">
+            <div className="od-art-cinema-panel">
+              <span className="od-art-cinema-subject wide" />
+            </div>
+            <div className="od-art-cinema-panel active">
+              <span className="od-art-cinema-subject close" />
+            </div>
+            <div className="od-art-cinema-panel">
+              <span className="od-art-cinema-subject mid" />
+            </div>
+            <div className="od-art-cinema-panel">
+              <span className="od-art-cinema-wave" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (archetype === "social-hook") {
+    return (
+      <div className="od-art-storyboard" style={cssVars} aria-hidden="true">
+        <div className="od-art-vertical-stage">
+          <div className="od-art-phone-frame active">
+            <span className="od-art-phone-notch" />
+            <span className="od-art-phone-badge" />
+            <div className="od-art-phone-center">
+              <span className="od-art-sb-avatar" />
+            </div>
+            <span className="od-art-phone-caption" />
+          </div>
+          <div className="od-art-phone-frame secondary">
+            <span className="od-art-phone-notch" />
+            <div className="od-art-phone-bars">
+              <span style={{ width: "78%" }} />
+              <span style={{ width: "56%" }} />
+              <span className="accent" style={{ width: "68%" }} />
+            </div>
+            <span className="od-art-phone-caption short" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="od-art-storyboard" aria-hidden="true">
+    <div className="od-art-storyboard" style={cssVars} aria-hidden="true">
       <div className="od-art-sb-sheet">
         <div className="od-art-sb-topbar">
           <span className="od-art-sb-dots">
@@ -120,8 +281,96 @@ function MinimalStoryboardArtwork() {
 }
 
 /**
+ * Minimalist OpenDesign Storyboard Sheet Specimen for `ProjectTemplate` cards.
+ * Visually mirrors the template's actual visible column density & archetype without noisy text!
+ */
+function MinimalTemplateSheetArtwork({
+  columns,
+  archetype,
+  accentHex
+}: {
+  columns: StoryboardColumn[];
+  archetype: StoryboardArchetypeId;
+  accentHex: string;
+}) {
+  const surface = ARCHETYPE_SURFACES[archetype] ?? ARCHETYPE_SURFACES.default;
+  const visibleContentCols = useMemo(() => {
+    const visible = columns.filter((col) => col.visible && col.id !== "sort" && col.id !== "shot");
+    return visible.slice(0, 5);
+  }, [columns]);
+
+  const isVertical = archetype === "social-hook";
+
+  return (
+    <div
+      className="od-art-template-stage"
+      style={
+        {
+          "--tpl-stage-bg": surface.bg,
+          "--tpl-accent": accentHex || surface.accent
+        } as React.CSSProperties
+      }
+      aria-hidden="true"
+    >
+      <div className="od-tpl-sheet">
+        <div className="od-tpl-sheet-head">
+          <div className="od-tpl-sheet-head-left">
+            <span className="od-tpl-accent-dot" />
+            <span className="od-tpl-title-bar" />
+          </div>
+          <span className="od-tpl-count-pill" />
+        </div>
+
+        <div className="od-tpl-table">
+          <div className="od-tpl-row head">
+            <span className="od-tpl-idx-col" />
+            {visibleContentCols.map((col) => (
+              <span
+                key={col.id}
+                className={`od-tpl-col-head ${col.type === "image" ? "img" : col.custom && col.id !== "custom-1" && col.id !== "custom-2" && col.id !== "custom-3" ? "highlight" : ""}`}
+              />
+            ))}
+          </div>
+
+          {[0, 1, 2].map((rowIdx) => (
+            <div key={rowIdx} className={`od-tpl-row body ${rowIdx === 1 ? "active" : ""}`}>
+              <span className="od-tpl-idx-dot" />
+              {visibleContentCols.map((col, colIdx) => {
+                if (col.type === "image") {
+                  return (
+                    <span
+                      key={col.id}
+                      className={`od-tpl-thumb-cell ${isVertical ? "vertical" : ""} ${rowIdx === 1 ? "accent" : ""}`}
+                    />
+                  );
+                }
+                if (col.id === "scene" || col.type === "select" || col.id === "duration") {
+                  return (
+                    <span
+                      key={col.id}
+                      className={`od-tpl-chip-cell ${rowIdx === 1 && colIdx <= 2 ? "accent" : ""}`}
+                    />
+                  );
+                }
+                const isCustomHighlight =
+                  col.custom && col.id !== "custom-1" && col.id !== "custom-2" && col.id !== "custom-3";
+                return (
+                  <span key={col.id} className="od-tpl-lines-cell">
+                    <i className={isCustomHighlight ? "accent" : rowIdx === 1 && col.id === "content" ? "dark" : ""} />
+                    <i className="short" />
+                  </span>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
  * Miniature editorial slide/UI mockup rendered in `{ bg, fg, accent }` — just like OpenDesign Community thumbnails.
- * Shows how the visual preset actually looks as a layout instead of repeating title text & hex strings!
  */
 function PresetEditorialSpecimen({
   bg,
@@ -189,18 +438,39 @@ function PresetEditorialSpecimen({
   );
 }
 
+function getArchetypeEmblem(archetype: StoryboardArchetypeId | null) {
+  switch (archetype) {
+    case "minimal-keyframe":
+      return Images;
+    case "creator-explainer":
+      return WandSparkles;
+    case "product-launch":
+      return Rocket;
+    case "cinematic-story":
+      return Film;
+    case "social-hook":
+      return Megaphone;
+    default:
+      return Layers;
+  }
+}
+
 export function SkillGalleryCard({
   skill,
   locale,
-  onSelect
+  onSelect,
+  onDuplicate
 }: {
   skill: Skill;
   locale: InterfaceLanguage;
   iconNode?: React.ReactNode;
   onSelect: (skillId: string) => void;
+  onDuplicate?: (skill: Skill) => void;
 }) {
   const isEn = locale === "en";
   const kind = useMemo(() => detectSkillKind(skill), [skill]);
+  const systemArchetype = useMemo(() => getSystemStoryboardSkillArchetype(skill.id), [skill.id]);
+  const systemFamily = useMemo(() => getSystemStoryboardSkillFamily(skill.id), [skill.id]);
   const seed = useMemo(() => hashSkillString(skill.id + skill.name), [skill.id, skill.name]);
   const palette = useMemo(() => getCleanIllustrationPalette(seed), [seed]);
   const [imgFailed, setImgFailed] = useState(false);
@@ -224,6 +494,22 @@ export function SkillGalleryCard({
     return null;
   }, [kind, seed]);
 
+  const displayName = useMemo(() => {
+    if (systemFamily) {
+      return isEn ? systemFamily.enName : systemFamily.zhName;
+    }
+    return skill.name;
+  }, [isEn, skill.name, systemFamily]);
+
+  const conciseSummary = useMemo(() => {
+    if (systemFamily) {
+      return isEn ? systemFamily.enDescription : systemFamily.zhDescription;
+    }
+    const raw = skill.description.trim();
+    if (raw) return raw;
+    return isEn ? "Storyboard breakdown & visual prompts" : "分镜拆解与画面提示词规范";
+  }, [isEn, skill.description, systemFamily]);
+
   const sourceLabel = useMemo(() => {
     if (skill.locked) return isEn ? "Built-in" : "官方内置";
     if (kind === "github-imported") return "GitHub";
@@ -231,24 +517,25 @@ export function SkillGalleryCard({
     return isEn ? "Custom" : "自定义技能";
   }, [kind, isEn, skill.locked]);
 
-  const conciseSummary = useMemo(() => {
-    const raw = skill.description.trim();
-    if (raw) return raw;
-    return isEn ? "Storyboard breakdown & visual prompts" : "分镜拆解与画面提示词规范";
-  }, [skill.description, isEn]);
-
   const EmblemIcon =
     kind === "system-storyboard"
-      ? Layers
+      ? getArchetypeEmblem(systemArchetype)
       : kind === "github-imported"
         ? Code2
         : Sparkles;
 
   return (
-    <button
-      type="button"
+    <div
       className="skg-card"
+      role="button"
+      tabIndex={0}
       onClick={() => onSelect(skill.id)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect(skill.id);
+        }
+      }}
       onMouseEnter={() => {
         if (videoRef.current) {
           videoRef.current.play().catch(() => {});
@@ -263,7 +550,7 @@ export function SkillGalleryCard({
     >
       <div className="skg-cover">
         {kind === "system-storyboard" ? (
-          <MinimalStoryboardArtwork />
+          <MinimalStoryboardArtwork archetype={systemArchetype ?? "default"} />
         ) : mediaInfo && !imgFailed ? (
           <div className="skg-art-media" aria-hidden="true">
             <img
@@ -306,25 +593,37 @@ export function SkillGalleryCard({
           </div>
         )}
 
-        <div className="skg-hover-overlay" aria-hidden="true">
+        <div className="skg-hover-overlay">
           <span className="skg-hover-pill light">
             {skill.locked
               ? isEn
-                ? "Inspect Rules"
+                ? "Inspect"
                 : "查看规范"
               : isEn
-                ? "Edit Skill"
+                ? "Edit"
                 : "编辑技能"}
           </span>
+          {skill.locked && onDuplicate ? (
+            <button
+              type="button"
+              className="skg-hover-pill dark"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDuplicate(skill);
+              }}
+            >
+              {isEn ? "Customize" : "复制自定义"}
+            </button>
+          ) : null}
         </div>
       </div>
 
       <div className="skg-caption">
         <div className="skg-caption-row1">
-          <strong className="skg-caption-title">{skill.name}</strong>
+          <strong className="skg-caption-title">{displayName}</strong>
           {skill.locked ? (
             <span className="skg-inline-status neutral">
-              {isEn ? "System" : "内置"}
+              {isEn ? "Built-in" : "内置"}
             </span>
           ) : null}
         </div>
@@ -337,7 +636,130 @@ export function SkillGalleryCard({
           </span>
         </div>
       </div>
-    </button>
+    </div>
+  );
+}
+
+/**
+ * Minimalist OpenDesign Gallery Card for Storyboard Templates (`分镜模板`).
+ */
+export function TemplateGalleryCard({
+  template,
+  templateName,
+  templateDescription,
+  storyboardSkillName,
+  visibleColumnCount,
+  columnCountLabel,
+  locale,
+  isDefault,
+  actionsSlot,
+  onPreview,
+  onUseTemplate
+}: {
+  template: ProjectTemplate;
+  templateName: string;
+  templateDescription: string;
+  storyboardSkillName: string;
+  visibleColumnCount: number;
+  columnCountLabel: string;
+  locale: InterfaceLanguage;
+  isDefault: boolean;
+  actionsSlot?: React.ReactNode;
+  onPreview: () => void;
+  onUseTemplate: () => void;
+}) {
+  const isEn = locale === "en";
+  const systemSeed = useMemo(() => getSystemTemplateSeed(template.id), [template.id]);
+  const seedNum = useMemo(() => hashSkillString(template.id + templateName), [template.id, templateName]);
+  const fallbackPalette = useMemo(() => getCleanIllustrationPalette(seedNum), [seedNum]);
+
+  const archetype: StoryboardArchetypeId = systemSeed?.archetype ?? "default";
+  const accentHex = systemSeed?.accentHex ?? fallbackPalette.accent;
+
+  return (
+    <article
+      className="skg-card skg-template-card"
+      data-template-id={template.id}
+      data-visible-columns={visibleColumnCount}
+    >
+      <div
+        className="skg-cover"
+        role="button"
+        tabIndex={0}
+        aria-label={templateName}
+        onClick={onPreview}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onPreview();
+          }
+        }}
+      >
+        <MinimalTemplateSheetArtwork
+          columns={template.columns}
+          archetype={archetype}
+          accentHex={accentHex}
+        />
+
+        {actionsSlot ? (
+          <div
+            className="skg-card-top-actions"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+          >
+            {actionsSlot}
+          </div>
+        ) : null}
+
+        <div className="skg-hover-overlay">
+          <span className="skg-hover-pill light">
+            {isEn ? "Preview" : "预览结构"}
+          </span>
+          <button
+            type="button"
+            className="skg-hover-pill dark"
+            onClick={(e) => {
+              e.stopPropagation();
+              onUseTemplate();
+            }}
+          >
+            {isEn ? "Use Template" : "使用模板"}
+          </button>
+        </div>
+      </div>
+
+      <div className="skg-caption">
+        <div className="skg-caption-row1">
+          <strong
+            className="skg-caption-title"
+            role="button"
+            tabIndex={-1}
+            onClick={onPreview}
+          >
+            {templateName}
+          </strong>
+          {isDefault ? (
+            <span className="skg-inline-status active">
+              <Check aria-hidden="true" />
+              <span>{isEn ? "Default" : "默认"}</span>
+            </span>
+          ) : template.scope === "system" ? (
+            <span className="skg-inline-status neutral">
+              {isEn ? "Built-in" : "内置"}
+            </span>
+          ) : null}
+        </div>
+        <div className="skg-caption-row2">
+          <span className="skg-micro-emblem" aria-hidden="true">
+            <TableProperties />
+          </span>
+          <span className="skg-caption-meta">
+            {columnCountLabel} · {storyboardSkillName}
+            {templateDescription ? ` · ${templateDescription}` : ""}
+          </span>
+        </div>
+      </div>
+    </article>
   );
 }
 

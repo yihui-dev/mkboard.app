@@ -2514,3 +2514,735 @@ div.skg-card:focus-visible {
   height: 12px !important;
   stroke-width: 2.5 !important;
 }
+
+/* =========================================================================
+   Minimalist Storyboard Skill Archetype Specimens & Template Gallery Cards
+   ========================================================================= */
+
+.od-art-storyboard {
+  background: var(--sb-stage-bg, #f5f5f4) !important;
+}
+
+:root[data-theme="dark"] .od-art-storyboard {
+  background: #18181b !important;
+}
+
+:root[data-theme="dark"] .od-art-sb-sheet {
+  background: #202024;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.od-art-accent-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--sb-accent, #18181b);
+  display: inline-block;
+}
+
+.od-art-accent-pill {
+  width: 28px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--sb-accent, #4f46e5);
+  opacity: 0.85;
+  display: inline-block;
+}
+
+.od-art-sb-bar.short {
+  width: 28px;
+}
+
+/* 1. Minimal Keyframe Cut Specimen */
+.od-art-keyframe-strip {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  align-items: center;
+  min-height: 0;
+}
+
+.od-art-kf-frame {
+  aspect-ratio: 4 / 3;
+  border-radius: 7px;
+  background: #fafaf9;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+:root[data-theme="dark"] .od-art-kf-frame {
+  background: #27272a;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.od-art-kf-frame.active {
+  border-color: color-mix(in srgb, var(--sb-accent, #d97706) 45%, transparent);
+  background: color-mix(in srgb, var(--sb-accent, #d97706) 7%, #ffffff);
+}
+
+.od-art-kf-subject {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: var(--sb-accent, #d97706);
+  opacity: 0.88;
+}
+
+.od-art-kf-sun {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #d6d3d1;
+  position: absolute;
+  top: 24%;
+  right: 26%;
+}
+
+.od-art-kf-horizon {
+  position: absolute;
+  left: 16%;
+  right: 16%;
+  bottom: 26%;
+  height: 2px;
+  border-radius: 999px;
+  background: #e7e5e4;
+}
+
+.od-art-kf-horizon.low {
+  bottom: 34%;
+  width: 48%;
+}
+
+.od-art-minimal-ticks {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.od-art-minimal-ticks i {
+  width: 14px;
+  height: 3px;
+  border-radius: 999px;
+  background: #e4e4e7;
+  display: inline-block;
+}
+
+.od-art-minimal-ticks i.active {
+  width: 24px;
+  background: var(--sb-accent, #d97706);
+}
+
+/* 2. Creator Explainer & MG Specimen */
+.od-art-explainer-split {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 0.9fr 1.35fr;
+  gap: 10px;
+  min-height: 0;
+}
+
+.od-art-explainer-left {
+  background: #f8fafc;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+}
+
+:root[data-theme="dark"] .od-art-explainer-left {
+  background: #27272a;
+}
+
+.od-art-explainer-right {
+  background: color-mix(in srgb, var(--sb-accent, #0284c7) 6%, #ffffff);
+  border: 1px solid color-mix(in srgb, var(--sb-accent, #0284c7) 22%, transparent);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.od-art-callout-pill {
+  width: 56%;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--sb-accent, #0284c7);
+  opacity: 0.85;
+}
+
+.od-art-explainer-bars {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  gap: 7px;
+  padding-top: 4px;
+}
+
+.od-art-explainer-bars i {
+  flex: 1;
+  border-radius: 4px 4px 2px 2px;
+  background: color-mix(in srgb, var(--sb-accent, #0284c7) 26%, transparent);
+  display: block;
+}
+
+.od-art-explainer-bars i.hi {
+  background: var(--sb-accent, #0284c7);
+}
+
+/* 3. Product Launch & UI Demo Specimen */
+.od-art-launch-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+.od-art-launch-hero {
+  flex: 1.1;
+  border-radius: 7px;
+  background: #f8f9fc;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+}
+
+:root[data-theme="dark"] .od-art-launch-hero {
+  background: #27272a;
+}
+
+.od-art-launch-cta {
+  margin-top: 2px;
+  width: 34px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--sb-accent, #4f46e5);
+}
+
+.od-art-launch-cards {
+  flex: 0.9;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.od-art-launch-tile {
+  border-radius: 6px;
+  background: #f4f4f6;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+:root[data-theme="dark"] .od-art-launch-tile {
+  background: #27272a;
+}
+
+.od-art-launch-tile.active {
+  background: color-mix(in srgb, var(--sb-accent, #4f46e5) 10%, #ffffff);
+  border-color: color-mix(in srgb, var(--sb-accent, #4f46e5) 30%, transparent);
+}
+
+/* 4. Cinematic Narrative 2x2 Grid Specimen */
+.od-art-sb-sheet.cinema {
+  padding: 9px;
+}
+
+.od-art-cinema-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 6px;
+}
+
+.od-art-cinema-panel {
+  border-radius: 5px;
+  background: #f6f5f5;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+:root[data-theme="dark"] .od-art-cinema-panel {
+  background: #27272a;
+  border-color: rgba(255, 255, 255, 0.09);
+}
+
+.od-art-cinema-panel.active {
+  background: color-mix(in srgb, var(--sb-accent, #e11d48) 8%, #ffffff);
+  border-color: color-mix(in srgb, var(--sb-accent, #e11d48) 36%, transparent);
+}
+
+.od-art-cinema-subject.wide {
+  width: 58%;
+  height: 5px;
+  border-radius: 999px;
+  background: #d4d4d8;
+}
+
+.od-art-cinema-subject.close {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: var(--sb-accent, #e11d48);
+  opacity: 0.85;
+}
+
+.od-art-cinema-subject.mid {
+  width: 24px;
+  height: 12px;
+  border-radius: 4px;
+  background: #d4d4d8;
+}
+
+.od-art-cinema-wave {
+  width: 48%;
+  height: 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--sb-accent, #e11d48) 42%, transparent);
+}
+
+/* 5. Vertical Hook 9:16 Dual Frame Specimen */
+.od-art-vertical-stage {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.od-art-phone-frame {
+  height: 94%;
+  aspect-ratio: 9 / 15;
+  background: #ffffff;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.09);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.04);
+  padding: 7px 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
+
+:root[data-theme="dark"] .od-art-phone-frame {
+  background: #202024;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.od-art-phone-frame.active {
+  border-color: color-mix(in srgb, var(--sb-accent, #059669) 38%, transparent);
+}
+
+.od-art-phone-frame.secondary {
+  opacity: 0.82;
+  transform: scale(0.94);
+}
+
+.od-art-phone-notch {
+  align-self: center;
+  width: 18px;
+  height: 3px;
+  border-radius: 999px;
+  background: #e4e4e7;
+}
+
+.od-art-phone-badge {
+  width: 24px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--sb-accent, #059669);
+}
+
+.od-art-phone-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.od-art-phone-bars {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+}
+
+.od-art-phone-bars span {
+  height: 4px;
+  border-radius: 999px;
+  background: #e4e4e7;
+  display: block;
+}
+
+.od-art-phone-bars span.accent {
+  background: var(--sb-accent, #059669);
+}
+
+.od-art-phone-caption {
+  width: 72%;
+  height: 4px;
+  border-radius: 999px;
+  background: #d4d4d8;
+}
+
+.od-art-phone-caption.short {
+  width: 48%;
+}
+
+/* =========================================================================
+   Minimalist Storyboard Template Sheet Specimen (`TemplateGalleryCard`)
+   ========================================================================= */
+
+.od-art-template-stage {
+  width: 100%;
+  height: 100%;
+  background: var(--tpl-stage-bg, #f4f4f5);
+  padding: 18px 20px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+:root[data-theme="dark"] .od-art-template-stage {
+  background: #18181b;
+}
+
+.od-tpl-sheet {
+  width: 100%;
+  height: 100%;
+  background: #ffffff;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.035);
+  padding: 9px 11px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+:root[data-theme="dark"] .od-tpl-sheet {
+  background: #202024;
+  border-color: rgba(255, 255, 255, 0.09);
+}
+
+.skg-template-card:hover .od-tpl-sheet {
+  transform: scale(1.015);
+}
+
+.od-tpl-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.od-tpl-sheet-head-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.od-tpl-accent-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--tpl-accent, #18181b);
+  display: inline-block;
+}
+
+.od-tpl-title-bar {
+  width: 42px;
+  height: 4px;
+  border-radius: 999px;
+  background: #d4d4d8;
+}
+
+.od-tpl-count-pill {
+  width: 18px;
+  height: 5px;
+  border-radius: 999px;
+  background: #ececee;
+}
+
+.od-tpl-table {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+}
+
+.od-tpl-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 5px;
+}
+
+.od-tpl-row.head {
+  height: 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  padding-bottom: 3px;
+}
+
+:root[data-theme="dark"] .od-tpl-row.head {
+  border-bottom-color: rgba(255, 255, 255, 0.07);
+}
+
+.od-tpl-row.body {
+  flex: 1;
+  border-radius: 6px;
+  background: #fafafa;
+  border: 1px solid transparent;
+  min-height: 0;
+}
+
+:root[data-theme="dark"] .od-tpl-row.body {
+  background: #27272a;
+}
+
+.od-tpl-row.body.active {
+  background: color-mix(in srgb, var(--tpl-accent, #18181b) 5%, #ffffff);
+  border-color: color-mix(in srgb, var(--tpl-accent, #18181b) 20%, transparent);
+}
+
+:root[data-theme="dark"] .od-tpl-row.body.active {
+  background: color-mix(in srgb, var(--tpl-accent, #18181b) 14%, #27272a);
+}
+
+.od-tpl-idx-col,
+.od-tpl-idx-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: #e4e4e7;
+  flex: 0 0 5px;
+}
+
+.od-tpl-col-head {
+  flex: 1;
+  height: 3.5px;
+  border-radius: 999px;
+  background: #e4e4e7;
+}
+
+.od-tpl-col-head.img {
+  flex: 0 0 22px;
+}
+
+.od-tpl-col-head.highlight {
+  background: color-mix(in srgb, var(--tpl-accent, #18181b) 48%, transparent);
+}
+
+.od-tpl-thumb-cell {
+  flex: 0 0 22px;
+  height: 14px;
+  border-radius: 3.5px;
+  background: #e4e4e7;
+}
+
+.od-tpl-thumb-cell.vertical {
+  flex: 0 0 13px;
+  height: 17px;
+}
+
+.od-tpl-thumb-cell.accent {
+  background: color-mix(in srgb, var(--tpl-accent, #18181b) 28%, #ffffff);
+  border: 1px solid color-mix(in srgb, var(--tpl-accent, #18181b) 45%, transparent);
+}
+
+.od-tpl-chip-cell {
+  flex: 0.7;
+  max-width: 30px;
+  height: 7px;
+  border-radius: 999px;
+  background: #ebebee;
+}
+
+.od-tpl-chip-cell.accent {
+  background: color-mix(in srgb, var(--tpl-accent, #18181b) 22%, transparent);
+}
+
+.od-tpl-lines-cell {
+  flex: 1.25;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.od-tpl-lines-cell i {
+  width: 86%;
+  height: 3.5px;
+  border-radius: 999px;
+  background: #e4e4e7;
+  display: block;
+}
+
+.od-tpl-lines-cell i.dark {
+  background: #a1a1aa;
+}
+
+.od-tpl-lines-cell i.accent {
+  background: var(--tpl-accent, #18181b);
+  opacity: 0.75;
+}
+
+.od-tpl-lines-cell i.short {
+  width: 52%;
+  opacity: 0.65;
+}
+
+/* Top-right ellipsis menu slot inside `.skg-cover` */
+.skg-card-top-actions {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 3;
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.skg-card:hover .skg-card-top-actions,
+.skg-card:focus-within .skg-card-top-actions,
+.skg-card-top-actions:has(.open) {
+  opacity: 1;
+}
+
+.skg-card-top-actions .template-card-more-trigger {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  padding: 0 !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+  color: #18181b !important;
+}
+
+:root[data-theme="dark"] .skg-card-top-actions .template-card-more-trigger {
+  background: rgba(32, 32, 36, 0.92) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #f4f4f5 !important;
+}
+
+/* TemplatesScreen OpenDesign Toolbar */
+.templates-od-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+/* Quick Starter Blueprint Strip in SkillEditor & TemplateEditor */
+.od-blueprint-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #f8f8f7;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  margin-bottom: 14px;
+}
+
+:root[data-theme="dark"] .od-blueprint-bar {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.od-blueprint-label {
+  font-size: 12px;
+  font-weight: 550;
+  color: #71717a;
+  margin-right: 4px;
+}
+
+.od-blueprint-chip {
+  height: 28px;
+  padding: 0 11px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.09);
+  background: #ffffff;
+  color: #27272a;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: all 140ms ease;
+}
+
+:root[data-theme="dark"] .od-blueprint-chip {
+  background: #202024;
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #e4e4e7;
+}
+
+.od-blueprint-chip:hover {
+  border-color: #18181b;
+  color: #18181b;
+  transform: translateY(-1px);
+}
+
+.od-blueprint-chip.active {
+  background: #18181b;
+  border-color: #18181b;
+  color: #ffffff;
+}
+
+:root[data-theme="dark"] .od-blueprint-chip.active {
+  background: #f4f4f5;
+  border-color: #f4f4f5;
+  color: #18181b;
+}
+
+.od-blueprint-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* Ensure HeroUI action buttons with icons stay crisp single-line inline-flex */
+.template-preview-secondary-action,
+.skill-editor-create-button {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  white-space: nowrap !important;
+}
+
+.template-preview-secondary-action svg,
+.skill-editor-create-button svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}

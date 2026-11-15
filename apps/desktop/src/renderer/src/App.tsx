@@ -18,8 +18,17 @@ import {
   SkillGalleryCard,
   SkillryPackGalleryCard,
   SkillryTastePackCard,
+  TemplateGalleryCard,
   VisualPresetGalleryCard
 } from "./components/SkillGalleryCard";
+import {
+  SYSTEM_PROJECT_TEMPLATE_SEEDS,
+  SYSTEM_STORYBOARD_SKILL_FAMILIES,
+  getLocalizedSystemStoryboardSkillId,
+  getSystemStoryboardSkillFamily,
+  getSystemTemplateSeed,
+  isSystemStoryboardSkillId
+} from "../../storyboard-presets";
 import {
   AlertTriangle,
   Archive,
@@ -872,10 +881,31 @@ function localizeProjectMarkOptions(t: Translator): SelectOption[] {
   }));
 }
 
-function localizeProjectTemplates(templates: ProjectTemplate[], t: Translator): SelectOption[] {
+function getLocalizedTemplateDisplay(template: ProjectTemplate, t: Translator, locale?: InterfaceLanguage) {
+  if (template.id === DEFAULT_TEMPLATE_ID) {
+    return {
+      name: t("common.defaultTemplate"),
+      description: t("templates.defaultDescription")
+    };
+  }
+  const seed = getSystemTemplateSeed(template.id);
+  if (seed) {
+    const isZh = getStoryboardTemplateLanguage(locale) === "zh";
+    return {
+      name: isZh ? seed.zhName : seed.enName,
+      description: isZh ? seed.zhDescription : seed.enDescription
+    };
+  }
+  return {
+    name: template.name,
+    description: template.description || t("templates.customDescriptionFallback")
+  };
+}
+
+function localizeProjectTemplates(templates: ProjectTemplate[], t: Translator, locale?: InterfaceLanguage): SelectOption[] {
   return templates.map((template) => ({
     value: template.id,
-    label: template.scope === "system" ? t("common.defaultTemplate") : template.name,
+    label: getLocalizedTemplateDisplay(template, t, locale).name,
     icon: (
       <span className="create-project-option-icon template" aria-hidden="true">
         {template.scope === "system" ? <Clapperboard /> : <TableProperties />}
@@ -929,12 +959,22 @@ function getFallbackProjectSkill(t: Translator, locale?: InterfaceLanguage): Ski
 }
 
 function localizeProjectSkill(skill: Skill, t: Translator, locale?: InterfaceLanguage): Skill {
-  if (!isDefaultStoryboardSkillId(skill.id)) return skill;
+  if (isDefaultStoryboardSkillId(skill.id)) {
+    return {
+      ...skill,
+      id: getDefaultStoryboardSkillId(locale),
+      name: t("project.defaultStoryboardSkill"),
+      description: t("project.defaultStoryboardSkillDescription")
+    };
+  }
+  const family = getSystemStoryboardSkillFamily(skill.id);
+  if (!family) return skill;
+  const isZh = getStoryboardTemplateLanguage(locale) === "zh";
   return {
     ...skill,
-    id: getDefaultStoryboardSkillId(locale),
-    name: t("project.defaultStoryboardSkill"),
-    description: t("project.defaultStoryboardSkillDescription")
+    id: isZh ? family.zhId : family.enId,
+    name: isZh ? family.zhName : family.enName,
+    description: isZh ? family.zhDescription : family.enDescription
   };
 }
 
@@ -945,13 +985,22 @@ function getSelectableProjectSkills(skills: Skill[], t: Translator, locale?: Int
   return [getFallbackProjectSkill(t, locale), ...localizedSkills];
 }
 
-function getTemplateStoryboardSkillName(template: ProjectTemplate, t: Translator) {
-  return isDefaultStoryboardSkillId(template.storyboardSkillId) ? t("project.defaultStoryboardSkill") : template.storyboardSkillName;
+function getTemplateStoryboardSkillName(template: ProjectTemplate, t: Translator, locale?: InterfaceLanguage) {
+  if (isDefaultStoryboardSkillId(template.storyboardSkillId)) return t("project.defaultStoryboardSkill");
+  const family = getSystemStoryboardSkillFamily(template.storyboardSkillId);
+  if (family) {
+    return getStoryboardTemplateLanguage(locale) === "zh" ? family.zhName : family.enName;
+  }
+  return template.storyboardSkillName;
 }
 
 function resolveSelectedProjectSkill(skills: Skill[], selectedSkillId: string, t: Translator, loading = false, locale?: InterfaceLanguage): Skill {
   const selectableSkills = getSelectableProjectSkills(skills, t, locale);
-  const normalizedSkillId = isDefaultStoryboardSkillId(selectedSkillId) ? getDefaultStoryboardSkillId(locale) : selectedSkillId;
+  const normalizedSkillId = isDefaultStoryboardSkillId(selectedSkillId)
+    ? getDefaultStoryboardSkillId(locale)
+    : isSystemStoryboardSkillId(selectedSkillId)
+      ? getLocalizedSystemStoryboardSkillId(selectedSkillId, locale)
+      : selectedSkillId;
   const selectedSkill = selectableSkills.find((skill) => skill.id === normalizedSkillId);
   if (selectedSkill) return selectedSkill;
   if (loading) {
@@ -1796,6 +1845,7 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
   const [skillsLoading, setSkillsLoading] = useState(false);
   const [skillsError, setSkillsError] = useState<string | null>(null);
   const [skillsHomeRequestId, setSkillsHomeRequestId] = useState(0);
+  const [skillsRequestedTab, setSkillsRequestedTab] = useState<SkillFilter | null>(null);
   const [skillryCatalog, setSkillryCatalog] = useState<SkillryCatalogStatus | null>(null);
   const [skillryCatalogLoading, setSkillryCatalogLoading] = useState(false);
   const [templates, setTemplates] = useState<ProjectTemplate[]>([]);
@@ -1832,7 +1882,7 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
     () => templates.find((template) => template.id === templateEditId && template.scope === "user") ?? null,
     [templateEditId, templates]
   );
-  const templateOptions = useMemo(() => localizeProjectTemplates(orderedTemplates, t), [orderedTemplates, t]);
+  const templateOptions = useMemo(() => localizeProjectTemplates(orderedTemplates, t, interfaceLanguage), [interfaceLanguage, orderedTemplates, t]);
   const localProjectLimitReached = false;
   const projectLimitMessage = "";
   const createReady = Boolean(projectNameInput.trim() && projectIconInput && templateInput && tasteInput && projectSkillInput);
@@ -1899,7 +1949,13 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
   useEffect(() => {
     if (isBooting || !window.mkboard) return;
     async function syncInterfaceLanguageData() {
-      setProjectSkillInput((currentSkillId) => (isDefaultStoryboardSkillId(currentSkillId) ? getDefaultStoryboardSkillId(interfaceLanguage) : currentSkillId));
+      setProjectSkillInput((currentSkillId) =>
+        isDefaultStoryboardSkillId(currentSkillId)
+          ? getDefaultStoryboardSkillId(interfaceLanguage)
+          : isSystemStoryboardSkillId(currentSkillId)
+            ? getLocalizedSystemStoryboardSkillId(currentSkillId, interfaceLanguage)
+            : currentSkillId
+      );
       await ensureTutorialProjectIfAvailable("language sync");
       await Promise.all([refreshTemplates(), refreshProjects(), refreshSkills()]);
       setOnboardingState(await getOnboardingStateIfAvailable());
@@ -3180,7 +3236,8 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
     applyRoute({ screen: "assets", projectId: "", tab });
   }
 
-  async function openSkills() {
+  async function openSkills(preferredFilter?: SkillFilter) {
+    setSkillsRequestedTab(preferredFilter ?? null);
     setSkillsHomeRequestId((requestId) => requestId + 1);
     applyRoute({ screen: "skills", projectId: "", tab });
     void refreshSkillryCatalog();
@@ -3367,8 +3424,8 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
   }
 
   async function duplicateTemplate(sourceTemplate: ProjectTemplate): Promise<ProjectTemplate> {
-    const sourceName = sourceTemplate.scope === "system" ? t("common.defaultTemplate") : sourceTemplate.name;
-    const copyNameBase = t("templates.copyName", { name: sourceName });
+    const localized = getLocalizedTemplateDisplay(sourceTemplate, t, interfaceLanguage);
+    const copyNameBase = t("templates.copyName", { name: localized.name });
     const existingNames = new Set(
       templates.filter((template) => template.scope === "user").map((template) => template.name.trim().toLocaleLowerCase())
     );
@@ -3381,7 +3438,7 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
 
     return await createTemplate({
       name: copyName,
-      description: sourceTemplate.scope === "system" ? t("templates.defaultDescription") : sourceTemplate.description,
+      description: localized.description,
       columns: sourceTemplate.columns.map((column) => ({ ...column })),
       storyboardSkillId: sourceTemplate.storyboardSkillId,
       interfaceLanguage
@@ -5364,6 +5421,7 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
             templates={orderedTemplates}
             defaultTemplateId={defaultTemplateId}
             onBack={() => void openProjects()}
+            onOpenStoryboardSkills={() => void openSkills("skills")}
             onCreateTemplate={() => void openTemplateCreator()}
             onDuplicateTemplate={duplicateTemplate}
             onEditTemplate={(template) => void openTemplateEditor(template)}
@@ -5403,6 +5461,8 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
           <SkillsScreen
             error={skillsError}
             homeRequestId={skillsHomeRequestId}
+            requestedTab={skillsRequestedTab}
+            onOpenTemplates={() => void openTemplates()}
             loading={skillsLoading}
             skills={skills}
             tastes={tastes.length > 0 ? tastes : [getFallbackDefaultTaste()]}
@@ -5996,6 +6056,7 @@ function TemplatesScreen({
   templates,
   defaultTemplateId,
   onBack,
+  onOpenStoryboardSkills,
   onCreateTemplate,
   onDuplicateTemplate,
   onEditTemplate,
@@ -6006,6 +6067,7 @@ function TemplatesScreen({
   templates: ProjectTemplate[];
   defaultTemplateId: string;
   onBack: () => void;
+  onOpenStoryboardSkills?: () => void;
   onCreateTemplate: () => void;
   onDuplicateTemplate: (template: ProjectTemplate) => Promise<ProjectTemplate>;
   onEditTemplate: (template: ProjectTemplate) => void;
@@ -6013,16 +6075,25 @@ function TemplatesScreen({
   onSetDefaultTemplate: (templateId: string) => void;
   onUseTemplate: (templateId: string) => void;
 }) {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
+  const isEn = locale === "en";
   const [previewTemplate, setPreviewTemplate] = useState<ProjectTemplate | null>(null);
   const [pendingDeleteTemplate, setPendingDeleteTemplate] = useState<ProjectTemplate | null>(null);
   const [actionBusy, setActionBusy] = useState<string | null>(null);
   const [actionError, setActionError] = useState("");
   const [activeFilter, setActiveFilter] = useState<TemplateFilter>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+
   const filteredTemplates = useMemo(() => {
-    if (activeFilter === "all") return templates;
-    return templates.filter((template) => template.scope === activeFilter);
-  }, [activeFilter, templates]);
+    const q = searchQuery.trim().toLocaleLowerCase();
+    return templates.filter((template) => {
+      if (activeFilter !== "all" && template.scope !== activeFilter) return false;
+      if (!q) return true;
+      const display = getLocalizedTemplateDisplay(template, t, locale);
+      const skillName = getTemplateStoryboardSkillName(template, t, locale);
+      return `${display.name} ${display.description} ${skillName}`.toLocaleLowerCase().includes(q);
+    });
+  }, [activeFilter, locale, searchQuery, t, templates]);
 
   async function duplicateTemplate(template: ProjectTemplate) {
     if (actionBusy) return;
@@ -6069,102 +6140,108 @@ function TemplatesScreen({
             { label: t("templates.title") }
           ]}
         />
-        <Button className="topbar-action-button" variant="ghost" onPress={onCreateTemplate}>
-          <Plus aria-hidden="true" />
-          {t("templates.createTemplate")}
-        </Button>
+        <div className="library-page-header-actions">
+          {onOpenStoryboardSkills ? (
+            <button type="button" className="hub-btn hub-btn-outline" onClick={onOpenStoryboardSkills}>
+              <Layers aria-hidden="true" />
+              <span>{isEn ? "Storyboard Skills" : "分镜技能"}</span>
+            </button>
+          ) : null}
+          <button type="button" className="hub-btn hub-btn-dark" onClick={onCreateTemplate}>
+            <Plus aria-hidden="true" />
+            <span>{t("templates.createTemplate")}</span>
+          </button>
+        </div>
       </header>
 
       <div className="template-library-content">
-        <div className="skills-filter-tabs template-filter-tabs" role="tablist" aria-label={t("templates.filterLabel")}>
-          {([
-            ["all", t("templates.filter.all")],
-            ["system", t("templates.filter.official")],
-            ["user", t("templates.filter.mine")]
-          ] as Array<[TemplateFilter, string]>).map(([filter, label]) => (
-            <button
-              className={cn("skills-filter-tab template-filter-tab", activeFilter === filter && "active")}
-              key={filter}
-              type="button"
-              role="tab"
-              aria-selected={activeFilter === filter}
-              onClick={() => setActiveFilter(filter)}
-            >
-              {label}
-            </button>
-          ))}
+        <div className="templates-od-toolbar">
+          <div className="skills-filter-tabs template-filter-tabs" role="tablist" aria-label={t("templates.filterLabel")}>
+            {([
+              ["all", t("templates.filter.all")],
+              ["system", t("templates.filter.official")],
+              ["user", t("templates.filter.mine")]
+            ] as Array<[TemplateFilter, string]>).map(([filter, label]) => (
+              <button
+                className={cn("skills-filter-tab template-filter-tab", activeFilter === filter && "active")}
+                key={filter}
+                type="button"
+                role="tab"
+                aria-selected={activeFilter === filter}
+                onClick={() => setActiveFilter(filter)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <label className="skills-search-field">
+            <Search aria-hidden="true" />
+            <input
+              type="search"
+              value={searchQuery}
+              placeholder={isEn ? "Search templates..." : "搜索分镜模板或适用场景..."}
+              aria-label={isEn ? "Search templates" : "搜索分镜模板"}
+              onChange={(event) => setSearchQuery(event.target.value)}
+            />
+          </label>
         </div>
+
         {actionError ? <p className="template-action-error" role="alert">{actionError}</p> : null}
+
         {filteredTemplates.length === 0 ? (
           <div className="skill-editor-empty-state skills-library-message template-filter-empty" role="status">
             <TableProperties aria-hidden="true" />
             <strong>{t("templates.emptyFilteredTitle")}</strong>
           </div>
         ) : (
-          <div className="template-grid" aria-label={t("templates.list")}>
+          <div className="skg-grid" aria-label={t("templates.list")}>
             {filteredTemplates.map((template) => {
-              const storyboardSkillName = getTemplateStoryboardSkillName(template, t);
-              const templateName = template.scope === "system" ? t("common.defaultTemplate") : template.name;
+              const storyboardSkillName = getTemplateStoryboardSkillName(template, t, locale);
+              const display = getLocalizedTemplateDisplay(template, t, locale);
+              const visibleCount = template.columns.filter((col) => col.visible).length;
               const isDefault = template.id === defaultTemplateId;
+
               return (
-                <article className={template.scope === "system" ? "template-card template-card-system" : "template-card template-card-user"} key={template.id}>
-                  <div className="template-card-top">
-                    <div className="template-card-heading">
-                      <div className="template-card-icon" aria-hidden="true">
-                        {template.scope === "system" ? <Clapperboard /> : <TableProperties />}
-                      </div>
-                      <div className="template-card-heading-copy">
-                        <h2>{templateName}</h2>
-                        {template.scope === "system" ? (
-                          <span className="template-card-lock" aria-label={t("templates.builtInBadge")} title={t("templates.builtInBadge")}>
-                            <Lock aria-hidden="true" />
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-                    <div className="template-card-top-actions">
-                      <TemplateActionsMenu
-                        actionBusy={actionBusy}
-                        template={template}
-                        onDelete={() => setPendingDeleteTemplate(template)}
-                        onDuplicate={() => void duplicateTemplate(template)}
-                        onEdit={() => onEditTemplate(template)}
-                      />
-                    </div>
-                  </div>
-                  <button className="template-card-preview-surface" type="button" aria-label={t("templates.previewNamedTemplate", { name: templateName })} onClick={() => setPreviewTemplate(template)}>
-                    <p className="template-card-description">{template.scope === "system" ? t("templates.defaultDescription") : template.description || t("templates.customDescriptionFallback")}</p>
-                    <div className="template-card-meta" aria-label={t("templates.columnCount", { count: template.columns.length })}>
-                      <span>{t("templates.columnCount", { count: template.columns.length })}</span>
-                      <span>{storyboardSkillName}</span>
-                    </div>
-                  </button>
-                  <div className="template-card-footer-actions">
-                    <Button
-                      className={cn("template-card-default-control", isDefault && "selected")}
-                      variant="ghost"
-                      isDisabled={actionBusy !== null}
-                      aria-pressed={isDefault}
-                      onPress={() => setDefaultTemplate(template)}
-                    >
-                      <span className="sr-only">{templateName}：</span>
-                      {isDefault ? <CircleCheck aria-hidden="true" /> : <CirclePlus aria-hidden="true" />}
-                      <span>{t(isDefault ? "templates.defaultBadge" : "templates.setAsDefault")}</span>
-                    </Button>
-                    <Button className="template-card-use-action" variant="primary" onPress={() => onUseTemplate(template.id)}>
-                      {t("templates.useTemplate")}
-                      <ChevronRight aria-hidden="true" />
-                    </Button>
-                  </div>
-                </article>
+                <TemplateGalleryCard
+                  key={template.id}
+                  template={template}
+                  templateName={display.name}
+                  templateDescription={display.description}
+                  storyboardSkillName={storyboardSkillName}
+                  visibleColumnCount={visibleCount}
+                  columnCountLabel={t("templates.columnCount", { count: visibleCount })}
+                  locale={locale}
+                  isDefault={isDefault}
+                  actionsSlot={
+                    <TemplateActionsMenu
+                      actionBusy={actionBusy}
+                      template={template}
+                      isDefault={isDefault}
+                      onSetDefault={() => setDefaultTemplate(template)}
+                      onDelete={() => setPendingDeleteTemplate(template)}
+                      onDuplicate={() => void duplicateTemplate(template)}
+                      onEdit={() => onEditTemplate(template)}
+                    />
+                  }
+                  onPreview={() => setPreviewTemplate(template)}
+                  onUseTemplate={() => onUseTemplate(template.id)}
+                />
               );
             })}
           </div>
         )}
       </div>
+
       <TemplatePreviewDialog
         template={previewTemplate}
+        isDefault={Boolean(previewTemplate && previewTemplate.id === defaultTemplateId)}
         onClose={() => setPreviewTemplate(null)}
+        onSetDefault={(nextTemplate) => setDefaultTemplate(nextTemplate)}
+        onDuplicate={(nextTemplate) => {
+          setPreviewTemplate(null);
+          void duplicateTemplate(nextTemplate);
+        }}
         onUseTemplate={(templateId) => {
           setPreviewTemplate(null);
           onUseTemplate(templateId);
@@ -6185,20 +6262,24 @@ function TemplatesScreen({
 function TemplateActionsMenu({
   actionBusy,
   template,
+  isDefault,
+  onSetDefault,
   onDelete,
   onDuplicate,
   onEdit
 }: {
   actionBusy: string | null;
   template: ProjectTemplate;
+  isDefault?: boolean;
+  onSetDefault?: () => void;
   onDelete: () => void;
   onDuplicate: () => void;
   onEdit: () => void;
 }) {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
   const [open, setOpen] = useState(false);
   const disabled = actionBusy !== null;
-  const templateName = template.scope === "system" ? t("common.defaultTemplate") : template.name;
+  const templateName = getLocalizedTemplateDisplay(template, t, locale).name;
   const actionMenuId = `template-actions:${template.id}`;
 
   useEffect(() => {
@@ -6251,6 +6332,12 @@ function TemplateActionsMenu({
       >
         <Popover.Dialog>
           <div className="project-card-actions-menu" aria-label={t("templates.actionsLabel", { name: templateName })}>
+            {!isDefault && onSetDefault ? (
+              <Button className="project-card-actions-menu-item" variant="ghost" onPress={() => runAction(onSetDefault)}>
+                <CircleCheck aria-hidden="true" />
+                {t("templates.setAsDefault")}
+              </Button>
+            ) : null}
             {template.scope === "user" ? (
               <Button className="project-card-actions-menu-item" variant="ghost" onPress={() => runAction(onEdit)}>
                 <Pencil aria-hidden="true" />
@@ -6310,16 +6397,24 @@ function TemplateDeleteDialog({
 
 function TemplatePreviewDialog({
   template,
+  isDefault,
   onClose,
+  onSetDefault,
+  onDuplicate,
   onUseTemplate
 }: {
   template: ProjectTemplate | null;
+  isDefault?: boolean;
   onClose: () => void;
+  onSetDefault?: (template: ProjectTemplate) => void;
+  onDuplicate?: (template: ProjectTemplate) => void;
   onUseTemplate: (templateId: string) => void;
 }) {
   const { locale, t } = useI18n();
+  const isEn = locale === "en";
   const columns = useMemo(() => ensureStoryboardPromptColumns(template?.columns ?? [], locale), [locale, template?.columns]);
-  const rows = useMemo(() => getTemplatePreviewRows(columns, t), [columns, t]);
+  const visibleColumnCount = useMemo(() => columns.filter((col) => col.visible).length, [columns]);
+  const rows = useMemo(() => getTemplatePreviewRows(columns, t, locale), [columns, locale, t]);
 
   useEffect(() => {
     if (!template) return undefined;
@@ -6334,8 +6429,8 @@ function TemplatePreviewDialog({
 
   if (!template) return null;
 
-  const templateName = template.scope === "system" ? t("common.defaultTemplate") : template.name;
-  const storyboardSkillName = getTemplateStoryboardSkillName(template, t);
+  const display = getLocalizedTemplateDisplay(template, t, locale);
+  const storyboardSkillName = getTemplateStoryboardSkillName(template, t, locale);
 
   return (
     <div
@@ -6348,9 +6443,9 @@ function TemplatePreviewDialog({
       <section className="template-preview-dialog" role="dialog" aria-modal="true" aria-labelledby="template-preview-title">
         <header className="template-preview-header">
           <div className="template-preview-heading">
-            <h2 id="template-preview-title">{templateName}</h2>
+            <h2 id="template-preview-title">{display.name}</h2>
             <div className="template-preview-meta" aria-label={t("templates.previewMeta")}>
-              <span>{t("templates.columnCount", { count: columns.length })}</span>
+              <span>{t("templates.columnCount", { count: visibleColumnCount })}</span>
               <span>{storyboardSkillName}</span>
               <span>{t("templates.previewReadonlyBadge")}</span>
             </div>
@@ -6366,9 +6461,17 @@ function TemplatePreviewDialog({
 
         <footer className="template-preview-footer">
           <div className="template-preview-footer-actions">
-            <Button className="template-preview-secondary-action" variant="outline" onPress={onClose}>
-              {t("common.close")}
-            </Button>
+            {onSetDefault && !isDefault ? (
+              <Button className="template-preview-secondary-action" variant="outline" onPress={() => onSetDefault(template)}>
+                {t("templates.setAsDefault")}
+              </Button>
+            ) : null}
+            {onDuplicate ? (
+              <Button className="template-preview-secondary-action" variant="outline" onPress={() => onDuplicate(template)}>
+                <Copy aria-hidden="true" />
+                {isEn ? "Duplicate & Customize" : "复制并自定义"}
+              </Button>
+            ) : null}
             <Button className="template-preview-primary-action" variant="primary" onPress={() => onUseTemplate(template.id)}>
               {t("templates.useTemplate")}
               <ChevronRight aria-hidden="true" />
@@ -6502,32 +6605,64 @@ function TemplatePreviewCell({ column, row, rowIndex }: { column: StoryboardColu
   );
 }
 
-function getTemplatePreviewRows(columns: StoryboardColumn[], t: Translator): StoryboardRow[] {
+function getTemplatePreviewRows(columns: StoryboardColumn[], t: Translator, locale?: InterfaceLanguage): StoryboardRow[] {
   return [
     {
       id: "template-preview-row-1",
       shot: "1",
       scene: "A-ROLL",
-      duration: "6",
+      duration: "5",
       content: t("templates.previewSampleArollContent"),
       note: t("templates.previewSampleArollNote"),
-      customValues: getTemplatePreviewCustomValues(columns, "a-roll", t)
+      customValues: getTemplatePreviewCustomValues(columns, "a-roll", t, locale)
     },
     {
       id: "template-preview-row-2",
       shot: "2",
       scene: "B-ROLL",
-      duration: "8",
+      duration: "10",
       content: t("templates.previewSampleBrollContent"),
       note: t("templates.previewSampleBrollNote"),
-      customValues: getTemplatePreviewCustomValues(columns, "b-roll", t)
+      customValues: getTemplatePreviewCustomValues(columns, "b-roll", t, locale)
     }
   ];
 }
 
-function getTemplatePreviewCustomValues(columns: StoryboardColumn[], rowKind: "a-roll" | "b-roll", t: Translator) {
+function getTemplatePreviewCustomValues(columns: StoryboardColumn[], rowKind: "a-roll" | "b-roll", t: Translator, locale?: InterfaceLanguage) {
+  const isZh = getStoryboardTemplateLanguage(locale) === "zh";
   return columns.reduce<Record<string, string>>((values, column) => {
     if (!column.id.startsWith("custom-")) return values;
+    if (column.id === "custom-10") {
+      values[column.id] = rowKind === "a-roll"
+        ? (isZh ? "核心问题：为什么越忙越低效？" : "Core Thesis: Why Busy != Output")
+        : (isZh ? "3 步极简创作流对比" : "3-Step Minimalist Workflow");
+      return values;
+    }
+    if (column.id === "custom-11") {
+      values[column.id] = rowKind === "a-roll"
+        ? (isZh ? "开场痛点共鸣" : "Opening Pain Point")
+        : (isZh ? "一键自动拆解分镜与提示词" : "1-Click Storyboard Breakdown");
+      return values;
+    }
+    if (column.id === "custom-12") {
+      values[column.id] = rowKind === "a-roll"
+        ? (isZh ? "中近景 · 固定机位" : "MCU · Locked-off")
+        : (isZh ? "特写 · 缓慢推镜" : "CU · Slow Dolly In");
+      return values;
+    }
+    if (column.id === "custom-13") {
+      values[column.id] = rowKind === "a-roll"
+        ? (isZh ? "安静室内环境底噪" : "Quiet room tone")
+        : (isZh ? "清脆键盘敲击与纸张翻动声" : "Crisp keystrokes & paper rustle");
+      return values;
+    }
+    if (column.id === "custom-14") {
+      values[column.id] = rowKind === "a-roll"
+        ? (isZh ? "黄金 3 秒钩子" : "3s Retention Hook")
+        : (isZh ? "直观效果验证" : "Visual Payoff");
+      return values;
+    }
+
 
     const normalizedLabel = column.label.toLocaleLowerCase();
     const isGenerationMethod = column.id === "custom-3" || /生成方式|generation/.test(normalizedLabel);
@@ -6773,6 +6908,43 @@ function TemplateEditorScreen({
           <div className="template-create-layout">
             {isColumnsStep ? (
               <section className="template-create-main template-create-step-panel" aria-label={t("templates.stepColumns")}>
+                {!isEditing ? (
+                  <div className="od-blueprint-bar" aria-label={locale === "en" ? "Quick layout presets" : "快速套用预设结构"}>
+                    <span className="od-blueprint-label">
+                      {locale === "en" ? "Quick start:" : "快速套用结构："}
+                    </span>
+                    {SYSTEM_PROJECT_TEMPLATE_SEEDS.map((preset) => {
+                      const isZh = getStoryboardTemplateLanguage(locale) === "zh";
+                      const presetLabel = isZh ? preset.zhName : preset.enName;
+                      const pairedFamily = SYSTEM_STORYBOARD_SKILL_FAMILIES.find((f) => f.familyId === preset.skillFamilyId);
+                      return (
+                        <button
+                          key={preset.id}
+                          type="button"
+                          className="od-blueprint-chip"
+                          onClick={() => {
+                            setColumns(ensureStoryboardPromptColumns(preset.buildColumns(locale), locale));
+                            if (!name.trim()) {
+                              setName(`${presetLabel} Pro`);
+                            }
+                            if (!description.trim()) {
+                              setDescription(isZh ? preset.zhDescription : preset.enDescription);
+                            }
+                            if (pairedFamily) {
+                              const targetSkillId = isZh ? pairedFamily.zhId : pairedFamily.enId;
+                              if (selectableSkills.some((sk) => sk.id === targetSkillId)) {
+                                setSelectedSkillId(targetSkillId);
+                              }
+                            }
+                          }}
+                        >
+                          <span className="od-blueprint-dot" style={{ background: preset.accentHex }} />
+                          <span>{presetLabel}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
                 <div className="template-columns-panel">
                   <ColumnSettingsPanel
                     columns={columns}
@@ -7921,6 +8093,8 @@ function AssetsScreen({
 function SkillsScreen({
   error,
   homeRequestId,
+  requestedTab,
+  onOpenTemplates,
   loading,
   skills,
   tastes,
@@ -7943,6 +8117,8 @@ function SkillsScreen({
 }: {
   error: string | null;
   homeRequestId: number;
+  requestedTab?: SkillFilter | null;
+  onOpenTemplates?: () => void;
   loading: boolean;
   skills: Skill[];
   tastes: Taste[];
@@ -7980,6 +8156,13 @@ function SkillsScreen({
   const [saving, setSaving] = useState(false);
   const [pendingDeleteSkill, setPendingDeleteSkill] = useState<Skill | null>(null);
   const [importModalMode, setImportModalMode] = useState<null | "skill" | "taste">(null);
+  const [pendingDuplicateDraft, setPendingDuplicateDraft] = useState<{
+    name: string;
+    description: string;
+    content: string;
+    iconId: string;
+    gradientId: string;
+  } | null>(null);
 
   // Visual preset (Taste) editor state
   const [editingTaste, setEditingTaste] = useState<Taste | "new" | null>(null);
@@ -8019,9 +8202,12 @@ function SkillsScreen({
   useEffect(() => {
     if (homeRequestId === 0) return;
     setSkillView("list");
+    if (requestedTab) {
+      setActiveFilter(requestedTab);
+    }
     setPendingDeleteSkill(null);
     setSkillVisualPickerOpen(false);
-  }, [homeRequestId]);
+  }, [homeRequestId, requestedTab]);
 
   useEffect(() => {
     if (skillView !== "editor" || selectedSkillId === "new" || !selectedSkillId) return;
@@ -8033,6 +8219,14 @@ function SkillsScreen({
 
   useEffect(() => {
     if (isCreating) {
+      if (pendingDuplicateDraft) {
+        setDraftName(pendingDuplicateDraft.name);
+        setDraftDescription(pendingDuplicateDraft.description);
+        setDraftContent(pendingDuplicateDraft.content);
+        setDraftIconId(pendingDuplicateDraft.iconId);
+        setDraftGradientId(pendingDuplicateDraft.gradientId);
+        return;
+      }
       setDraftName("");
       setDraftDescription("");
       setDraftContent("");
@@ -8046,9 +8240,27 @@ function SkillsScreen({
     setDraftContent(selectedSkill.content);
     setDraftIconId(selectedSkill.iconId || (selectedSkill.locked ? defaultSystemSkillIconId : defaultSkillIconId));
     setDraftGradientId(selectedSkill.gradientId || (selectedSkill.locked ? defaultSystemSkillGradientId : defaultSkillGradientId));
-  }, [isCreating, selectedSkill?.id]);
+  }, [isCreating, pendingDuplicateDraft, selectedSkill?.id]);
 
   function startCreateSkill() {
+    setPendingDuplicateDraft(null);
+    setSelectedSkillId("new");
+    setSkillView("editor");
+    setPendingDeleteSkill(null);
+    setSkillVisualPickerOpen(false);
+  }
+
+  function duplicateSkillToDraft(source: Skill) {
+    const family = getSystemStoryboardSkillFamily(source.id);
+    const baseName = family ? (isEn ? family.enName : family.zhName) : source.name;
+    const baseDesc = family ? (isEn ? family.enDescription : family.zhDescription) : source.description;
+    setPendingDuplicateDraft({
+      name: isEn ? `${baseName} (Custom)` : `${baseName}（自定义）`,
+      description: baseDesc,
+      content: source.content,
+      iconId: source.iconId && source.iconId !== defaultSystemSkillIconId ? source.iconId : "sparkles",
+      gradientId: source.gradientId && source.gradientId !== defaultSystemSkillGradientId ? source.gradientId : getRandomSkillGradientId()
+    });
     setSelectedSkillId("new");
     setSkillView("editor");
     setPendingDeleteSkill(null);
@@ -8133,6 +8345,11 @@ function SkillsScreen({
               {saving ? <LoaderCircle className="spinning" aria-hidden="true" /> : null}
               {isCreating ? t("skills.create") : t("skills.save")}
             </Button>
+          ) : selectedSkill ? (
+            <Button className="skill-editor-create-button" isDisabled={loading} variant="primary" onPress={() => duplicateSkillToDraft(selectedSkill)}>
+              <Copy aria-hidden="true" />
+              {isEn ? "Duplicate & Customize" : "复制并自定义"}
+            </Button>
           ) : null}
         </header>
 
@@ -8155,6 +8372,44 @@ function SkillsScreen({
             </div>
           ) : (
             <div className="skill-form-shell">
+              {isCreating ? (
+                <div className="od-blueprint-bar" aria-label={isEn ? "Starter skill blueprints" : "分镜技能起步蓝图"}>
+                  <span className="od-blueprint-label">
+                    {isEn ? "Start from blueprint:" : "从蓝图快速起步："}
+                  </span>
+                  <button
+                    type="button"
+                    className={cn("od-blueprint-chip", !draftContent.trim() && "active")}
+                    onClick={() => {
+                      setDraftName("");
+                      setDraftDescription("");
+                      setDraftContent("");
+                    }}
+                  >
+                    <span>{isEn ? "Blank" : "空白"}</span>
+                  </button>
+                  {SYSTEM_STORYBOARD_SKILL_FAMILIES.filter((f) => f.familyId !== "default").map((family) => {
+                    const label = isEn ? family.enName : family.zhName;
+                    return (
+                      <button
+                        key={family.familyId}
+                        type="button"
+                        className="od-blueprint-chip"
+                        onClick={() => {
+                          setDraftName(isEn ? `${family.enName} (Custom)` : `${family.zhName}（自定义）`);
+                          setDraftDescription(isEn ? family.enDescription : family.zhDescription);
+                          setDraftContent(isEn ? family.enContent : family.zhContent);
+                          setDraftIconId(family.iconId);
+                          setDraftGradientId(family.gradientId);
+                        }}
+                      >
+                        <span className="od-blueprint-dot" style={{ background: family.accentHex }} />
+                        <span>{label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
               <div className="skill-visual-control">
                 {locked ? (
                   <SkillVisualIcon className="skill-form-icon" iconId={draftIconId} gradientId={draftGradientId} />
@@ -8331,6 +8586,17 @@ function SkillsScreen({
           <h1>{t("skills.title")}</h1>
         </div>
         <div className="library-page-header-actions">
+          {onOpenTemplates ? (
+            <button
+              type="button"
+              className="hub-btn hub-btn-outline"
+              disabled={loading}
+              onClick={onOpenTemplates}
+            >
+              <TableProperties aria-hidden="true" />
+              <span>{isEn ? "Templates" : "分镜模板"}</span>
+            </button>
+          ) : null}
           <button
             type="button"
             className="hub-btn hub-btn-outline"
@@ -8489,16 +8755,6 @@ function SkillsScreen({
                   </div>
                 ) : (
                   <div className="skg-grid" aria-label={t("skills.cardGridLabel")}>
-                    {systemSkills.map((skill) => (
-                      <SkillGalleryCard
-                        key={skill.id}
-                        skill={skill}
-                        locale={locale}
-                        iconNode={<SkillVisualIcon className="skg-avatar-icon" iconId={skill.iconId} gradientId={skill.gradientId} />}
-                        onSelect={openSkill}
-                      />
-                    ))}
-
                     {visiblePacks.map((pack) => (
                       <SkillryPackGalleryCard
                         key={pack.slug}
@@ -8507,6 +8763,17 @@ function SkillsScreen({
                         onOpenGallery={() => openPackGallery(pack.slug)}
                         onPullPack={() => openPackPullModal(pack)}
                         onEditSyncedSkill={openSkill}
+                      />
+                    ))}
+
+                    {systemSkills.map((skill) => (
+                      <SkillGalleryCard
+                        key={skill.id}
+                        skill={skill}
+                        locale={locale}
+                        iconNode={<SkillVisualIcon className="skg-avatar-icon" iconId={skill.iconId} gradientId={skill.gradientId} />}
+                        onSelect={openSkill}
+                        onDuplicate={duplicateSkillToDraft}
                       />
                     ))}
 

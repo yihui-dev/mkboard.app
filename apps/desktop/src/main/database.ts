@@ -84,6 +84,16 @@ import {
   type UpdateSkillInput,
   type UpdateShotInput
 } from "../shared";
+import {
+  buildAllSystemProjectTemplates,
+  buildSystemProjectTemplate,
+  getLocalizedSystemStoryboardSkillId,
+  getSystemStoryboardSkillSeeds,
+  getSystemStoryboardSkillSortIndex,
+  getSystemTemplateSeed,
+  isSystemStoryboardSkillId,
+  isSystemTemplateId
+} from "../storyboard-presets";
 
 const require = createRequire(import.meta.url);
 const sqlitePackageName = "better-sqlite3";
@@ -1858,8 +1868,17 @@ export class MkboardStore {
 
   listTemplates(interfaceLanguage?: InterfaceLanguage): ProjectTemplate[] {
     this.ensureDefaultSkills();
+    const systemTemplates = buildAllSystemProjectTemplates(interfaceLanguage, (targetSkillId) => {
+      const skill = this.getSkillRecordOrDefault(targetSkillId);
+      return { id: skill.id, name: skill.name };
+    });
     const rows = this.db.prepare("SELECT * FROM templates ORDER BY updated_at DESC, created_at DESC").all() as TemplateRecord[];
-    return [this.getDefaultTemplate(interfaceLanguage), ...rows.map((row) => mapTemplate(row, this.getTemplateSkillName(row.storyboard_skill_id, interfaceLanguage), interfaceLanguage))];
+    return [
+      ...systemTemplates,
+      ...rows
+        .filter((row) => !isSystemTemplateId(row.id))
+        .map((row) => mapTemplate(row, this.getTemplateSkillName(row.storyboard_skill_id, interfaceLanguage), interfaceLanguage))
+    ];
   }
 
   createTemplate(input: CreateProjectTemplateInput): ProjectTemplate {
@@ -1890,7 +1909,7 @@ export class MkboardStore {
   }
 
   updateTemplate(input: UpdateProjectTemplateInput): ProjectTemplate {
-    if (input.id === defaultTemplateId) throw new Error("内置分镜模板不允许修改。");
+    if (isSystemTemplateId(input.id)) throw new Error("内置分镜模板不允许修改。");
     const existing = this.db.prepare("SELECT * FROM templates WHERE id = ?").get(input.id) as TemplateRecord | undefined;
     if (!existing) throw new Error("没有找到要编辑的分镜模板。");
     if (existing.scope !== "user") throw new Error("内置分镜模板不允许修改。");
@@ -1923,7 +1942,7 @@ export class MkboardStore {
   }
 
   deleteTemplate(templateId: string): ProjectTemplate[] {
-    if (templateId === defaultTemplateId) throw new Error("内置分镜模板不允许删除。");
+    if (isSystemTemplateId(templateId)) throw new Error("内置分镜模板不允许删除。");
     const existing = this.db.prepare("SELECT * FROM templates WHERE id = ?").get(templateId) as TemplateRecord | undefined;
     if (!existing) throw new Error("没有找到要删除的分镜模板。");
     if (existing.scope !== "user") throw new Error("内置分镜模板不允许删除。");
@@ -2101,7 +2120,16 @@ export class MkboardStore {
     this.ensureDefaultSkills();
     const defaultStoryboardSkillId = this.getDefaultStoryboardSkillId(interfaceLanguage);
     const rows = this.db.prepare("SELECT * FROM skills ORDER BY locked DESC, updated_at DESC, created_at DESC").all() as SkillRecord[];
-    return rows.filter((row) => !systemStoryboardSkillIds.has(row.id) || row.id === defaultStoryboardSkillId).map(mapSkill);
+    return rows
+      .filter((row) => !isSystemStoryboardSkillId(row.id) || row.id === defaultStoryboardSkillId || getLocalizedSystemStoryboardSkillId(row.id, interfaceLanguage) === row.id)
+      .sort((a, b) => {
+        if (a.locked !== b.locked) return b.locked - a.locked;
+        if (a.locked) {
+          return getSystemStoryboardSkillSortIndex(a.id) - getSystemStoryboardSkillSortIndex(b.id);
+        }
+        return 0;
+      })
+      .map(mapSkill);
   }
 
   createSkill(input: CreateSkillInput): Skill {
@@ -2156,7 +2184,7 @@ export class MkboardStore {
 
   deleteSkill(skillId: string): Skill[] {
     const existing = this.getSkillRecord(skillId);
-    if (existing.locked || existing.id === storyboardSkillId) throw new Error("系统默认拆分分镜 SKILL 不允许删除。");
+    if (existing.locked || isSystemStoryboardSkillId(existing.id)) throw new Error("系统默认拆分分镜 SKILL 不允许删除。");
     this.db.prepare("DELETE FROM skills WHERE id = ?").run(skillId);
     return this.listSkills();
   }
@@ -3665,25 +3693,26 @@ export class MkboardStore {
 
   private getTemplate(templateId: string, interfaceLanguage?: InterfaceLanguage): ProjectTemplate {
     const normalizedTemplateId = legacyDefaultTemplateIds.has(templateId) ? defaultTemplateId : templateId;
-    if (normalizedTemplateId === defaultTemplateId) return this.getDefaultTemplate(interfaceLanguage);
+    const systemSeed = getSystemTemplateSeed(normalizedTemplateId);
+    if (systemSeed) {
+      this.ensureDefaultSkills();
+      return buildSystemProjectTemplate(systemSeed, interfaceLanguage, (targetSkillId) => {
+        const skill = this.getSkillRecordOrDefault(targetSkillId);
+        return { id: skill.id, name: skill.name };
+      });
+    }
     const row = this.db.prepare("SELECT * FROM templates WHERE id = ?").get(normalizedTemplateId) as TemplateRecord | undefined;
     if (!row) return this.getDefaultTemplate(interfaceLanguage);
     return mapTemplate(row, this.getTemplateSkillName(row.storyboard_skill_id, interfaceLanguage), interfaceLanguage);
   }
 
   private getDefaultTemplate(interfaceLanguage?: InterfaceLanguage): ProjectTemplate {
-    const skill = this.getSkillRecord(this.getDefaultStoryboardSkillId(interfaceLanguage));
-    return {
-      id: defaultTemplateId,
-      name: defaultTemplateName,
-      description: defaultTemplateDescription,
-      scope: "system",
-      columns: ensureStoryboardPromptColumns(getDefaultStoryboardColumns(interfaceLanguage), interfaceLanguage),
-      storyboardSkillId: skill.id,
-      storyboardSkillName: skill.name,
-      createdAt: "",
-      updatedAt: ""
-    };
+    const defaultSeed = getSystemTemplateSeed(defaultTemplateId)!;
+    this.ensureDefaultSkills();
+    return buildSystemProjectTemplate(defaultSeed, interfaceLanguage, (targetSkillId) => {
+      const skill = this.getSkillRecordOrDefault(targetSkillId);
+      return { id: skill.id, name: skill.name };
+    });
   }
 
   private getTemplateSkillName(skillId: string, interfaceLanguage?: InterfaceLanguage): string {
@@ -3695,25 +3724,12 @@ export class MkboardStore {
   }
 
   private getLocalizedStoryboardSkillId(skillId: string, interfaceLanguage?: InterfaceLanguage): string {
-    return systemStoryboardSkillIds.has(skillId) ? this.getDefaultStoryboardSkillId(interfaceLanguage) : skillId;
+    return isSystemStoryboardSkillId(skillId) ? getLocalizedSystemStoryboardSkillId(skillId, interfaceLanguage) : skillId;
   }
 
   private ensureDefaultSkills(): void {
     const now = new Date().toISOString();
-    const seeds = [
-      {
-        id: storyboardSkillId,
-        name: storyboardSkillName,
-        description: storyboardSkillDescription,
-        content: fallbackStoryboardSkill
-      },
-      {
-        id: chineseStoryboardSkillId,
-        name: chineseStoryboardSkillName,
-        description: chineseStoryboardSkillDescription,
-        content: fallbackChineseStoryboardSkill
-      }
-    ];
+    const seeds = getSystemStoryboardSkillSeeds();
     const insert = this.db.prepare(
       "INSERT INTO skills (id, name, description, content, icon_id, gradient_id, scope, locked, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     );
@@ -3722,7 +3738,7 @@ export class MkboardStore {
       seeds.forEach((seed) => {
         const existing = this.db.prepare("SELECT * FROM skills WHERE id = ?").get(seed.id) as SkillRecord | undefined;
         if (!existing) {
-          insert.run(seed.id, seed.name, seed.description, seed.content, defaultSystemSkillIconId, defaultSystemSkillGradientId, "system", 1, now, now);
+          insert.run(seed.id, seed.name, seed.description, seed.content, seed.iconId, seed.gradientId, "system", 1, now, now);
           return;
         }
         if (
@@ -3731,10 +3747,10 @@ export class MkboardStore {
           existing.name !== seed.name ||
           existing.description !== seed.description ||
           existing.content !== seed.content ||
-          existing.icon_id !== defaultSystemSkillIconId ||
-          existing.gradient_id !== defaultSystemSkillGradientId
+          existing.icon_id !== seed.iconId ||
+          existing.gradient_id !== seed.gradientId
         ) {
-          update.run(seed.name, seed.description, seed.content, defaultSystemSkillIconId, defaultSystemSkillGradientId, now, seed.id);
+          update.run(seed.name, seed.description, seed.content, seed.iconId, seed.gradientId, now, seed.id);
         }
       });
     });

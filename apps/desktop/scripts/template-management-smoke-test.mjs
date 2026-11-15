@@ -162,3 +162,54 @@ test("custom templates support update, snapshot isolation, write protection, and
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+
+test("built-in minimalist storyboard templates and skills localize cleanly and bind tailored columns", () => {
+  const { root, store } = createStoreFixture();
+
+  try {
+    const zhSkills = store.listSkills("zh-CN");
+    const enSkills = store.listSkills("en");
+    assert.equal(zhSkills.filter((s) => s.locked).length, 6);
+    assert.equal(enSkills.filter((s) => s.locked).length, 6);
+    assert.ok(zhSkills.some((s) => s.id === "storyboard-minimal-keyframe-zh" && s.name === "极简静帧快剪"));
+    assert.ok(enSkills.some((s) => s.id === "storyboard-minimal-keyframe" && s.name === "Minimal Keyframe Cut"));
+    assert.equal(zhSkills.some((s) => s.id === "storyboard-minimal-keyframe"), false);
+
+    const zhTemplates = store.listTemplates("zh-CN");
+    const enTemplates = store.listTemplates("en");
+    assert.equal(zhTemplates.filter((t) => t.scope === "system").length, 6);
+    assert.equal(zhTemplates[0].id, "default-template");
+
+    const minimalTpl = zhTemplates.find((t) => t.id === "template-minimal-cut");
+    assert.ok(minimalTpl);
+    assert.equal(minimalTpl.name, "极简快剪模板");
+    assert.equal(minimalTpl.storyboardSkillId, "storyboard-minimal-keyframe-zh");
+    assert.equal(minimalTpl.columns.find((c) => c.id === "note")?.visible, false);
+    assert.equal(minimalTpl.columns.find((c) => c.id === "custom-2")?.visible, false);
+    assert.equal(minimalTpl.columns.find((c) => c.id === "custom-1")?.visible, true);
+
+    const enExplainerTpl = enTemplates.find((t) => t.id === "template-creator-explainer");
+    assert.ok(enExplainerTpl);
+    assert.equal(enExplainerTpl.name, "Creator Explainer");
+    assert.equal(enExplainerTpl.storyboardSkillId, "storyboard-creator-explainer");
+    assert.ok(enExplainerTpl.columns.some((c) => c.id === "custom-10" && c.label === "On-Screen Callout" && c.visible));
+
+    const taste = store.listTastes()[0];
+    const minimalProject = store.createProject({
+      name: "极简项目测试",
+      icon: "clapperboard",
+      templateId: "template-minimal-cut",
+      tasteId: taste.id,
+      interfaceLanguage: "zh-CN"
+    });
+    assert.equal(minimalProject.storyboardSkill.id, "storyboard-minimal-keyframe-zh");
+    assert.equal(minimalProject.columns.find((c) => c.id === "note")?.visible, false);
+    assert.equal(minimalProject.columns.find((c) => c.id === "custom-2")?.visible, false);
+
+    assert.throws(() => store.deleteTemplate("template-minimal-cut"), /内置/);
+    assert.throws(() => store.deleteSkill("storyboard-minimal-keyframe-zh"), /不允许删除/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
