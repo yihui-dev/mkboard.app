@@ -19030,27 +19030,109 @@ function AgentComposer({
   const isEn = locale === "en";
   const [composerInput, setComposerInput] = useState("");
   const [agentMenuOpen, setAgentMenuOpen] = useState(false);
+  const [browsingCliId, setBrowsingCliId] = useState<string>(selectedCliId);
+  const [modelSearchQuery, setModelSearchQuery] = useState("");
   const agentMenuRef = useRef<HTMLDivElement>(null);
+  const modelSearchInputRef = useRef<HTMLInputElement>(null);
   const composerTextAreaRef = useRef<HTMLTextAreaElement>(null);
   const selectableAgents = useMemo(
-    () => localCliAgents.filter((agent) => !isDependencyCliAgent(agent)),
+    () =>
+      localCliAgents
+        .filter((agent) => !isDependencyCliAgent(agent))
+        .slice()
+        .sort((a, b) => Number(b.installed) - Number(a.installed)),
     [localCliAgents]
   );
   const activeAgentObj = selectableAgents.find((agent) => agent.id === selectedCliId);
-  const availableModels = activeAgentObj?.models ?? [{ id: "default", label: isEn ? "CLI Default" : "CLI 默认模型" }];
+  const availableModels = activeAgentObj?.models ?? [{ id: "default", label: isEn ? "Default" : "CLI 默认" }];
   const supportsEffort = activeAgentObj?.supportsEffort ?? selectedCliId === "codex";
   const mcpOnline = Boolean(mcpBridgeStatus?.listening && mcpBridgeStatus?.enabled);
 
+  const activeModelPreset = useMemo(
+    () => availableModels.find((m) => m.id === selectedAgentModel) ?? availableModels[0],
+    [availableModels, selectedAgentModel]
+  );
+  const triggerPrimaryLabel =
+    !selectedAgentModel || selectedAgentModel === "default" || !activeModelPreset || activeModelPreset.id === "default"
+      ? selectedCliName
+      : activeModelPreset.label;
+  const effortShortMap: Record<AgentEffortLevel, string> = isEn
+    ? { low: "Low", medium: "Med", high: "High" }
+    : { low: "低", medium: "中", high: "高" };
+
+  const browsedAgentObj =
+    selectableAgents.find((agent) => agent.id === browsingCliId) ?? activeAgentObj ?? selectableAgents[0];
+  const browsedModels = browsedAgentObj?.models ?? [{ id: "default", label: isEn ? "Default" : "CLI 默认" }];
+  const browsedSupportsEffort = browsedAgentObj
+    ? (browsedAgentObj.supportsEffort ?? browsedAgentObj.id === "codex")
+    : supportsEffort;
+
+  const trimmedModelQuery = modelSearchQuery.trim().toLowerCase();
+  const filteredModelEntries = useMemo(() => {
+    const formatModelOptionLabel = (model: { id: string; label: string }) =>
+      model.id === "default" ? (isEn ? "Default" : "CLI 默认") : model.label;
+
+    if (!trimmedModelQuery) {
+      if (!browsedAgentObj || !browsedAgentObj.installed) return [];
+      return browsedModels.map((model) => ({
+        agent: browsedAgentObj,
+        model,
+        displayLabel: formatModelOptionLabel(model),
+        showProviderHint: false
+      }));
+    }
+
+    const matches: Array<{
+      agent: LocalCliAgent;
+      model: { id: string; label: string };
+      displayLabel: string;
+      showProviderHint: boolean;
+    }> = [];
+    for (const agent of selectableAgents) {
+      if (!agent.installed) continue;
+      const models = agent.models?.length ? agent.models : [{ id: "default", label: isEn ? "Default" : "CLI 默认" }];
+      for (const model of models) {
+        const displayLabel = formatModelOptionLabel(model);
+        const haystack = `${agent.name} ${agent.id} ${model.id} ${model.label} ${displayLabel}`.toLowerCase();
+        if (haystack.includes(trimmedModelQuery)) {
+          matches.push({
+            agent,
+            model,
+            displayLabel,
+            showProviderHint: true
+          });
+        }
+      }
+    }
+    return matches;
+  }, [browsedAgentObj, browsedModels, isEn, selectableAgents, trimmedModelQuery]);
+
   useEffect(() => {
     if (!agentMenuOpen) return undefined;
+    setBrowsingCliId(selectedCliId);
+    setModelSearchQuery("");
+    const raf = window.requestAnimationFrame(() => {
+      modelSearchInputRef.current?.focus({ preventScroll: true });
+    });
     const onPointerDown = (event: MouseEvent) => {
       if (agentMenuRef.current && !agentMenuRef.current.contains(event.target as Node)) {
         setAgentMenuOpen(false);
       }
     };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.stopPropagation();
+        setAgentMenuOpen(false);
+      }
+    };
     window.addEventListener("mousedown", onPointerDown);
-    return () => window.removeEventListener("mousedown", onPointerDown);
-  }, [agentMenuOpen]);
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.cancelAnimationFrame(raf);
+      window.removeEventListener("mousedown", onPointerDown);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [agentMenuOpen, selectedCliId]);
 
   useLayoutEffect(() => {
     resizeAgentComposerTextArea(composerTextAreaRef.current);
@@ -19126,88 +19208,202 @@ function AgentComposer({
 
           <div className="composer-pill-wrap" ref={agentMenuRef}>
             <button
-              className="composer-pill"
+              className={cn("composer-pill t3-model-trigger", agentMenuOpen && "open")}
               type="button"
+              data-chat-provider-model-picker="true"
+              aria-expanded={agentMenuOpen}
               onClick={() => setAgentMenuOpen((open) => !open)}
-              title={isEn ? "Switch CLI Agent, Model & Effort" : "切换本地 CLI Agent、模型与推理强度"}
+              title={
+                isEn
+                  ? `${selectedCliName} · ${triggerPrimaryLabel}${supportsEffort ? ` (${selectedAgentEffort})` : ""}`
+                  : `${selectedCliName} · ${triggerPrimaryLabel}${supportsEffort ? `（推理：${effortShortMap[selectedAgentEffort]}）` : ""}`
+              }
             >
-              <span className={cn("composer-cli-status-dot", cliConnected && "connected")} aria-hidden="true" />
-              <AgentBrandGlyph agentId={selectedCliId} name={selectedCliName} size={15} variant="inline" />
-              <span>
-                {selectedCliName}
-                {selectedAgentModel && selectedAgentModel !== "default" ? ` · ${selectedAgentModel}` : ""}
-                {supportsEffort ? ` · ${selectedAgentEffort}` : ""}
+              <span className="t3-trigger-brand" aria-hidden="true">
+                <AgentBrandGlyph agentId={selectedCliId} name={selectedCliName} size={14} variant="inline" />
+                <span className={cn("t3-trigger-status-dot", cliConnected && "connected")} />
               </span>
-              <ChevronDown aria-hidden="true" />
+              <span className="t3-trigger-label" data-chat-provider-model-picker-label="true">
+                {triggerPrimaryLabel}
+              </span>
+              {supportsEffort ? (
+                <span className="t3-trigger-effort">{effortShortMap[selectedAgentEffort]}</span>
+              ) : null}
+              <ChevronDown className="t3-trigger-chevron" aria-hidden="true" />
             </button>
             {agentMenuOpen ? (
-              <div className="composer-popover" role="dialog" aria-label="Agent & Model Picker">
-                <div className="composer-popover-label">{isEn ? "Local CLI Agent" : "本地 CLI Agent"}</div>
-                <div className="composer-popover-list">
-                  {selectableAgents.map((agent) => (
-                    <button
-                      key={agent.id}
-                      type="button"
-                      disabled={!agent.installed}
-                      className={cn("composer-popover-option", agent.id === selectedCliId && "selected")}
-                      onClick={() => {
-                        if (!isAgentCliId(agent.id)) return;
-                        onSelectCli(agent.id);
-                        onSelectAgentModel("default");
-                      }}
-                    >
-                      <span className="composer-popover-option-main">
-                        <AgentBrandGlyph agentId={agent.id} name={agent.name} size={16} variant="inline" />
-                        <span>{agent.name}</span>
-                      </span>
-                      <small>{agent.installed ? (agent.id === selectedCliId ? "✓" : "") : isEn ? "Not installed" : "未安装"}</small>
-                    </button>
-                  ))}
-                </div>
-                {availableModels.length > 0 ? (
-                  <>
-                    <div className="composer-popover-label">{isEn ? "Model" : "模型"}</div>
-                    <select
-                      className="byok-select"
-                      value={availableModels.some((m) => m.id === selectedAgentModel) ? selectedAgentModel : availableModels[0].id}
-                      onChange={(e) => onSelectAgentModel(e.target.value)}
-                    >
-                      {availableModels.map((m) => (
-                        <option key={m.id} value={m.id}>
-                          {m.label}
-                        </option>
-                      ))}
-                    </select>
-                  </>
-                ) : null}
-                {supportsEffort ? (
-                  <>
-                    <div className="composer-popover-label">{isEn ? "Reasoning Effort" : "推理强度"}</div>
-                    <div className="composer-effort-chips">
-                      {(["low", "medium", "high"] as const).map((lvl) => (
+              <div className="composer-popover t3-model-picker-popover" role="dialog" aria-label="Agent & Model Picker">
+                <div className="t3-picker-body">
+                  <div className="t3-picker-rail" role="tablist" aria-label={isEn ? "Providers" : "CLI 提供方"}>
+                    {selectableAgents.map((agent) => {
+                      const isBrowsing = (browsedAgentObj?.id ?? selectedCliId) === agent.id && !trimmedModelQuery;
+                      return (
                         <button
-                          key={lvl}
+                          key={agent.id}
                           type="button"
-                          className={cn("composer-effort-chip", selectedAgentEffort === lvl && "active")}
-                          onClick={() => onSelectAgentEffort(lvl)}
+                          role="tab"
+                          aria-selected={isBrowsing}
+                          aria-label={agent.name}
+                          title={
+                            agent.installed
+                              ? agent.name
+                              : `${agent.name} · ${isEn ? "Not installed" : "未安装"}`
+                          }
+                          className={cn(
+                            "t3-picker-rail-btn",
+                            isBrowsing && "active",
+                            !agent.installed && "uninstalled"
+                          )}
+                          onClick={() => {
+                            setModelSearchQuery("");
+                            setBrowsingCliId(agent.id);
+                            if (agent.installed && isAgentCliId(agent.id) && agent.id !== selectedCliId) {
+                              onSelectCli(agent.id);
+                              onSelectAgentModel("default");
+                            }
+                          }}
                         >
-                          {lvl}
+                          <AgentBrandGlyph agentId={agent.id} name={agent.name} size={17} variant="inline" />
                         </button>
-                      ))}
+                      );
+                    })}
+                  </div>
+
+                  <div className="t3-picker-main">
+                    <div className="t3-picker-search-row">
+                      <Search className="t3-picker-search-icon" aria-hidden="true" />
+                      <input
+                        ref={modelSearchInputRef}
+                        type="text"
+                        className="t3-picker-search-input"
+                        value={modelSearchQuery}
+                        placeholder={isEn ? "Search models…" : "搜索模型…"}
+                        aria-label={isEn ? "Search models" : "搜索模型"}
+                        onChange={(e) => setModelSearchQuery(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && filteredModelEntries.length > 0) {
+                            e.preventDefault();
+                            const top = filteredModelEntries[0];
+                            if (isAgentCliId(top.agent.id)) {
+                              if (top.agent.id !== selectedCliId) {
+                                onSelectCli(top.agent.id);
+                              }
+                              onSelectAgentModel(top.model.id);
+                              setAgentMenuOpen(false);
+                            }
+                          }
+                        }}
+                      />
+                      {!trimmedModelQuery && browsedAgentObj ? (
+                        <span className="t3-picker-provider-tag">{browsedAgentObj.name}</span>
+                      ) : null}
                     </div>
-                  </>
-                ) : null}
-                <button
-                  type="button"
-                  className="composer-popover-option"
-                  onClick={() => {
-                    setAgentMenuOpen(false);
-                    onOpenRuntimeSettings();
-                  }}
-                >
-                  <span>{isEn ? "Configure CLI & API Keys…" : "管理 CLI 与本地 API Key…"}</span>
-                  <Settings size={13} aria-hidden="true" />
-                </button>
+
+                    <div className="t3-picker-model-list" role="listbox" aria-label={isEn ? "Models" : "模型列表"}>
+                      {!trimmedModelQuery && browsedAgentObj && !browsedAgentObj.installed ? (
+                        <div className="t3-picker-empty-state">
+                          <p>
+                            {isEn
+                              ? `${browsedAgentObj.name} is not installed on this machine.`
+                              : `本机尚未安装 ${browsedAgentObj.name}`}
+                          </p>
+                          <button
+                            type="button"
+                            className="t3-picker-empty-action"
+                            onClick={() => {
+                              setAgentMenuOpen(false);
+                              onOpenRuntimeSettings();
+                            }}
+                          >
+                            {isEn ? "Open provider setup" : "前往安装与配置"}
+                          </button>
+                        </div>
+                      ) : filteredModelEntries.length === 0 ? (
+                        <div className="t3-picker-empty-state">
+                          <p>{isEn ? "No matching models" : "没有匹配的模型"}</p>
+                        </div>
+                      ) : (
+                        filteredModelEntries.map(({ agent, model, displayLabel, showProviderHint }) => {
+                          const effectiveActiveModel = availableModels.some((m) => m.id === selectedAgentModel)
+                            ? selectedAgentModel
+                            : availableModels[0]?.id ?? "default";
+                          const isSelected =
+                            agent.id === selectedCliId && model.id === effectiveActiveModel;
+                          return (
+                            <button
+                              key={`${agent.id}:${model.id}`}
+                              type="button"
+                              role="option"
+                              aria-selected={isSelected}
+                              className={cn("t3-picker-model-row", isSelected && "selected")}
+                              onClick={() => {
+                                if (!isAgentCliId(agent.id)) return;
+                                if (agent.id !== selectedCliId) {
+                                  onSelectCli(agent.id);
+                                }
+                                onSelectAgentModel(model.id);
+                                setAgentMenuOpen(false);
+                              }}
+                            >
+                              <span className="t3-picker-model-main">
+                                {showProviderHint ? (
+                                  <AgentBrandGlyph agentId={agent.id} name={agent.name} size={14} variant="inline" />
+                                ) : null}
+                                <span className="t3-picker-model-name">{displayLabel}</span>
+                              </span>
+                              <span className="t3-picker-model-meta">
+                                {isSelected ? <Check className="t3-picker-check" aria-hidden="true" /> : null}
+                              </span>
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="t3-picker-footer">
+                  {browsedSupportsEffort ? (
+                    <div className="t3-effort-group">
+                      <span className="t3-effort-caption">{isEn ? "Effort" : "推理"}</span>
+                      <div
+                        className="t3-effort-segmented"
+                        role="radiogroup"
+                        aria-label={isEn ? "Reasoning effort" : "推理强度"}
+                      >
+                        {(["low", "medium", "high"] as const).map((lvl) => (
+                          <button
+                            key={lvl}
+                            type="button"
+                            role="radio"
+                            aria-checked={selectedAgentEffort === lvl}
+                            className={cn("t3-effort-segment", selectedAgentEffort === lvl && "active")}
+                            onClick={() => onSelectAgentEffort(lvl)}
+                          >
+                            {effortShortMap[lvl]}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="t3-effort-caption muted">
+                      {isEn ? "Default reasoning" : "默认推理"}
+                    </span>
+                  )}
+
+                  <button
+                    type="button"
+                    className="t3-picker-settings-btn"
+                    title={isEn ? "Configure CLI & API Keys" : "管理 CLI 与本地 API Key"}
+                    onClick={() => {
+                      setAgentMenuOpen(false);
+                      onOpenRuntimeSettings();
+                    }}
+                  >
+                    <Settings size={12.5} aria-hidden="true" />
+                    <span>{isEn ? "Setup" : "配置"}</span>
+                  </button>
+                </div>
               </div>
             ) : null}
           </div>

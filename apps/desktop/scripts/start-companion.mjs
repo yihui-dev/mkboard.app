@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -14,6 +15,7 @@ import { MKBOARD_MCP_TOOLS } from "../src/main/mcp/tools.ts";
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const desktopRoot = resolve(scriptDir, "..");
 const rendererDistDir = join(desktopRoot, "out", "renderer");
+const appVersion = JSON.parse(readFileSync(join(desktopRoot, "package.json"), "utf8")).version;
 
 const argv = process.argv.slice(2);
 const wantLan = argv.includes("--lan") || argv.includes("--network");
@@ -70,7 +72,7 @@ companion = new CompanionServer({
         result: {
           protocolVersion: "2025-06-18",
           capabilities: { tools: {} },
-          serverInfo: { name: "mkboard-web", version: "0.3.0" }
+          serverInfo: { name: "mkboard-web", version: appVersion }
         }
       };
     }
@@ -120,7 +122,7 @@ companion = new CompanionServer({
       case "listElevenLabsVoices": return elevenLabs.listVoices();
       case "synthesizeElevenLabsSpeech": return elevenLabs.synthesizeSpeech(args[0]);
       case "getElevenLabsSpeechStatus": return elevenLabs.getSpeechStatus(args[0]);
-      case "checkDesktopVersion": return { status: "current", currentVersion: "0.3.0", latestVersion: "0.3.0", downloadUrl: "https://github.com/yihui-dev/mkboard.app/releases", updateAvailable: false, checkedAt: new Date().toISOString(), downloadProgress: null, installBlocked: false };
+      case "checkDesktopVersion": return { status: "current", currentVersion: appVersion, latestVersion: appVersion, downloadUrl: "https://github.com/yihui-dev/mkboard.app/releases", updateAvailable: false, checkedAt: new Date().toISOString(), downloadProgress: null, installBlocked: false };
       case "generateStoryboardImages": {
         const input = args[0];
         const proj = store.getProject(input.projectId).project;
@@ -131,8 +133,8 @@ companion = new CompanionServer({
       }
       case "getActiveStoryboardVideoGenerations": return { rowIds: [], tasks: [] };
       case "ensureTutorialProject": return store.ensureTutorialProject(args[0]);
-      case "getOnboardingState": return store.getOnboardingState("0.3.0", args[0]);
-      case "updateOnboardingState": return store.updateOnboardingState(args[0], "0.3.0", args[1]);
+      case "getOnboardingState": return store.getOnboardingState(appVersion, args[0]);
+      case "updateOnboardingState": return store.updateOnboardingState(args[0], appVersion, args[1]);
       case "revealTutorialStoryboard": return store.revealTutorialStoryboard(args[0]);
       case "revealTutorialMedia": return store.revealTutorialMedia(args[0]);
       case "listProjects": return store.listProjects();

@@ -1,10 +1,44 @@
 {
-  "updatedAt": "2026-11-15",
+  "updatedAt": "2026-11-16",
   "currentVersions": {
-    "production": "0.3.0",
-    "dev": "0.3.0"
+    "production": "0.3.1",
+    "dev": "0.3.1"
   },
   "releases": [
+    {
+      "version": "0.3.1",
+      "date": "2026-11-16",
+      "title": {
+        "zh": "Apple 官方签名公证安装包、极简模型切换器与核心分镜模板精简",
+        "en": "Apple Signed & Notarized Installers, Minimalist Model Picker & Core Storyboard Templates"
+      },
+      "summary": {
+        "zh": "macOS 双架构（Apple Silicon & Intel）安装包已完成 Apple Developer ID 签名与公证；重塑对话栏极简多栏模型切换器，升级 ElevenLabs 音色工坊并将内置分镜模板精简为 4 套核心结构。",
+        "en": "macOS installers (Apple Silicon & Intel) are now Apple Developer ID signed and notarized; introduced a minimalist multi-pane Agent & Model switcher, upgraded ElevenLabs Voice Studio, and streamlined built-in storyboard templates to 4 core presets."
+      },
+      "sections": [
+        {
+          "title": {
+            "zh": "更新亮点",
+            "en": "Highlights"
+          },
+          "items": [
+            {
+              "zh": "macOS 安装包（arm64 / x64）已完成 Apple Developer ID 签名、notarytool 公证与离线票据钉合（Stapled）",
+              "en": "macOS installers (arm64 & x64) are now Apple Developer ID signed, notarized, and stapled for seamless Gatekeeper installation"
+            },
+            {
+              "zh": "全新极简双栏 Agent 与模型切换浮层：左侧 CLI 品牌侧栏、搜索即达模型列表与分段推理强度控制",
+              "en": "Minimalist two-pane Agent & Model switcher with vertical provider rail, instant model search, and segmented reasoning effort control"
+            },
+            {
+              "zh": "重构 ElevenLabs 配音音色管理面板，并将内置分镜模板精简为 4 套高频核心结构",
+              "en": "Redesigned ElevenLabs Voice Studio with rich filtering & preview, and streamlined built-in storyboard templates to 4 core structures"
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "0.3.0",
       "date": "2026-11-15",
