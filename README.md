@@ -49,7 +49,7 @@ CSC_IDENTITY_AUTO_DISCOVERY=false pnpm --filter @mkboard/desktop run dist:linux
 CSC_IDENTITY_AUTO_DISCOVERY=false pnpm --filter @mkboard/desktop run dist:win:oss
 ```
 
-> **macOS Unsigned App Tip**: Community builds are unsigned by default. On first launch on macOS, run `xattr -cr /Applications/MkBoard.app` if Gatekeeper shows a warning.
+> **macOS Signing & Gatekeeper**: Official macOS installers on [GitHub Releases](https://github.com/yihui-dev/mkboard.app/releases/latest) are Apple Developer ID signed and notarized. Community builds compiled from source are unsigned by default (`identity: null`); if building locally without an Apple certificate, run `xattr -cr /Applications/MkBoard.app` on first launch.
 
 ## License
 

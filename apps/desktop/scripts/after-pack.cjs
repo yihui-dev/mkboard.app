@@ -5,13 +5,27 @@ const fs = require("node:fs/promises");
 const path = require("node:path");
 
 module.exports = async function afterPack(context) {
-  const expectedTarget = context.electronPlatformName === "darwin" ? "darwin-arm64" : context.electronPlatformName === "win32" ? "win32-x64" : null;
+  const macSigned = process.env.MKBOARD_MAC_SIGN === "1";
+  const darwinArch = context.arch === 1 ? "x64" : "arm64";
+  const expectedTarget =
+    context.electronPlatformName === "darwin"
+      ? `darwin-${darwinArch}`
+      : context.electronPlatformName === "win32"
+        ? "win32-x64"
+        : null;
+
   if (expectedTarget) {
-    const runtimeRoot = path.join(context.appOutDir, context.electronPlatformName === "darwin" ? "MkBoard.app/Contents/Resources/runtime" : "resources/runtime");
+    const runtimeRoot = path.join(
+      context.appOutDir,
+      context.electronPlatformName === "darwin" ? "MkBoard.app/Contents/Resources/runtime" : "resources/runtime"
+    );
     const manifestPath = path.join(runtimeRoot, "manifest.json");
-    const hasManifest = await fs.access(manifestPath).then(() => true, () => false);
+    const hasManifest = await fs.access(manifestPath).then(
+      () => true,
+      () => false
+    );
     if (!hasManifest) {
-      if (context.electronPlatformName === "darwin") {
+      if (context.electronPlatformName === "darwin" && !macSigned) {
         adHocSignMacBundle(path.join(context.appOutDir, "MkBoard.app"));
       }
       if (context.electronPlatformName === "win32") {
@@ -22,8 +36,11 @@ module.exports = async function afterPack(context) {
       }
       return;
     }
+
     const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8"));
-    if (manifest.target !== expectedTarget) throw new Error(`Bundled runtime target mismatch: expected ${expectedTarget}, got ${manifest.target}`);
+    if (manifest.target !== expectedTarget) {
+      throw new Error(`Bundled runtime target mismatch: expected ${expectedTarget}, got ${manifest.target}`);
+    }
     const onnxPath = path.join(runtimeRoot, "hyperframes", "node_modules", "onnxruntime-node");
     try {
       await fs.access(onnxPath);
@@ -40,12 +57,16 @@ module.exports = async function afterPack(context) {
         delete manifest.integrity[file];
       }
       for (const file of [manifest.executables?.browser, manifest.executables?.ffmpeg, manifest.executables?.ffprobe]) {
-        if (!file || !codeSignatureProtected[file]) throw new Error(`Expected a code-signed macOS runtime executable: ${file || "<missing>"}`);
+        if (!file || !codeSignatureProtected[file]) {
+          throw new Error(`Expected a code-signed macOS runtime executable: ${file || "<missing>"}`);
+        }
       }
       await packMacHyperframesRuntime(runtimeRoot, manifest, codeSignatureProtected);
       manifest.codeSignatureProtected = codeSignatureProtected;
       await fs.writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
-      adHocSignMacBundle(path.join(context.appOutDir, "MkBoard.app"));
+      if (!macSigned) {
+        adHocSignMacBundle(path.join(context.appOutDir, "MkBoard.app"));
+      }
     }
   }
 

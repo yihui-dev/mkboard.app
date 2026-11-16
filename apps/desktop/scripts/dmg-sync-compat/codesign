@@ -1,0 +1,21 @@
+#!/bin/bash
+set -u
+max_attempts=5
+for ((attempt=1; attempt<=max_attempts; attempt++)); do
+  tmp_err="$(mktemp "${TMPDIR:-/tmp}/mkboard-codesign.XXXXXX")"
+  if /usr/bin/codesign "$@" 2>"$tmp_err"; then
+    cat "$tmp_err" >&2
+    rm -f "$tmp_err"
+    exit 0
+  fi
+  rc=$?
+  err_text="$(cat "$tmp_err")"
+  if [[ "$attempt" -lt "$max_attempts" ]] && [[ "$err_text" == *"timestamp service is not available"* || "$err_text" == *"unable to communicate with the timestamp"* || "$err_text" == *"Connection reset by peer"* ]]; then
+    rm -f "$tmp_err"
+    sleep $((attempt * 2))
+    continue
+  fi
+  cat "$tmp_err" >&2
+  rm -f "$tmp_err"
+  exit "$rc"
+done
