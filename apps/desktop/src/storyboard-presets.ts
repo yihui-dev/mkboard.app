@@ -285,60 +285,6 @@ function buildProductLaunchColumns(interfaceLanguage?: InterfaceLanguage): Story
   return base;
 }
 
-function buildCinematicStoryColumns(interfaceLanguage?: InterfaceLanguage): StoryboardColumn[] {
-  const isZh = getStoryboardTemplateLanguage(interfaceLanguage) === "zh";
-  const base = getDefaultStoryboardColumns(interfaceLanguage).map((col) => {
-    if (col.id === "duration") return { ...col, visible: true };
-    if (col.id === "note") return { ...col, visible: false };
-    return col;
-  });
-  const contentIdx = base.findIndex((col) => col.id === "content");
-  const framingCol: StoryboardColumn = {
-    id: "custom-12",
-    label: isZh ? "景别与运镜" : "Framing & Camera",
-    type: "text",
-    visible: true,
-    custom: true
-  };
-  const soundCol: StoryboardColumn = {
-    id: "custom-13",
-    label: isZh ? "音效与氛围" : "Sound & Ambience",
-    type: "text",
-    visible: true,
-    custom: true
-  };
-  if (contentIdx >= 0) {
-    base.splice(contentIdx, 0, framingCol);
-    base.splice(contentIdx + 2, 0, soundCol);
-  } else {
-    base.push(framingCol, soundCol);
-  }
-  return base;
-}
-
-function buildSocialHookColumns(interfaceLanguage?: InterfaceLanguage): StoryboardColumn[] {
-  const isZh = getStoryboardTemplateLanguage(interfaceLanguage) === "zh";
-  const base = getDefaultStoryboardColumns(interfaceLanguage).map((col) => {
-    if (col.id === "duration") return { ...col, visible: true };
-    if (col.id === "note" || col.id === "custom-2") return { ...col, visible: false };
-    return col;
-  });
-  const contentIdx = base.findIndex((col) => col.id === "content");
-  const hookCol: StoryboardColumn = {
-    id: "custom-14",
-    label: isZh ? "节奏钩子" : "Hook Beat",
-    type: "text",
-    visible: true,
-    custom: true
-  };
-  if (contentIdx >= 0) {
-    base.splice(contentIdx, 0, hookCol);
-  } else {
-    base.push(hookCol);
-  }
-  return base;
-}
-
 export const SYSTEM_PROJECT_TEMPLATE_SEEDS: readonly SystemTemplateSeed[] = [
   {
     id: "default-template",
@@ -383,28 +329,6 @@ export const SYSTEM_PROJECT_TEMPLATE_SEEDS: readonly SystemTemplateSeed[] = [
     enDescription: "Includes Feature Focus & Duration columns for SaaS, app, and hardware demos.",
     zhDescription: "新增「演示亮点」与时长控制，适配软件演示、新品预告与功能宣传片。",
     buildColumns: buildProductLaunchColumns
-  },
-  {
-    id: "template-cinematic-narrative",
-    archetype: "cinematic-story",
-    accentHex: "#E11D48",
-    skillFamilyId: "cinematic-story",
-    enName: "Cinematic Shotlist",
-    zhName: "叙事短片 · 视听模板",
-    enDescription: "Adds Framing & Camera and Sound & Ambience columns for narrative storytelling.",
-    zhDescription: "细化「景别与运镜」「音效与氛围」，适合故事短片、纪录片与微电影。",
-    buildColumns: buildCinematicStoryColumns
-  },
-  {
-    id: "template-social-hook",
-    archetype: "social-hook",
-    accentHex: "#059669",
-    skillFamilyId: "social-hook",
-    enName: "Vertical Hook & UGC",
-    zhName: "短视频钩子模板",
-    enDescription: "Highlights 3-second Hook Beats & brisk shot durations for 9:16 short-form clips.",
-    zhDescription: "突出「节奏钩子」与紧凑单镜时长，适配 9:16 竖屏短视频与种草口播。",
-    buildColumns: buildSocialHookColumns
   }
 ] as const;
 

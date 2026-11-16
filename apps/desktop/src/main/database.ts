@@ -315,7 +315,7 @@ const legacyDefaultAgentMessages = new Set([
 const agentConversationTitleMaxLength = 10;
 const maxShotMediaAssets = 10;
 const defaultTemplateId = "default-template";
-const legacyDefaultTemplateIds = new Set(["默认模板", "default", defaultTemplateId]);
+const legacyDefaultTemplateIds = new Set(["默认模板", "default", defaultTemplateId, "template-cinematic-narrative", "template-social-hook"]);
 const defaultTemplateName = "默认模板";
 const defaultTemplateDescription = "从空白脚本和基础分镜表开始，适合大多数新项目。";
 const sampleProjectId = "testing-storyboard";
@@ -1876,7 +1876,7 @@ export class MkboardStore {
     return [
       ...systemTemplates,
       ...rows
-        .filter((row) => !isSystemTemplateId(row.id))
+        .filter((row) => !isSystemTemplateId(row.id) && row.scope !== "system")
         .map((row) => mapTemplate(row, this.getTemplateSkillName(row.storyboard_skill_id, interfaceLanguage), interfaceLanguage))
     ];
   }

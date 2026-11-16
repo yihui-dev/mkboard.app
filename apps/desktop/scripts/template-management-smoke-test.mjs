@@ -178,7 +178,8 @@ test("built-in minimalist storyboard templates and skills localize cleanly and b
 
     const zhTemplates = store.listTemplates("zh-CN");
     const enTemplates = store.listTemplates("en");
-    assert.equal(zhTemplates.filter((t) => t.scope === "system").length, 6);
+    assert.equal(zhTemplates.filter((t) => t.scope === "system").length, 4);
+    assert.deepEqual(zhTemplates.filter((t) => t.scope === "system").map((t) => t.id), ["default-template", "template-minimal-cut", "template-creator-explainer", "template-product-launch"]);
     assert.equal(zhTemplates[0].id, "default-template");
 
     const minimalTpl = zhTemplates.find((t) => t.id === "template-minimal-cut");
