@@ -1,5 +1,5 @@
 import type BetterSqlite3 from "better-sqlite3";
-import { copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve } from "node:path";
 import { createHash, randomUUID } from "node:crypto";
@@ -42,6 +42,7 @@ import {
   getStoryboardTemplateLanguage,
   legacyDefaultAgentConversationTitles,
   normalizeImageRatio,
+  normalizeProjectCoverRatio,
   withMkboardR2ImageQuality,
   withMkboardR2VideoOptimization,
   type AgentConversation,
@@ -65,6 +66,7 @@ import {
   type OnboardingStatePatch,
   type OnboardingStepId,
   type ProjectAsset,
+  type ProjectCoverRatio,
   type ProjectDetail,
   type ProjectKind,
   type ProjectSkill,
@@ -79,6 +81,8 @@ import {
   type StoryboardColumn,
   type StoryboardRow,
   type StoryboardVideoGenerationMethod,
+  type UpdateProjectCoverInput,
+  type UpdateProjectCoverResult,
   type UpdateProjectInput,
   type UpdateProjectTemplateInput,
   type UpdateSkillInput,
@@ -110,6 +114,9 @@ type ProjectRecord = {
   image_ratio?: string | null;
   local_path: string;
   cloud_project_id?: string | null;
+  cover_image_path?: string | null;
+  cover_image_ratio?: string | null;
+  cover_image_hash?: string | null;
   created_at: string;
   updated_at: string;
   archived_at?: string | null;
@@ -635,7 +642,13 @@ export class MkboardStore {
     const videoCount = mediaAssets.filter((a) => a.kind === "video").length;
 
     let coverPreview: ProjectSummary["coverPreview"] = null;
-    if (chosenVideo) {
+    if (summary.coverImageUrl) {
+      coverPreview = {
+        kind: "custom-cover",
+        url: summary.coverImageUrl,
+        ratio: summary.coverImageRatio ?? "16:9"
+      };
+    } else if (chosenVideo) {
       const videoUrl = createAssetPreviewUrl(chosenVideo.asset);
       const remote = isHttpUrl(chosenVideo.asset.local_path);
       coverPreview = {
@@ -687,6 +700,13 @@ export class MkboardStore {
       this.insertDefaultProjectState(id, now, "<p></p>", [], template.columns, storyboardSkillId, normalizeImageRatio(input.imageRatio));
     });
     create();
+    if (input.coverImageSourcePath || input.coverImageDataUrl) {
+      this.applyProjectCoverMutation(id, localPath, {
+        coverImageSourcePath: input.coverImageSourcePath,
+        coverImageDataUrl: input.coverImageDataUrl,
+        coverImageRatio: input.coverImageRatio
+      });
+    }
     return this.getProject(id, input.interfaceLanguage);
   }
 
@@ -878,7 +898,133 @@ export class MkboardStore {
       }
     });
     update();
+    if (
+      input.clearCoverImage ||
+      input.coverImageSourcePath ||
+      input.coverImageDataUrl ||
+      input.coverImageRatio !== undefined
+    ) {
+      this.applyProjectCoverMutation(project.id, project.local_path, {
+        coverImageSourcePath: input.coverImageSourcePath,
+        coverImageDataUrl: input.coverImageDataUrl,
+        coverImageRatio: input.coverImageRatio,
+        clearCoverImage: input.clearCoverImage
+      });
+    }
     return this.listProjects();
+  }
+
+  updateProjectCover(input: UpdateProjectCoverInput): UpdateProjectCoverResult {
+    const project = this.getProjectRecord(input.projectId);
+    if (isTutorialProjectRecord(project)) {
+      throw new Error("教程项目不支持修改封面。");
+    }
+    this.applyProjectCoverMutation(project.id, project.local_path, {
+      coverImageSourcePath: input.coverImageSourcePath,
+      coverImageDataUrl: input.coverImageDataUrl,
+      coverImageRatio: input.coverImageRatio,
+      clearCoverImage: input.clearCoverImage
+    });
+    this.touchProject(project.id);
+    return {
+      projects: this.listProjects(),
+      detail: this.getProject(project.id, input.interfaceLanguage)
+    };
+  }
+
+  private applyProjectCoverMutation(
+    projectId: string,
+    localPath: string,
+    input: {
+      coverImageSourcePath?: string | null;
+      coverImageDataUrl?: string | null;
+      coverImageRatio?: ProjectCoverRatio;
+      clearCoverImage?: boolean;
+    }
+  ): void {
+    const coverDir = join(localPath, "cover");
+    if (input.clearCoverImage) {
+      if (isPathInside(this.projectRoot, coverDir) && existsSync(coverDir)) {
+        rmSync(coverDir, { recursive: true, force: true });
+      }
+      this.db
+        .prepare("UPDATE projects SET cover_image_path = NULL, cover_image_ratio = NULL, cover_image_hash = NULL WHERE id = ?")
+        .run(projectId);
+      return;
+    }
+
+    const sourcePath = input.coverImageSourcePath?.trim() || "";
+    const dataUrl = input.coverImageDataUrl?.trim() || "";
+
+    if (sourcePath || dataUrl) {
+      let buffer: Buffer | null = null;
+      let extension = ".png";
+      if (sourcePath && existsSync(sourcePath) && statSync(sourcePath).isFile()) {
+        buffer = readFileSync(sourcePath);
+        const rawExt = extname(sourcePath).toLowerCase();
+        if ([".png", ".jpg", ".jpeg", ".webp", ".gif", ".avif"].includes(rawExt)) {
+          extension = rawExt === ".jpeg" ? ".jpg" : rawExt;
+        }
+      } else if (dataUrl.startsWith("data:image/")) {
+        const match = /^data:image\/([a-zA-Z0-9+.-]+);base64,(.+)$/s.exec(dataUrl);
+        if (!match) {
+          throw new Error("封面图片数据格式无效。");
+        }
+        const subtype = (match[1] || "png").toLowerCase();
+        if (subtype.includes("jpeg") || subtype.includes("jpg")) extension = ".jpg";
+        else if (subtype.includes("webp")) extension = ".webp";
+        else if (subtype.includes("gif")) extension = ".gif";
+        else if (subtype.includes("avif")) extension = ".avif";
+        else extension = ".png";
+        buffer = Buffer.from(match[2]!, "base64");
+      }
+
+      if (!buffer || buffer.length === 0) {
+        throw new Error("无法读取所选封面图片。");
+      }
+
+      const contentHash = createHash("sha256").update(buffer).digest("hex");
+      mkdirSync(coverDir, { recursive: true });
+      const destFileName = `cover-${contentHash.slice(0, 12)}${extension}`;
+      const destPath = join(coverDir, destFileName);
+      for (const entry of readdirSync(coverDir)) {
+        if (entry !== destFileName) {
+          rmSync(join(coverDir, entry), { force: true, recursive: true });
+        }
+      }
+      writeFileSync(destPath, buffer);
+      const existing = this.db
+        .prepare("SELECT cover_image_ratio FROM projects WHERE id = ?")
+        .get(projectId) as { cover_image_ratio?: string | null } | undefined;
+      const ratio = normalizeProjectCoverRatio(input.coverImageRatio ?? existing?.cover_image_ratio ?? "16:9");
+      this.db
+        .prepare("UPDATE projects SET cover_image_path = ?, cover_image_ratio = ?, cover_image_hash = ? WHERE id = ?")
+        .run(destPath, ratio, contentHash.slice(0, 16), projectId);
+      return;
+    }
+
+    if (input.coverImageRatio !== undefined) {
+      const existing = this.db
+        .prepare("SELECT cover_image_path FROM projects WHERE id = ?")
+        .get(projectId) as { cover_image_path?: string | null } | undefined;
+      if (existing?.cover_image_path) {
+        this.db
+          .prepare("UPDATE projects SET cover_image_ratio = ? WHERE id = ?")
+          .run(normalizeProjectCoverRatio(input.coverImageRatio), projectId);
+      }
+    }
+  }
+
+  resolveProjectCoverPath(projectId: string): string | null {
+    const row = this.db
+      .prepare("SELECT local_path, cover_image_path FROM projects WHERE id = ?")
+      .get(projectId) as { local_path?: string | null; cover_image_path?: string | null } | undefined;
+    if (!row?.cover_image_path || !existsSync(row.cover_image_path)) return null;
+    if (!isPathInside(this.projectRoot, row.cover_image_path) && (!row.local_path || !isPathInside(row.local_path, row.cover_image_path))) {
+      return null;
+    }
+    const stats = statSync(row.cover_image_path);
+    return stats.isFile() ? row.cover_image_path : null;
   }
 
   getProject(projectId: string, interfaceLanguage?: InterfaceLanguage): ProjectDetail {
@@ -2190,6 +2336,9 @@ export class MkboardStore {
   }
 
   resolveAssetPreviewPath(assetId: string): string | null {
+    if (assetId.startsWith("project-cover--")) {
+      return this.resolveProjectCoverPath(assetId.slice("project-cover--".length));
+    }
     const row = this.db.prepare("SELECT local_path FROM assets WHERE id = ?").get(assetId) as Pick<AssetRecord, "local_path"> | undefined;
     if (!row || !row.local_path || !existsSync(row.local_path)) return null;
     if (!isPathInside(this.projectRoot, row.local_path)) return null;
@@ -2493,6 +2642,9 @@ export class MkboardStore {
         template_id TEXT NOT NULL,
         taste_id TEXT,
         local_path TEXT NOT NULL,
+        cover_image_path TEXT,
+        cover_image_ratio TEXT,
+        cover_image_hash TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
         archived_at TEXT,
@@ -2709,6 +2861,15 @@ export class MkboardStore {
     }
     if (!names.has("taste_id")) {
       this.db.prepare("ALTER TABLE projects ADD COLUMN taste_id TEXT").run();
+    }
+    if (!names.has("cover_image_path")) {
+      this.db.prepare("ALTER TABLE projects ADD COLUMN cover_image_path TEXT").run();
+    }
+    if (!names.has("cover_image_ratio")) {
+      this.db.prepare("ALTER TABLE projects ADD COLUMN cover_image_ratio TEXT").run();
+    }
+    if (!names.has("cover_image_hash")) {
+      this.db.prepare("ALTER TABLE projects ADD COLUMN cover_image_hash TEXT").run();
     }
   }
 
@@ -3878,7 +4039,18 @@ export class MkboardStore {
   }
 }
 
+function createProjectCoverPreviewUrl(projectId: string, coverPath: string, coverHash?: string | null): string {
+  const versionParam = coverHash ? `?cv=${encodeURIComponent(coverHash)}` : "";
+  return `${assetPreviewScheme}://asset/project-cover--${encodeURIComponent(projectId)}/${encodeURIComponent(basename(coverPath))}${versionParam}`;
+}
+
 function mapProject(row: ProjectRecord): ProjectSummary {
+  const hasCustomCover = Boolean(row.cover_image_path && existsSync(row.cover_image_path));
+  const coverImageRatio = hasCustomCover ? normalizeProjectCoverRatio(row.cover_image_ratio) : null;
+  const coverImageUrl =
+    hasCustomCover && row.cover_image_path
+      ? createProjectCoverPreviewUrl(row.id, row.cover_image_path, row.cover_image_hash)
+      : null;
   return {
     id: row.id,
     kind: row.kind === "tutorial" ? "tutorial" : "user",
@@ -3889,6 +4061,8 @@ function mapProject(row: ProjectRecord): ProjectSummary {
     imageRatio: normalizeImageRatio(row.image_ratio),
     localPath: row.local_path,
     cloudProjectId: row.cloud_project_id ?? null,
+    coverImageUrl,
+    coverImageRatio,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     archivedAt: row.archived_at ?? null,

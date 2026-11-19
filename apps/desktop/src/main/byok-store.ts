@@ -71,12 +71,12 @@ const PROVIDER_METAS: readonly ProviderMeta[] = [
   },
   {
     id: "elevenlabs",
-    name: "ElevenLabs (Multilingual v2 TTS)",
+    name: "ElevenLabs (Eleven v4 TTS)",
     category: "voice",
     envKeys: ["MKBOARD_ELEVENLABS_API_KEY", "ELEVENLABS_API_KEY"],
     baseUrlEnvKeys: ["MKBOARD_ELEVENLABS_BASE_URL"],
     defaultBaseUrl: "https://api.elevenlabs.io",
-    defaultModel: "eleven_multilingual_v2",
+    defaultModel: "eleven_v4",
     docsUrl: "https://elevenlabs.io/app/settings/api-keys"
   },
   {
@@ -137,7 +137,11 @@ export class ByokStore {
 
     const envBaseUrl = firstNonEmptyEnv(this.env, meta.baseUrlEnvKeys);
     const baseUrl = normalizeBaseUrl(envBaseUrl || override?.baseUrl || meta.defaultBaseUrl);
-    const model = override?.model?.trim() || meta.defaultModel;
+    const rawOverrideModel = override?.model?.trim();
+    const model =
+      providerId === "elevenlabs" && rawOverrideModel === "eleven_multilingual_v2"
+        ? meta.defaultModel
+        : rawOverrideModel || meta.defaultModel;
 
     if (providerId === "stub") {
       return { apiKey: "stub", source: "builtin", baseUrl, model, updatedAt: null };

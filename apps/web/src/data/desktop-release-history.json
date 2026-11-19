@@ -1,10 +1,44 @@
 {
-  "updatedAt": "2026-11-16",
+  "updatedAt": "2026-11-20",
   "currentVersions": {
-    "production": "0.3.1",
-    "dev": "0.3.1"
+    "production": "0.3.2",
+    "dev": "0.3.2"
   },
   "releases": [
+    {
+      "version": "0.3.2",
+      "date": "2026-11-20",
+      "title": {
+        "zh": "ElevenLabs v4 配音升级、多比例项目封面与零跳帧连贯演示",
+        "en": "ElevenLabs v4 TTS Upgrade, Multi-Ratio Project Covers & Seamless Zero-Jump Playback"
+      },
+      "summary": {
+        "zh": "默认配音模型升级至 ElevenLabs eleven_v4；新增多比例项目自定义封面图上传与顶部 Banner 缩略预览；彻底解决演示模式跨镜续播与首帧封面跳变问题。",
+        "en": "Upgraded default TTS model to ElevenLabs eleven_v4; added multi-ratio custom project cover upload with top banner preview; fixed presentation cross-shot playback sync and eliminated first-frame poster jumps."
+      },
+      "sections": [
+        {
+          "title": {
+            "zh": "更新亮点",
+            "en": "Highlights"
+          },
+          "items": [
+            {
+              "zh": "ElevenLabs 默认配音模型升级为 eleven_v4，自动迁移旧版模型配置并按模型隔离音频缓存",
+              "en": "Upgraded default ElevenLabs TTS model to eleven_v4 with automatic legacy model migration and model-keyed speech caching"
+            },
+            {
+              "zh": "支持上传 16:9、4:3、3:4、9:16、1:1 等多比例项目封面图，覆盖首页默认 B-Roll 预览并在项目顶部栏提供悬浮大图预览",
+              "en": "Added custom project cover image upload across 16:9, 4:3, 3:4, 9:16, and 1:1 aspect ratios on Home cards and workspace top banner"
+            },
+            {
+              "zh": "优化分镜演示模式：任意时间点点击画面或按钮均可音画同轴续播，跨镜自动连播零封面跳帧、首帧即播",
+              "en": "Improved storyboard presentation playback: resume synced audio & video from the exact scrubbed timestamp, seamless cross-shot auto-advance, and prewarmed frame-0 playback with zero poster flash"
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "0.3.1",
       "date": "2026-11-16",

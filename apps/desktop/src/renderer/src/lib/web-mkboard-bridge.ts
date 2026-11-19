@@ -2,7 +2,7 @@
 // When running outside Electron (window.mkboard is undefined), this module installs a full
 // HTTP RPC + SSE + Browser Upload + Asset URL Rewriting implementation of MkboardApi.
 
-import type { MkboardApi } from "../../../shared";
+import { suggestProjectCoverRatio, type MkboardApi, type PickedProjectCoverFile } from "../../../shared";
 
 type EventListenerSet = Set<(payload: unknown) => void>;
 
@@ -138,6 +138,45 @@ export async function ensureWebMkboardBridge(): Promise<void> {
           const paths = await pickAndUploadBrowserFiles("image/*,video/*", true);
           if (paths.length === 0) return callRpc("getShotMediaUpdate", projectId);
           return callRpc("importShotMediaPaths", projectId, rowId, paths);
+        };
+      }
+      if (prop === "chooseProjectCoverFile") {
+        return async (): Promise<PickedProjectCoverFile | null> => {
+          const files = await new Promise<File[]>((resolveFiles) => {
+            const input = document.createElement("input");
+            input.type = "file";
+            input.accept = "image/*";
+            input.multiple = false;
+            input.style.display = "none";
+            document.body.appendChild(input);
+            input.onchange = () => {
+              const list = Array.from(input.files ?? []);
+              input.remove();
+              resolveFiles(list);
+            };
+            input.oncancel = () => {
+              input.remove();
+              resolveFiles([]);
+            };
+            input.click();
+          });
+          const file = files[0];
+          if (!file) return null;
+          const previewDataUrl = await fileToBase64(file);
+          const dims = await new Promise<{ width: number; height: number }>((resolveDims) => {
+            const img = new Image();
+            img.onload = () => resolveDims({ width: img.naturalWidth || 0, height: img.naturalHeight || 0 });
+            img.onerror = () => resolveDims({ width: 0, height: 0 });
+            img.src = previewDataUrl;
+          });
+          return {
+            filePath: null,
+            fileName: file.name,
+            previewDataUrl,
+            width: dims.width,
+            height: dims.height,
+            suggestedRatio: suggestProjectCoverRatio(dims.width, dims.height)
+          };
         };
       }
       if (prop === "chooseAgentImages") {

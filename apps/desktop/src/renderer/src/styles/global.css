@@ -10078,6 +10078,7 @@ button.taste-card:focus-visible,
 }
 
 .storyboard-media-preview-frame {
+  position: relative;
   width: 100%;
   height: 100%;
   min-width: 0;
@@ -10326,6 +10327,7 @@ button.taste-card:focus-visible,
 }
 
 .storyboard-presentation-frame {
+  position: relative;
   width: 100%;
   height: auto;
   min-width: 0;
@@ -10338,6 +10340,25 @@ button.taste-card:focus-visible,
   place-items: center;
   overflow: hidden;
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.32);
+}
+
+.storyboard-media-preview-frame > img,
+.storyboard-media-preview-frame > .stage-controls-video:not(.is-prewarm),
+.storyboard-presentation-frame > img,
+.storyboard-presentation-frame > .storyboard-presentation-empty-frame,
+.storyboard-presentation-frame > .stage-controls-video:not(.is-prewarm) {
+  position: relative;
+  z-index: 1;
+}
+
+.stage-controls-video.is-prewarm {
+  position: absolute !important;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
 }
 
 .storyboard-presentation-frame[data-ratio="9:16"] {
@@ -22721,8 +22742,8 @@ html[data-theme="dark"] .composer-pill.open {
 }
 
 .composer-pill.t3-model-trigger {
-  width: 100%;
-  max-width: 200px;
+  width: auto;
+  max-width: 100%;
   min-width: 0;
   flex: 0 1 auto;
   overflow: hidden;
@@ -22820,7 +22841,7 @@ html[data-theme="dark"] .composer-pill.mode-auto {
   bottom: calc(100% + 8px);
   left: 0;
   z-index: 80;
-  width: min(304px, 100%);
+  width: min(332px, 100%);
   padding: 0;
   border-radius: 12px;
   border: 1px solid rgba(15, 23, 42, 0.09);
@@ -23232,34 +23253,115 @@ html[data-theme="dark"] .t3-effort-segment.active {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.32);
 }
 
-.t3-picker-settings-btn {
+.t3-picker-rail-btn.t3-picker-rail-add {
+  margin-top: auto;
+  color: rgba(15, 23, 42, 0.44);
+  border: 1px dashed rgba(15, 23, 42, 0.14);
+}
+
+.t3-picker-rail-btn.t3-picker-rail-add:hover {
+  color: #0f172a;
+  border-color: rgba(15, 23, 42, 0.28);
+  background: rgba(15, 23, 42, 0.055);
+}
+
+html[data-theme="dark"] .t3-picker-rail-btn.t3-picker-rail-add {
+  color: rgba(248, 250, 252, 0.44);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+html[data-theme="dark"] .t3-picker-rail-btn.t3-picker-rail-add:hover {
+  color: #f8fafc;
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.075);
+}
+
+.t3-picker-footer-actions {
   margin-left: auto;
   display: inline-flex;
   align-items: center;
-  gap: 4.5px;
-  height: 24px;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.t3-picker-meta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 23px;
   padding: 0 7px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.72);
+  color: rgba(15, 23, 42, 0.66);
+  font-size: 11px;
+  font-weight: 520;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 110ms ease, color 110ms ease, border-color 110ms ease;
+}
+
+.t3-picker-meta-pill:hover {
+  background: #ffffff;
+  border-color: rgba(15, 23, 42, 0.16);
+  color: #0f172a;
+}
+
+.t3-picker-meta-pill.mode-auto {
+  background: rgba(245, 158, 11, 0.11);
+  border-color: rgba(245, 158, 11, 0.24);
+  color: #b45309;
+}
+
+.t3-picker-meta-pill.mode-auto:hover {
+  background: rgba(245, 158, 11, 0.17);
+  color: #92400e;
+}
+
+html[data-theme="dark"] .t3-picker-meta-pill {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.09);
+  color: rgba(248, 250, 252, 0.68);
+}
+
+html[data-theme="dark"] .t3-picker-meta-pill:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #f8fafc;
+}
+
+html[data-theme="dark"] .t3-picker-meta-pill.mode-auto {
+  background: rgba(245, 158, 11, 0.16);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #fbbf24;
+}
+
+.t3-picker-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 23px;
+  height: 23px;
+  padding: 0;
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: rgba(15, 23, 42, 0.56);
-  font-size: 11.5px;
-  font-weight: 500;
+  color: rgba(15, 23, 42, 0.52);
   cursor: pointer;
   transition: background-color 110ms ease, color 110ms ease;
 }
 
-.t3-picker-settings-btn:hover {
-  background: rgba(15, 23, 42, 0.065);
+.t3-picker-icon-btn:hover {
+  background: rgba(15, 23, 42, 0.07);
   color: #0f172a;
 }
 
-html[data-theme="dark"] .t3-picker-settings-btn {
-  color: rgba(248, 250, 252, 0.58);
+html[data-theme="dark"] .t3-picker-icon-btn {
+  color: rgba(248, 250, 252, 0.54);
 }
 
-html[data-theme="dark"] .t3-picker-settings-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
+html[data-theme="dark"] .t3-picker-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.09);
   color: #f8fafc;
 }
 

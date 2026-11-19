@@ -15,11 +15,11 @@ import {
 } from "../shared";
 import { ByokStore, maskApiKey } from "./byok-store";
 
-const defaultElevenLabsModelId = "eleven_multilingual_v2";
+export const defaultElevenLabsModelId = "eleven_v4";
 const defaultElevenLabsOutputFormat = "mp3_44100_128";
 const maxCachedSpeechFiles = 200;
 const maxSpeechAudioBytes = 25 * 1024 * 1024;
-const elevenLabsTimeoutMs = 45_000;
+const elevenLabsTimeoutMs = 60_000;
 
 export type ElevenLabsTransport = {
   synthesizeElevenLabsSpeech(input: {
@@ -115,13 +115,19 @@ export class ElevenLabsService {
     }
   }
 
+  private resolveModelId(): string {
+    if (this.customTransport) return defaultElevenLabsModelId;
+    return this.byok.resolveCredentials("elevenlabs").model || defaultElevenLabsModelId;
+  }
+
   getSpeechStatus(input: ElevenLabsSpeechStatusInput): ElevenLabsSpeechSegmentState[] {
     const voiceId = input.voiceId.trim();
     if (!voiceId) return input.texts.map(() => "missing");
+    const modelId = this.resolveModelId();
     return input.texts.map((rawText) => {
       const text = rawText.trim();
       if (!text) return "missing";
-      const cacheKey = speechCacheKey(voiceId, text);
+      const cacheKey = speechCacheKey(voiceId, text, modelId);
       if (this.inFlightSpeech.has(cacheKey)) return "generating";
       return this.readCachedAudio(cacheKey) ? "cached" : "missing";
     });
@@ -135,7 +141,8 @@ export class ElevenLabsService {
     if (!text || !voiceId) return { ok: false, error: "request_failed", message: "Missing speech text or voiceId." };
     if (text.length > SPEECH_SEGMENT_MAX_LENGTH * 2) return { ok: false, error: "text_too_long" };
 
-    const cacheKey = speechCacheKey(voiceId, text);
+    const modelId = this.resolveModelId();
+    const cacheKey = speechCacheKey(voiceId, text, modelId);
     const cached = this.readCachedAudio(cacheKey);
     if (cached) return { ok: true, audio: cached, contentType: "audio/mpeg", cached: true };
 
@@ -143,7 +150,7 @@ export class ElevenLabsService {
       const result = await this.customTransport.synthesizeElevenLabsSpeech({
         text,
         voiceId,
-        modelId: defaultElevenLabsModelId,
+        modelId,
         outputFormat: defaultElevenLabsOutputFormat
       });
       if (!result.ok) {
@@ -170,7 +177,7 @@ export class ElevenLabsService {
         },
         body: JSON.stringify({
           text,
-          model_id: creds.model || defaultElevenLabsModelId
+          model_id: modelId
         }),
         signal: AbortSignal.timeout(elevenLabsTimeoutMs)
       });
@@ -214,7 +221,7 @@ export class ElevenLabsService {
     const voiceId = input.voiceId.trim();
     if (!text || !voiceId) return { ok: false, error: "request_failed" };
 
-    const cacheKey = speechCacheKey(voiceId, text);
+    const cacheKey = speechCacheKey(voiceId, text, this.resolveModelId());
     const cached = this.readCachedAudio(cacheKey);
     if (cached) return { ok: true, audioDataUrl: toAudioDataUrl(cached, "audio/mpeg"), cached: true };
 
@@ -327,8 +334,8 @@ function mapTransportErrorCode(code: string): ElevenLabsErrorCode {
   return "request_failed";
 }
 
-function speechCacheKey(voiceId: string, text: string): string {
-  return createHash("sha256").update(`${voiceId}\n${defaultElevenLabsModelId}\n${defaultElevenLabsOutputFormat}\n${text}`).digest("hex");
+function speechCacheKey(voiceId: string, text: string, modelId = defaultElevenLabsModelId): string {
+  return createHash("sha256").update(`${voiceId}\n${modelId}\n${defaultElevenLabsOutputFormat}\n${text}`).digest("hex");
 }
 
 function decodeAudio(audioBase64: string): Buffer | null {

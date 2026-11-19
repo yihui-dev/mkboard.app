@@ -66,7 +66,8 @@ import {
   normalizeHyperframesVideoResolution,
   normalizeImageRatio,
   normalizeSeedanceVideoResolution,
-  seedanceVideoCreditsPerSecond
+  seedanceVideoCreditsPerSecond,
+  suggestProjectCoverRatio
 } from "../shared";
 import type {
   McpActiveViewReport,
@@ -105,6 +106,7 @@ import type {
   ImageRatio,
   InterfaceLanguage,
   OnboardingStatePatch,
+  PickedProjectCoverFile,
   ProjectAsset,
   ProjectDetail,
   ProjectExportKind,
@@ -128,6 +130,7 @@ import type {
   TutorialMediaRevealInput,
   TutorialStoryboardRevealInput,
   StoryboardColumn,
+  UpdateProjectCoverInput,
   UpdateProjectInput,
   UpdateProjectTemplateInput,
   UpdateSkillInput,
@@ -1445,6 +1448,13 @@ async function dispatchCompanionRpc(method: string, args: unknown[]): Promise<un
       return store.saveProjectTaste(String(args[0]), String(args[1]));
     case "updateProject":
       return store.updateProject(args[0] as UpdateProjectInput);
+    case "updateProjectCover": {
+      const input = args[0] as UpdateProjectCoverInput;
+      return store.updateProjectCover({
+        ...input,
+        interfaceLanguage: normalizeInterfaceLanguage(input.interfaceLanguage)
+      });
+    }
     case "getProject": {
       const projectId = String(args[0]);
       const language = normalizeInterfaceLanguage(args[1]);
@@ -1650,6 +1660,63 @@ function registerIpc(): void {
   ipcMain.handle("mkboard:import-taste-from-source", (_event, input: ExternalSourceImportInput) => importTasteFromSource(store, input));
   ipcMain.handle("mkboard:save-project-taste", (_event, projectId: string, tasteId: string) => store.saveProjectTaste(projectId, tasteId));
   ipcMain.handle("mkboard:update-project", (_event, input: UpdateProjectInput) => store.updateProject(input));
+  ipcMain.handle("mkboard:choose-project-cover-file", async (): Promise<PickedProjectCoverFile | null> => {
+    const ownerWindow = BrowserWindow.getFocusedWindow() ?? mainWindow;
+    const options: Electron.OpenDialogOptions = {
+      properties: ["openFile"],
+      filters: [
+        {
+          name: "Images",
+          extensions: ["png", "jpg", "jpeg", "webp", "gif", "avif"]
+        }
+      ]
+    };
+    const result = ownerWindow ? await dialog.showOpenDialog(ownerWindow, options) : await dialog.showOpenDialog(options);
+    if (result.canceled || result.filePaths.length === 0) return null;
+    const filePath = result.filePaths[0]!;
+    if (!existsSync(filePath) || !statSync(filePath).isFile()) return null;
+    const buffer = readFileSync(filePath);
+    const ext = extname(filePath).toLowerCase();
+    const mime =
+      ext === ".jpg" || ext === ".jpeg"
+        ? "image/jpeg"
+        : ext === ".webp"
+          ? "image/webp"
+          : ext === ".gif"
+            ? "image/gif"
+            : ext === ".avif"
+              ? "image/avif"
+              : "image/png";
+    const img = nativeImage.createFromBuffer(buffer);
+    const size = img.getSize();
+    let width = size.width || 0;
+    let height = size.height || 0;
+    let previewDataUrl = "";
+    if (!img.isEmpty() && width > 0 && height > 0) {
+      const maxEdge = 1280;
+      const previewImg =
+        Math.max(width, height) > maxEdge
+          ? img.resize(width >= height ? { width: maxEdge } : { height: maxEdge })
+          : img;
+      previewDataUrl = ext === ".png" || ext === ".gif" ? previewImg.toDataURL() : `data:image/jpeg;base64,${previewImg.toJPEG(88).toString("base64")}`;
+    } else {
+      previewDataUrl = `data:${mime};base64,${buffer.toString("base64")}`;
+    }
+    return {
+      filePath,
+      fileName: basename(filePath),
+      previewDataUrl,
+      width,
+      height,
+      suggestedRatio: suggestProjectCoverRatio(width, height)
+    };
+  });
+  ipcMain.handle("mkboard:update-project-cover", (_event, input: UpdateProjectCoverInput) =>
+    store.updateProjectCover({
+      ...input,
+      interfaceLanguage: normalizeInterfaceLanguage(input.interfaceLanguage)
+    })
+  );
   ipcMain.handle("mkboard:get-project", async (_event, projectId: string, interfaceLanguage?: InterfaceLanguage) => {
     const language = normalizeInterfaceLanguage(interfaceLanguage);
     store.getProject(projectId, language);
@@ -2010,15 +2077,17 @@ function registerAssetPreviewProtocol(): void {
       }
     }
     if (!assetPath) return new Response("Asset not found", { status: 404 });
-    return createAssetPreviewResponse(assetPath, request.headers.get("range"));
+    const immutable = /[?&](?:v|pv|cv)=/.test(request.url);
+    return createAssetPreviewResponse(assetPath, request.headers.get("range"), immutable);
   });
 }
 
-function createAssetPreviewResponse(assetPath: string, rangeHeader: string | null): Response {
+function createAssetPreviewResponse(assetPath: string, rangeHeader: string | null, immutable = false): Response {
   const fileSize = statSync(assetPath).size;
   const contentType = contentTypeForAssetPath(assetPath);
   const baseHeaders = {
     "Accept-Ranges": "bytes",
+    "Cache-Control": immutable ? "public, max-age=31536000, immutable" : "private, max-age=60",
     "Content-Type": contentType
   };
 
@@ -2136,6 +2205,7 @@ function contentTypeForAssetPath(assetPath: string): string {
   if (extension === ".jpg" || extension === ".jpeg") return "image/jpeg";
   if (extension === ".gif") return "image/gif";
   if (extension === ".webp") return "image/webp";
+  if (extension === ".avif") return "image/avif";
   if (extension === ".svg") return "image/svg+xml";
   if (extension === ".mp3") return "audio/mpeg";
   if (extension === ".wav") return "audio/wav";

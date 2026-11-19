@@ -855,6 +855,9 @@ function localToolchainBinDirs(env: NodeJS.ProcessEnv): string[] {
     npmPrefixBinDir(env),
     ...windowsEntries,
     join(home, ".local", "bin"),
+    join(home, ".kimi-code", "bin"),
+    join(home, ".kimi", "bin"),
+    join(home, ".cursor", "bin"),
     join(home, ".vite-plus", "bin"),
     join(home, ".opencode", "bin"),
     join(home, ".bun", "bin"),
@@ -956,7 +959,7 @@ async function probeLocalCliVersion(bin: string, definition: LocalCliAgentDefini
 }
 
 async function probeCliVersion(bin: string, args: string[], pathPrepend: string[] = []): Promise<string | null> {
-  const result = await execCli(bin, args, 3500, localCliSpawnEnv(pathPrepend));
+  const result = await execCli(bin, args, 8000, localCliSpawnEnv(pathPrepend));
   if (result.code !== 0) return null;
   const version = compactOutput(result.stdout, result.stderr).split(/\r?\n/u)[0]?.trim();
   return version || "已安装";

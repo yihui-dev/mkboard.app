@@ -2,6 +2,8 @@ export type WorkspaceTab = "script" | "storyboard" | "assets";
 export type InterfaceLanguage = "zh-CN" | "zh-TW" | "en";
 export const imageRatioValues = ["16:9", "9:16", "3:4", "4:3"] as const;
 export type ImageRatio = (typeof imageRatioValues)[number];
+export const projectCoverRatioValues = ["16:9", "4:3", "3:4", "9:16", "1:1"] as const;
+export type ProjectCoverRatio = (typeof projectCoverRatioValues)[number];
 export const seedanceAspectRatioValues = ["1:1", "4:3", "3:4", "16:9", "9:16", "21:9"] as const;
 export type SeedanceAspectRatio = (typeof seedanceAspectRatioValues)[number];
 export type ProjectKind = "user" | "tutorial";
@@ -111,6 +113,34 @@ export function normalizeImageRatio(input: unknown): ImageRatio {
   return imageRatioValues.includes(input as ImageRatio) ? (input as ImageRatio) : "16:9";
 }
 
+export function normalizeProjectCoverRatio(input: unknown): ProjectCoverRatio {
+  return projectCoverRatioValues.includes(input as ProjectCoverRatio) ? (input as ProjectCoverRatio) : "16:9";
+}
+
+export function suggestProjectCoverRatio(width: number, height: number): ProjectCoverRatio {
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+    return "16:9";
+  }
+  const actual = width / height;
+  const candidates: Array<{ ratio: ProjectCoverRatio; value: number }> = [
+    { ratio: "16:9", value: 16 / 9 },
+    { ratio: "4:3", value: 4 / 3 },
+    { ratio: "1:1", value: 1 },
+    { ratio: "3:4", value: 3 / 4 },
+    { ratio: "9:16", value: 9 / 16 }
+  ];
+  let best = candidates[0]!;
+  let minLogDiff = Math.abs(Math.log(actual / best.value));
+  for (let i = 1; i < candidates.length; i += 1) {
+    const diff = Math.abs(Math.log(actual / candidates[i]!.value));
+    if (diff < minLogDiff) {
+      minLogDiff = diff;
+      best = candidates[i]!;
+    }
+  }
+  return best.ratio;
+}
+
 export function isSeedanceAspectRatio(input: unknown): input is SeedanceAspectRatio {
   return seedanceAspectRatioValues.includes(input as SeedanceAspectRatio);
 }
@@ -179,13 +209,23 @@ export type LocalCliDiagnostic = {
 };
 
 export type ProjectCoverPreview = {
-  kind: "broll-image" | "video-first-frame";
+  kind: "custom-cover" | "broll-image" | "video-first-frame";
   url: string;
+  ratio?: ProjectCoverRatio | null;
   videoUrl?: string | null;
   fallbackUrl?: string | null;
   isRemoteVideo?: boolean;
   shotNumber?: string | null;
   scene?: string | null;
+};
+
+export type PickedProjectCoverFile = {
+  filePath?: string | null;
+  fileName: string;
+  previewDataUrl: string;
+  width: number;
+  height: number;
+  suggestedRatio: ProjectCoverRatio;
 };
 
 export type ProjectSummary = {
@@ -202,6 +242,8 @@ export type ProjectSummary = {
   updatedAt: string;
   archivedAt?: string | null;
   deletedAt?: string | null;
+  coverImageUrl?: string | null;
+  coverImageRatio?: ProjectCoverRatio | null;
   coverPreview?: ProjectCoverPreview | null;
   shotCount?: number;
   bRollCount?: number;
@@ -329,7 +371,25 @@ export type UpdateProjectInput = {
   tasteId?: string;
   imageRatio?: ImageRatio;
   storyboardSkillId?: string;
+  coverImageSourcePath?: string | null;
+  coverImageDataUrl?: string | null;
+  coverImageRatio?: ProjectCoverRatio;
+  clearCoverImage?: boolean;
   interfaceLanguage?: InterfaceLanguage;
+};
+
+export type UpdateProjectCoverInput = {
+  projectId: string;
+  coverImageSourcePath?: string | null;
+  coverImageDataUrl?: string | null;
+  coverImageRatio?: ProjectCoverRatio;
+  clearCoverImage?: boolean;
+  interfaceLanguage?: InterfaceLanguage;
+};
+
+export type UpdateProjectCoverResult = {
+  projects: ProjectSummary[];
+  detail: ProjectDetail;
 };
 
 export type AgentMessage = {
@@ -382,6 +442,9 @@ export type CreateProjectInput = {
   tasteId: string;
   imageRatio?: ImageRatio;
   storyboardSkillId?: string;
+  coverImageSourcePath?: string | null;
+  coverImageDataUrl?: string | null;
+  coverImageRatio?: ProjectCoverRatio;
   interfaceLanguage?: InterfaceLanguage;
 };
 
@@ -1239,6 +1302,8 @@ export type MkboardApi = {
   countRetainedProjects(): Promise<number>;
   createProject(input: CreateProjectInput): Promise<ProjectDetail>;
   updateProject(input: UpdateProjectInput): Promise<ProjectSummary[]>;
+  chooseProjectCoverFile(): Promise<PickedProjectCoverFile | null>;
+  updateProjectCover(input: UpdateProjectCoverInput): Promise<UpdateProjectCoverResult>;
   getProject(projectId: string, interfaceLanguage?: InterfaceLanguage): Promise<ProjectDetail>;
   archiveProject(projectId: string): Promise<ProjectSummary[]>;
   unarchiveProject(projectId: string): Promise<ProjectSummary[]>;

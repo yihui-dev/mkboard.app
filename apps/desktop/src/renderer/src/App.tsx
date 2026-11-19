@@ -156,6 +156,9 @@ import {
   isStoryboardVideoPromptColumn,
   isTutorialProjectId,
   legacyDefaultAgentConversationTitles,
+  normalizeProjectCoverRatio,
+  projectCoverRatioValues,
+  suggestProjectCoverRatio,
   withMkboardR2ImageQuality,
   withMkboardR2VideoOptimization,
   type ActiveStoryboardParseRun,
@@ -203,9 +206,12 @@ import {
   type MkboardApi,
   type OnboardingState,
   type OnboardingStepId,
+  type PickedProjectCoverFile,
   type ProjectAsset,
   type ProjectChangedExternallyEvent,
+  type ProjectCoverRatio,
   type ProjectDetail,
+  type UpdateProjectCoverInput,
   type ProjectExportKind,
   type ProjectSkill,
   type ProjectTaste,
@@ -311,6 +317,69 @@ type StoryboardGenerationContentFilter = "all" | "image" | "video";
 const AGENT_MODEL_STORAGE_KEY = "mkboard.selectedAgentModel";
 const AGENT_EFFORT_STORAGE_KEY = "mkboard.selectedAgentEffort";
 const AGENT_PERMISSION_MODE_STORAGE_KEY = "mkboard.agentPermissionMode";
+const ENABLED_CLI_PROVIDERS_STORAGE_KEY = "mkboard.enabledCliProviders";
+const CACHED_LOCAL_CLI_AGENTS_STORAGE_KEY = "mkboard.cachedLocalCliAgents";
+
+function isCliProviderEnabledByDefault(agentId: string): boolean {
+  return agentId === "codex" || agentId === "claude-code";
+}
+
+function isCliProviderEnabled(
+  agentId: string,
+  enabledMap: Readonly<Record<string, boolean>>,
+  activeCliId?: string
+): boolean {
+  if (Object.prototype.hasOwnProperty.call(enabledMap, agentId)) {
+    return Boolean(enabledMap[agentId]);
+  }
+  if (activeCliId && agentId === activeCliId) {
+    return true;
+  }
+  return isCliProviderEnabledByDefault(agentId);
+}
+
+function readStoredEnabledCliProviders(initialSelectedId: string): Record<string, boolean> {
+  try {
+    const raw = window.localStorage.getItem(ENABLED_CLI_PROVIDERS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as unknown;
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        const clean: Record<string, boolean> = {};
+        for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
+          if (typeof v === "boolean") clean[k] = v;
+        }
+        if (Object.keys(clean).length > 0) {
+          return clean;
+        }
+      }
+    }
+  } catch {
+    // ignore storage errors
+  }
+  const initial: Record<string, boolean> = {
+    codex: true,
+    "claude-code": true
+  };
+  if (initialSelectedId) {
+    initial[initialSelectedId] = true;
+  }
+  return initial;
+}
+
+function readCachedLocalCliAgents(): LocalCliAgent[] {
+  try {
+    const raw = window.localStorage.getItem(CACHED_LOCAL_CLI_AGENTS_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (item): item is LocalCliAgent =>
+        Boolean(item && typeof item === "object" && typeof (item as LocalCliAgent).id === "string")
+    );
+  } catch {
+    return [];
+  }
+}
 type SettingsStaticDetailTone = "neutral" | "checking" | "success" | "warning" | "error";
 type ProjectArchiveFilter = "active" | "archived";
 type ProjectDialogMode = "create" | "edit";
@@ -510,8 +579,58 @@ const imageRatioOptions: Array<{ value: ImageRatio; label: string; aspectRatio: 
   { value: "4:3", label: "4:3", aspectRatio: "4 / 3" }
 ];
 
-function AspectRatioIcon({ ratio, className }: { ratio: ImageRatio; className?: string }) {
-  const aspectRatio = imageRatioOptions.find((option) => option.value === ratio)?.aspectRatio ?? "16 / 9";
+const projectCoverRatioOptions: Array<{ value: ProjectCoverRatio; label: string; aspectRatio: string }> = [
+  { value: "16:9", label: "16:9", aspectRatio: "16 / 9" },
+  { value: "4:3", label: "4:3", aspectRatio: "4 / 3" },
+  { value: "3:4", label: "3:4", aspectRatio: "3 / 4" },
+  { value: "9:16", label: "9:16", aspectRatio: "9 / 16" },
+  { value: "1:1", label: "1:1", aspectRatio: "1 / 1" }
+];
+
+type ProjectCoverDraft = {
+  previewUrl: string | null;
+  sourcePath: string | null;
+  dataUrl: string | null;
+  ratio: ProjectCoverRatio;
+  cleared: boolean;
+};
+
+const emptyProjectCoverDraft: ProjectCoverDraft = {
+  previewUrl: null,
+  sourcePath: null,
+  dataUrl: null,
+  ratio: "16:9",
+  cleared: false
+};
+
+async function readImageFileAsCoverPick(file: File, resolvedPath?: string | null): Promise<PickedProjectCoverFile> {
+  const previewDataUrl = await new Promise<string>((resolveUrl, rejectUrl) => {
+    const reader = new FileReader();
+    reader.onload = () => resolveUrl(String(reader.result || ""));
+    reader.onerror = () => rejectUrl(reader.error ?? new Error("Failed to read cover image"));
+    reader.readAsDataURL(file);
+  });
+  const dims = await new Promise<{ width: number; height: number }>((resolveDims) => {
+    const img = new window.Image();
+    img.onload = () => resolveDims({ width: img.naturalWidth || 0, height: img.naturalHeight || 0 });
+    img.onerror = () => resolveDims({ width: 0, height: 0 });
+    img.src = previewDataUrl;
+  });
+  return {
+    filePath: resolvedPath || null,
+    fileName: file.name || "cover.png",
+    previewDataUrl,
+    width: dims.width,
+    height: dims.height,
+    suggestedRatio: suggestProjectCoverRatio(dims.width, dims.height)
+  };
+}
+
+function AspectRatioIcon({ ratio, className }: { ratio: ImageRatio | ProjectCoverRatio; className?: string }) {
+  const aspectRatio =
+    projectCoverRatioOptions.find((option) => option.value === ratio)?.aspectRatio ??
+    imageRatioOptions.find((option) => option.value === ratio)?.aspectRatio ??
+    "16 / 9";
   return (
     <span className={cn("aspect-ratio-icon", className)} aria-hidden="true">
       <span style={{ aspectRatio }} />
@@ -1118,7 +1237,34 @@ type SpeechPlaybackResult = {
   errorCode?: ElevenLabsErrorCode;
 };
 
-function playAudioToEnd(audio: HTMLAudioElement): Promise<{ ended: boolean; durationSeconds: number }> {
+type ForcedEndAudioElement = HTMLAudioElement & { __mkboardForcedEnded?: boolean };
+
+function waitForAudioMetadata(audio: HTMLAudioElement): Promise<number> {
+  if (audio.readyState >= 1 && Number.isFinite(audio.duration) && audio.duration > 0) {
+    return Promise.resolve(audio.duration);
+  }
+  return new Promise((resolveMeta) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timer);
+      audio.removeEventListener("loadedmetadata", finish);
+      audio.removeEventListener("durationchange", onDurationChange);
+      audio.removeEventListener("error", finish);
+      resolveMeta(Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration : 0);
+    };
+    const onDurationChange = () => {
+      if (Number.isFinite(audio.duration) && audio.duration > 0) finish();
+    };
+    const timer = window.setTimeout(finish, 2000);
+    audio.addEventListener("loadedmetadata", finish, { once: true });
+    audio.addEventListener("durationchange", onDurationChange);
+    audio.addEventListener("error", finish, { once: true });
+  });
+}
+
+function playAudioToEnd(audio: ForcedEndAudioElement): Promise<{ ended: boolean; durationSeconds: number }> {
   return new Promise((resolvePlayback) => {
     let settled = false;
     const finish = (ended: boolean) => {
@@ -1130,16 +1276,46 @@ function playAudioToEnd(audio: HTMLAudioElement): Promise<{ ended: boolean; dura
     audio.addEventListener("ended", () => finish(true));
     audio.addEventListener("error", () => finish(false));
     audio.addEventListener("pause", () => {
-      if (!audio.ended) finish(false);
+      if (audio.ended || audio.__mkboardForcedEnded) {
+        finish(true);
+      } else {
+        finish(false);
+      }
     });
     void audio.play().catch(() => finish(false));
   });
 }
 
+type PreparedSpeechSegment = {
+  text: string;
+  audioDataUrl: string;
+  durationSeconds: number;
+};
+
+type ResumableSpeechSession = {
+  key: string;
+  segments: string[];
+  prepared: Array<PreparedSpeechSegment | undefined>;
+  activeSegmentIndex: number;
+  pausedOffsetSeconds: number;
+  completed: boolean;
+};
+
+type SpeakOptions = {
+  startOffsetSeconds?: number;
+  resume?: boolean;
+  onPlaybackStart?: () => void;
+};
+
+function buildSpeechSessionKey(voiceId: string, segments: string[]): string {
+  return `${voiceId}::${segments.join("\n")}`;
+}
+
 function useElevenLabsSpeaker() {
   const [speechState, setSpeechState] = useState<SpeechPlayerState>("idle");
   const [speechError, setSpeechError] = useState<ElevenLabsErrorCode | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioRef = useRef<ForcedEndAudioElement | null>(null);
+  const sessionRef = useRef<ResumableSpeechSession | null>(null);
   const runIdRef = useRef(0);
   const playbackRateRef = useRef(1);
 
@@ -1148,9 +1324,24 @@ function useElevenLabsSpeaker() {
     if (audioRef.current) audioRef.current.playbackRate = rate;
   }
 
-  function stopSpeech() {
+  function computeSessionOffset(session: ResumableSpeechSession, activeAudio: HTMLAudioElement | null): number {
+    if (activeAudio && Number.isFinite(activeAudio.currentTime)) {
+      let base = 0;
+      for (let i = 0; i < session.activeSegmentIndex; i += 1) {
+        base += session.prepared[i]?.durationSeconds ?? 0;
+      }
+      return base + Math.max(0, activeAudio.currentTime);
+    }
+    return Math.max(0, session.pausedOffsetSeconds);
+  }
+
+  function pauseSpeech() {
     runIdRef.current += 1;
     const audio = audioRef.current;
+    const session = sessionRef.current;
+    if (session && audio) {
+      session.pausedOffsetSeconds = computeSessionOffset(session, audio);
+    }
     audioRef.current = null;
     if (audio) {
       try {
@@ -1162,46 +1353,232 @@ function useElevenLabsSpeaker() {
     setSpeechState("idle");
   }
 
-  async function speak(voiceId: string, text: string): Promise<SpeechPlaybackResult> {
-    stopSpeech();
-    const runId = runIdRef.current;
-    setSpeechError(null);
+  function stopSpeech() {
+    pauseSpeech();
+    sessionRef.current = null;
+  }
+
+  function getPausedSpeechOffset(voiceId: string, text: string): number | null {
     const segments = splitTextIntoSpeechSegments(text);
-    if (!segments.length || !voiceId || !window.mkboard) return { completed: false, durationSeconds: 0 };
-    let playedSeconds = 0;
-    for (const segment of segments) {
-      setSpeechState("loading");
-      let result: Awaited<ReturnType<MkboardApi["synthesizeElevenLabsSpeech"]>>;
-      try {
-        result = await window.mkboard.synthesizeElevenLabsSpeech({ text: segment, voiceId });
-      } catch {
-        result = { ok: false, error: "request_failed" };
-      }
-      if (runIdRef.current !== runId) return { completed: false, durationSeconds: playedSeconds };
-      if (!result.ok) {
-        setSpeechError(result.error);
-        setSpeechState("idle");
-        return { completed: false, durationSeconds: playedSeconds, errorCode: result.error };
-      }
-      const audio = new Audio(result.audioDataUrl);
-      audio.playbackRate = playbackRateRef.current;
-      audioRef.current = audio;
-      setSpeechState("playing");
-      const playback = await playAudioToEnd(audio);
-      if (runIdRef.current !== runId) return { completed: false, durationSeconds: playedSeconds + playback.durationSeconds };
-      playedSeconds += playback.durationSeconds;
-      if (!playback.ended) {
-        setSpeechState("idle");
-        return { completed: false, durationSeconds: playedSeconds };
+    if (!segments.length || !voiceId) return null;
+    const key = buildSpeechSessionKey(voiceId, segments);
+    const session = sessionRef.current;
+    if (!session || session.key !== key || session.completed) return null;
+    const offset = computeSessionOffset(session, audioRef.current);
+    return offset > 0.02 ? offset : null;
+  }
+
+  function hasPreparedSpeech(voiceId: string, text: string): boolean {
+    const segments = splitTextIntoSpeechSegments(text);
+    if (!segments.length || !voiceId) return false;
+    const key = buildSpeechSessionKey(voiceId, segments);
+    const session = sessionRef.current;
+    return Boolean(session && session.key === key && session.prepared[0]?.audioDataUrl);
+  }
+
+  function seekSpeech(voiceId: string, text: string, targetOffsetSeconds: number): boolean {
+    const segments = splitTextIntoSpeechSegments(text);
+    if (!segments.length || !voiceId) return false;
+    const clampedOffset = Math.max(0, Number.isFinite(targetOffsetSeconds) ? targetOffsetSeconds : 0);
+    const key = buildSpeechSessionKey(voiceId, segments);
+    let session = sessionRef.current;
+    if (!session || session.key !== key) {
+      session = {
+        key,
+        segments,
+        prepared: [],
+        activeSegmentIndex: 0,
+        pausedOffsetSeconds: clampedOffset,
+        completed: false
+      };
+      sessionRef.current = session;
+      return false;
+    }
+
+    session.pausedOffsetSeconds = clampedOffset;
+    session.completed = false;
+
+    const activeAudio = audioRef.current;
+    if (!activeAudio) return false;
+
+    let segStart = 0;
+    for (let i = 0; i < session.activeSegmentIndex; i += 1) {
+      segStart += session.prepared[i]?.durationSeconds ?? 0;
+    }
+    const segDuration =
+      Number.isFinite(activeAudio.duration) && activeAudio.duration > 0
+        ? activeAudio.duration
+        : (session.prepared[session.activeSegmentIndex]?.durationSeconds ?? 0);
+
+    if (segments.length === 1 || (clampedOffset >= segStart && (segDuration <= 0 || clampedOffset < segStart + segDuration - 0.04))) {
+      if (segDuration > 0 && clampedOffset >= segStart + segDuration - 0.04) {
+        if (session.activeSegmentIndex >= segments.length - 1) {
+          session.completed = true;
+          session.pausedOffsetSeconds = 0;
+          activeAudio.__mkboardForcedEnded = true;
+          try {
+            activeAudio.pause();
+          } catch {
+            // ignore
+          }
+          return true;
+        }
+      } else {
+        try {
+          activeAudio.currentTime = Math.max(0, clampedOffset - segStart);
+          return true;
+        } catch {
+          return false;
+        }
       }
     }
+
+    // Multi-segment cross-boundary seek while actively playing: restart speak at target offset
+    void speak(voiceId, text, { startOffsetSeconds: clampedOffset });
+    return true;
+  }
+
+  async function speak(voiceId: string, text: string, options?: SpeakOptions): Promise<SpeechPlaybackResult> {
+    const segments = splitTextIntoSpeechSegments(text);
+    if (!segments.length || !voiceId || !window.mkboard) {
+      stopSpeech();
+      return { completed: false, durationSeconds: 0 };
+    }
+
+    const key = buildSpeechSessionKey(voiceId, segments);
+    const previousSession = sessionRef.current;
+    const initialOffset =
+      typeof options?.startOffsetSeconds === "number"
+        ? Math.max(0, Number.isFinite(options.startOffsetSeconds) ? options.startOffsetSeconds : 0)
+        : options?.resume && previousSession?.key === key && !previousSession.completed
+          ? computeSessionOffset(previousSession, audioRef.current)
+          : 0;
+
+    const reusedPrepared = previousSession?.key === key ? previousSession.prepared : [];
+    pauseSpeech();
+    const runId = runIdRef.current;
+    setSpeechError(null);
+
+    const session: ResumableSpeechSession = {
+      key,
+      segments,
+      prepared: reusedPrepared,
+      activeSegmentIndex: 0,
+      pausedOffsetSeconds: initialOffset,
+      completed: false
+    };
+    sessionRef.current = session;
+
+    let remainingSkip = initialOffset;
+    let notifiedStart = false;
+    let cumulativeDuration = 0;
+
+    for (let i = 0; i < segments.length; i += 1) {
+      const segment = segments[i];
+      session.activeSegmentIndex = i;
+
+      let preparedSeg = session.prepared[i];
+      if (!preparedSeg) {
+        setSpeechState("loading");
+        let result: Awaited<ReturnType<MkboardApi["synthesizeElevenLabsSpeech"]>>;
+        try {
+          result = await window.mkboard.synthesizeElevenLabsSpeech({ text: segment, voiceId });
+        } catch {
+          result = { ok: false, error: "request_failed" };
+        }
+        if (runIdRef.current !== runId) return { completed: false, durationSeconds: session.pausedOffsetSeconds };
+        if (!result.ok) {
+          setSpeechError(result.error);
+          setSpeechState("idle");
+          return { completed: false, durationSeconds: session.pausedOffsetSeconds, errorCode: result.error };
+        }
+        preparedSeg = { text: segment, audioDataUrl: result.audioDataUrl, durationSeconds: 0 };
+        session.prepared[i] = preparedSeg;
+      }
+
+      const audio: ForcedEndAudioElement = new Audio(preparedSeg.audioDataUrl);
+      audio.playbackRate = playbackRateRef.current;
+      const measuredDuration = await waitForAudioMetadata(audio);
+      if (runIdRef.current !== runId) return { completed: false, durationSeconds: session.pausedOffsetSeconds };
+      if (measuredDuration > 0) {
+        preparedSeg.durationSeconds = measuredDuration;
+      }
+      const segDuration = preparedSeg.durationSeconds;
+
+      if (remainingSkip > 0 && segDuration > 0 && remainingSkip >= segDuration - 0.05) {
+        remainingSkip = Math.max(0, remainingSkip - segDuration);
+        cumulativeDuration += segDuration;
+        continue;
+      }
+
+      if (remainingSkip > 0.01) {
+        try {
+          audio.currentTime = segDuration > 0 ? Math.min(remainingSkip, Math.max(0, segDuration - 0.04)) : remainingSkip;
+        } catch {
+          // ignore if media rejects early seek
+        }
+        remainingSkip = 0;
+      }
+
+      const segBaseSeconds = cumulativeDuration;
+      const syncProgress = () => {
+        if (sessionRef.current === session && Number.isFinite(audio.currentTime)) {
+          session.pausedOffsetSeconds = segBaseSeconds + Math.max(0, audio.currentTime);
+        }
+      };
+      audio.addEventListener("timeupdate", syncProgress);
+
+      audioRef.current = audio;
+      setSpeechState("playing");
+      if (!notifiedStart) {
+        notifiedStart = true;
+        options?.onPlaybackStart?.();
+      }
+
+      const playback = await playAudioToEnd(audio);
+      audio.removeEventListener("timeupdate", syncProgress);
+      if (runIdRef.current !== runId) {
+        return { completed: false, durationSeconds: session.pausedOffsetSeconds };
+      }
+      const actualSegDuration = playback.durationSeconds > 0 ? playback.durationSeconds : segDuration;
+      if (actualSegDuration > 0) {
+        preparedSeg.durationSeconds = actualSegDuration;
+      }
+      if (!playback.ended) {
+        syncProgress();
+        audioRef.current = null;
+        setSpeechState("idle");
+        return { completed: false, durationSeconds: session.pausedOffsetSeconds };
+      }
+      cumulativeDuration += actualSegDuration;
+      session.pausedOffsetSeconds = cumulativeDuration;
+    }
+
+    if (!notifiedStart) {
+      notifiedStart = true;
+      options?.onPlaybackStart?.();
+    }
+    audioRef.current = null;
+    session.completed = true;
+    session.pausedOffsetSeconds = 0;
     setSpeechState("idle");
-    return { completed: true, durationSeconds: playedSeconds };
+    return { completed: true, durationSeconds: cumulativeDuration };
   }
 
   useEffect(() => stopSpeech, []);
 
-  return { speechState, speechError, speak, stopSpeech, setSpeechPlaybackRate, clearSpeechError: () => setSpeechError(null) };
+  return {
+    speechState,
+    speechError,
+    speak,
+    pauseSpeech,
+    stopSpeech,
+    seekSpeech,
+    getPausedSpeechOffset,
+    hasPreparedSpeech,
+    setSpeechPlaybackRate,
+    clearSpeechError: () => setSpeechError(null)
+  };
 }
 
 const presentationPlaybackRates = [1, 1.25, 1.5, 2] as const;
@@ -1403,9 +1780,89 @@ function isTransientCloudGenerationPollError(code: string, message: string) {
   return isAgentNetworkFailureMessage(message);
 }
 
-function scrollNearestStoryboardRowsIntoView(rowIds: string[]) {
+type StoredProjectShotCursor = {
+  frameId: string | null;
+  shotIndex: number;
+  updatedAt: number;
+};
+
+const PROJECT_SHOT_CURSORS_STORAGE_KEY = "mkboard.projectShotCursors.v1";
+const MAX_STORED_PROJECT_SHOT_CURSORS = 200;
+
+function readAllProjectShotCursors(): Record<string, StoredProjectShotCursor> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(PROJECT_SHOT_CURSORS_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    return parsed as Record<string, StoredProjectShotCursor>;
+  } catch {
+    return {};
+  }
+}
+
+function readProjectShotCursor(projectId: string): { frameId: string | null; shotIndex: number } | null {
+  if (!projectId) return null;
+  const entry = readAllProjectShotCursors()[projectId];
+  if (!entry || typeof entry !== "object") return null;
+  const frameId = typeof entry.frameId === "string" && entry.frameId ? entry.frameId : null;
+  const shotIndex = Number.isFinite(entry.shotIndex) ? Math.max(0, Math.floor(entry.shotIndex)) : 0;
+  if (!frameId && shotIndex === 0 && typeof entry.updatedAt !== "number") return null;
+  return { frameId, shotIndex };
+}
+
+function writeProjectShotCursor(projectId: string, cursor: { frameId: string | null; shotIndex: number }) {
+  if (!projectId || typeof window === "undefined") return;
+  try {
+    const map = readAllProjectShotCursors();
+    map[projectId] = {
+      frameId: cursor.frameId,
+      shotIndex: Math.max(0, Math.floor(cursor.shotIndex)),
+      updatedAt: Date.now()
+    };
+    const entries = Object.entries(map);
+    if (entries.length > MAX_STORED_PROJECT_SHOT_CURSORS) {
+      entries
+        .sort((left, right) => (right[1]?.updatedAt ?? 0) - (left[1]?.updatedAt ?? 0))
+        .slice(MAX_STORED_PROJECT_SHOT_CURSORS)
+        .forEach(([staleProjectId]) => {
+          delete map[staleProjectId];
+        });
+    }
+    window.localStorage.setItem(PROJECT_SHOT_CURSORS_STORAGE_KEY, JSON.stringify(map));
+  } catch {
+    // Ignore storage quota/security errors and keep in-memory state working.
+  }
+}
+
+function resolveShotCursorIndex(
+  items: ReadonlyArray<{ id: string }>,
+  cursor: { frameId: string | null; shotIndex: number } | null
+): number {
+  if (items.length === 0 || !cursor) return 0;
+  if (cursor.frameId) {
+    const exactIndex = items.findIndex((item) => item.id === cursor.frameId);
+    if (exactIndex >= 0) return exactIndex;
+  }
+  return Math.min(Math.max(0, cursor.shotIndex), items.length - 1);
+}
+
+function findDomFocusedStoryboardRowId(): string | null {
+  if (typeof document === "undefined") return null;
+  const activeElement = document.activeElement as HTMLElement | null;
+  const rowElement = activeElement?.closest?.("[data-storyboard-row-id]") as HTMLElement | null;
+  const rowId = rowElement?.dataset?.storyboardRowId?.trim();
+  return rowId || null;
+}
+
+function scrollNearestStoryboardRowsIntoView(
+  rowIds: string[],
+  options: { behavior?: ScrollBehavior; onlyIfOffscreen?: boolean } = {}
+) {
   if (typeof document === "undefined" || rowIds.length === 0) return;
   const targetRowIds = new Set(rowIds);
+  const behavior = options.behavior ?? "smooth";
   window.requestAnimationFrame(() => {
     window.requestAnimationFrame(() => {
       const rows = Array.from(document.querySelectorAll<HTMLElement>("[data-storyboard-row-id]")).filter((row) => {
@@ -1421,7 +1878,13 @@ function scrollNearestStoryboardRowsIntoView(rowIds: string[]) {
         const nearestDistance = Math.abs(nearestRect.top + nearestRect.height / 2 - viewportCenter);
         return rowDistance < nearestDistance ? row : nearest;
       }, rows[0]);
-      nearestRow.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+      if (options.onlyIfOffscreen) {
+        const rect = nearestRow.getBoundingClientRect();
+        if (rect.top >= 150 && rect.bottom <= window.innerHeight - 64) {
+          return;
+        }
+      }
+      nearestRow.scrollIntoView({ behavior, block: "center", inline: "nearest" });
     });
   });
 }
@@ -1578,8 +2041,18 @@ function agentEventsEquivalent(left: AgentEvent, right: AgentEvent) {
 }
 
 function replaceLocalCliAgent(agents: LocalCliAgent[], nextAgent: LocalCliAgent) {
-  const nextAgents = agents.map((agent) => (agent.id === nextAgent.id ? nextAgent : agent));
-  if (nextAgents.some((agent) => agent.id === nextAgent.id)) return nextAgents;
+  let matched = false;
+  const nextAgents = agents.map((agent) => {
+    if (agent.id !== nextAgent.id) return agent;
+    matched = true;
+    return {
+      ...agent,
+      ...nextAgent,
+      models: nextAgent.models?.length ? nextAgent.models : agent.models,
+      supportsEffort: nextAgent.supportsEffort ?? agent.supportsEffort
+    };
+  });
+  if (matched) return nextAgents;
   return [...nextAgents, nextAgent];
 }
 
@@ -1765,6 +2238,7 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
   const [projectNameInput, setProjectNameInput] = useState("");
   const [projectIconInput, setProjectIconInput] = useState("");
   const [projectImageRatioInput, setProjectImageRatioInput] = useState<ImageRatio>("16:9");
+  const [projectCoverDraft, setProjectCoverDraft] = useState<ProjectCoverDraft>(emptyProjectCoverDraft);
   const [templateInput, setTemplateInput] = useState(DEFAULT_TEMPLATE_ID);
   const [defaultTemplateId, setDefaultTemplateId] = useState(readStoredDefaultTemplateId);
   const [templateEditId, setTemplateEditId] = useState("");
@@ -1812,7 +2286,7 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
     state: "checking",
     label: fallbackTranslator("status.codex.checking")
   });
-  const [localCliAgents, setLocalCliAgents] = useState<LocalCliAgent[]>([]);
+  const [localCliAgents, setLocalCliAgents] = useState<LocalCliAgent[]>(readCachedLocalCliAgents);
   const [localCliScanBusy, setLocalCliScanBusy] = useState(false);
   const [selectedCliId, setSelectedCliId] = useState<AgentCliId>(() => {
     try {
@@ -1826,6 +2300,12 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
     }
     return readStoredOption(SELECTED_CLI_STORAGE_KEY, "codex", agentCliValues);
   });
+  const [enabledCliProviders, setEnabledCliProviders] = useState<Record<string, boolean>>(() =>
+    readStoredEnabledCliProviders(selectedCliId)
+  );
+  const enabledCliProvidersRef = useRef(enabledCliProviders);
+  enabledCliProvidersRef.current = enabledCliProviders;
+  const [accountAuthScrollAnchor, setAccountAuthScrollAnchor] = useState<"mcp" | null>(null);
   const [cliTestBusy, setCliTestBusy] = useState(false);
   const [cliTestResult, setCliTestResult] = useState<CliTestResult | null>(null);
   const [storyboardBusyAction, setStoryboardBusyAction] = useState<StoryboardAiAction | null>(null);
@@ -1872,6 +2352,18 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
   const t = useMemo(() => createTranslator(interfaceLanguage), [interfaceLanguage]);
   const i18n = useMemo(() => ({ locale: interfaceLanguage, t }), [interfaceLanguage, t]);
   const visibleLocalCliAgents = useMemo(() => mergeLocalCliAgentsWithDefaults(localCliAgents, codexStatus, t), [codexStatus, localCliAgents, t]);
+  const pickerVisibleLocalCliAgents = useMemo(() => {
+    const installedAgents = visibleLocalCliAgents.filter((agent) => !isDependencyCliAgent(agent) && agent.installed);
+    const enabledInstalled = installedAgents.filter((agent) => isCliProviderEnabled(agent.id, enabledCliProviders, selectedCliId));
+    if (enabledInstalled.length > 0) {
+      return enabledInstalled;
+    }
+    if (installedAgents.length > 0) {
+      const activeInstalled = installedAgents.find((agent) => agent.id === selectedCliId);
+      return [activeInstalled ?? installedAgents[0]];
+    }
+    return [];
+  }, [enabledCliProviders, selectedCliId, visibleLocalCliAgents]);
   const dropText = assetDropNoticeText(assetDropNotice, t);
   const projectMarkOptions = useMemo(() => localizeProjectMarkOptions(t), [t]);
   const orderedTemplates = useMemo(
@@ -2297,6 +2789,19 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
       window.localStorage.setItem(AGENT_PERMISSION_MODE_STORAGE_KEY, agentPermissionMode);
     } catch {}
   }, [agentPermissionMode]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(ENABLED_CLI_PROVIDERS_STORAGE_KEY, JSON.stringify(enabledCliProviders));
+    } catch {}
+  }, [enabledCliProviders]);
+
+  useEffect(() => {
+    if (localCliAgents.length === 0) return;
+    try {
+      window.localStorage.setItem(CACHED_LOCAL_CLI_AGENTS_STORAGE_KEY, JSON.stringify(localCliAgents));
+    } catch {}
+  }, [localCliAgents]);
 
   useEffect(() => {
     let cancelled = false;
@@ -2737,13 +3242,58 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
       const agents = await window.mkboard.scanLocalCliAgents();
       setLocalCliAgents(agents);
       setSelectedCliId((currentId) => {
-        if (agents.some((agent) => agent.id === currentId && agent.installed)) return currentId;
-        const fallbackAgent = agents.find((agent): agent is LocalCliAgent & { id: AgentCliId } => agent.installed && isAgentCliId(agent.id));
+        const currentMap = enabledCliProvidersRef.current;
+        if (
+          agents.some(
+            (agent) => agent.id === currentId && agent.installed && isCliProviderEnabled(agent.id, currentMap, currentId)
+          )
+        ) {
+          return currentId;
+        }
+        const enabledFallback = agents.find(
+          (agent): agent is LocalCliAgent & { id: AgentCliId } =>
+            agent.installed && isAgentCliId(agent.id) && isCliProviderEnabled(agent.id, currentMap)
+        );
+        if (enabledFallback) return enabledFallback.id;
+        const fallbackAgent = agents.find(
+          (agent): agent is LocalCliAgent & { id: AgentCliId } => agent.installed && isAgentCliId(agent.id)
+        );
         return fallbackAgent?.id ?? "codex";
       });
       return agents;
     } finally {
       setLocalCliScanBusy(false);
+    }
+  }
+
+  function selectCliAndEnsureEnabled(nextCliId: AgentCliId) {
+    setSelectedCliId(nextCliId);
+    setEnabledCliProviders((prev) =>
+      isCliProviderEnabled(nextCliId, prev) ? prev : { ...prev, [nextCliId]: true }
+    );
+  }
+
+  function toggleCliProviderInPicker(cliId: string, nextEnabled: boolean) {
+    const installedAgents = visibleLocalCliAgents.filter((agent) => !isDependencyCliAgent(agent) && agent.installed);
+    if (!nextEnabled) {
+      const currentlyEnabledInstalled = installedAgents.filter((agent) =>
+        isCliProviderEnabled(agent.id, enabledCliProvidersRef.current)
+      );
+      if (currentlyEnabledInstalled.length <= 1 && currentlyEnabledInstalled.some((agent) => agent.id === cliId)) {
+        return;
+      }
+    }
+    const nextMap = { ...enabledCliProvidersRef.current, [cliId]: nextEnabled };
+    setEnabledCliProviders(nextMap);
+    if (!nextEnabled && cliId === selectedCliId) {
+      const nextCandidate = installedAgents.find(
+        (agent): agent is LocalCliAgent & { id: AgentCliId } =>
+          agent.id !== cliId && isAgentCliId(agent.id) && isCliProviderEnabled(agent.id, nextMap)
+      );
+      if (nextCandidate) {
+        setSelectedCliId(nextCandidate.id);
+        setSelectedAgentModel("default");
+      }
     }
   }
 
@@ -3000,8 +3550,9 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
     }
   }
 
-  function openAccountAuthAtSection(section: SettingsSectionId) {
+  function openAccountAuthAtSection(section: SettingsSectionId, scrollAnchor: "mcp" | null = null) {
     clearByokNotice();
+    setAccountAuthScrollAnchor(scrollAnchor);
     setAccountAuthSection(section);
     setAccountAuthOpen(true);
     void refreshCodexStatus();
@@ -3009,8 +3560,8 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
     void refreshByokAndCompanion();
   }
 
-  function openAccountAuth() {
-    openAccountAuthAtSection("runtime");
+  function openAccountAuth(focusTarget?: unknown) {
+    openAccountAuthAtSection("runtime", focusTarget === "mcp" ? "mcp" : null);
   }
 
   function openAccountProfile() {
@@ -3283,6 +3834,7 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
     setProjectNameInput("");
     setProjectIconInput(projectMarkOptionDefinitions[0].value);
     setProjectImageRatioInput("16:9");
+    setProjectCoverDraft(emptyProjectCoverDraft);
     setTemplateInput(nextTemplateId);
     setTasteInput(getDefaultCreateTasteId(tastes, defaultTasteId));
     setProjectSkillInput(getTemplateStoryboardSkillId(templates, nextTemplateId, interfaceLanguage));
@@ -3317,6 +3869,7 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
     setShowCreate(false);
     setCreateTasteDrawerOpen(false);
     setProjectSkillDrawerOpen(false);
+    setProjectCoverDraft(emptyProjectCoverDraft);
   }
 
   async function createSkill(input: CreateSkillInput): Promise<Skill> {
@@ -3484,6 +4037,13 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
     setProjectNameInput(project.name);
     setProjectIconInput(project.icon || projectMarkOptionDefinitions[0].value);
     setProjectImageRatioInput(project.imageRatio);
+    setProjectCoverDraft({
+      previewUrl: project.coverImageUrl ?? null,
+      sourcePath: null,
+      dataUrl: null,
+      ratio: normalizeProjectCoverRatio(project.coverImageRatio ?? "16:9"),
+      cleared: false
+    });
     setTemplateInput(project.templateId || getDefaultCreateTemplateId(templates, defaultTemplateId));
     setTasteInput(projectDetail?.project.id === project.id ? projectDetail.taste?.id ?? project.tasteId ?? DEFAULT_TASTE_ID : project.tasteId || DEFAULT_TASTE_ID);
     setProjectSkillInput(
@@ -3506,6 +4066,17 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
       setProjectNameInput(detail.project.name);
       setProjectIconInput(detail.project.icon || projectMarkOptionDefinitions[0].value);
       setProjectImageRatioInput(detail.imageRatio);
+      setProjectCoverDraft((prev) =>
+        prev.sourcePath || prev.dataUrl || prev.cleared
+          ? prev
+          : {
+              previewUrl: detail.project.coverImageUrl ?? null,
+              sourcePath: null,
+              dataUrl: null,
+              ratio: normalizeProjectCoverRatio(detail.project.coverImageRatio ?? "16:9"),
+              cleared: false
+            }
+      );
       setTemplateInput(detail.project.templateId || getDefaultCreateTemplateId(templates, defaultTemplateId));
       setTasteInput(detail.taste?.id ?? detail.project.tasteId ?? DEFAULT_TASTE_ID);
       setProjectSkillInput(detail.storyboardSkill?.id ?? getDefaultStoryboardSkillId(interfaceLanguage));
@@ -3530,6 +4101,10 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
         templateId: templateInput,
         tasteId: tasteInput,
         storyboardSkillId: projectSkillInput,
+        coverImageSourcePath: projectCoverDraft.sourcePath,
+        coverImageDataUrl: projectCoverDraft.sourcePath ? null : projectCoverDraft.dataUrl,
+        coverImageRatio: projectCoverDraft.previewUrl ? projectCoverDraft.ratio : undefined,
+        clearCoverImage: projectCoverDraft.cleared || undefined,
         interfaceLanguage
       });
       setProjects(nextProjects);
@@ -3541,8 +4116,40 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
       setEditingProject(null);
       setCreateTasteDrawerOpen(false);
       setProjectSkillDrawerOpen(false);
+      setProjectCoverDraft(emptyProjectCoverDraft);
     } finally {
       setProjectEditBusy(false);
+    }
+  }
+
+  async function quickUploadProjectCover(targetProject: ProjectSummary) {
+    if (isTutorialProject(targetProject)) return;
+    const picked = await window.mkboard.chooseProjectCoverFile();
+    if (!picked) return;
+    const result = await window.mkboard.updateProjectCover({
+      projectId: targetProject.id,
+      coverImageSourcePath: picked.filePath ?? null,
+      coverImageDataUrl: picked.filePath ? null : picked.previewDataUrl,
+      coverImageRatio: picked.suggestedRatio,
+      interfaceLanguage
+    });
+    setProjects(result.projects);
+    await refreshArchivedProjects();
+    if (projectId === targetProject.id) {
+      applyProjectDetail(result.detail);
+    }
+  }
+
+  async function updateActiveWorkspaceCover(patch: Omit<UpdateProjectCoverInput, "projectId" | "interfaceLanguage">) {
+    if (!projectId) return;
+    const result = await window.mkboard.updateProjectCover({
+      projectId,
+      ...patch,
+      interfaceLanguage
+    });
+    setProjects(result.projects);
+    if (projectId === result.detail.project.id) {
+      applyProjectDetail(result.detail);
     }
   }
 
@@ -3935,6 +4542,9 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
         templateId: templateInput,
         tasteId: tasteInput,
         storyboardSkillId: projectSkillInput,
+        coverImageSourcePath: projectCoverDraft.sourcePath,
+        coverImageDataUrl: projectCoverDraft.sourcePath ? null : projectCoverDraft.dataUrl,
+        coverImageRatio: projectCoverDraft.previewUrl ? projectCoverDraft.ratio : undefined,
         interfaceLanguage
       });
       applyProjectDetail(detail);
@@ -5409,6 +6019,7 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
               void startDesktopUpdate();
             }}
             onEditProject={openProjectEditor}
+            onUploadProjectCover={(nextProject) => void quickUploadProjectCover(nextProject)}
             onOpenProject={(nextProject) => void openProject(nextProject.id, nextProject.name)}
             onOpenTemplates={openTemplates}
             onOpenTrash={() => void openTrash()}
@@ -5505,6 +6116,10 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
           <WorkspaceScreen
             projectId={projectId}
             projectName={projectName}
+            projectCoverUrl={projectDetail?.project.coverImageUrl ?? null}
+            projectCoverRatio={normalizeProjectCoverRatio(projectDetail?.project.coverImageRatio ?? "16:9")}
+            isTutorialProject={Boolean(projectDetail && isTutorialProject(projectDetail.project))}
+            onUpdateProjectCover={updateActiveWorkspaceCover}
             onEditProject={() => {
               if (projectDetail) void openProjectEditor(projectDetail.project);
             }}
@@ -5518,7 +6133,7 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
             agentBusy={agentBusy}
             runningAgentClientRunIds={runningAgentClientRunIds}
             runningAgentConversationIds={runningAgentConversationIds}
-            localCliAgents={visibleLocalCliAgents}
+            localCliAgents={pickerVisibleLocalCliAgents}
             selectedCliId={selectedCliId}
             selectedCliName={selectedCliName}
             selectedCliConnectionState={selectedCliConnectionState}
@@ -5528,7 +6143,7 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
             selectedAgentEffort={selectedAgentEffort}
             agentPermissionMode={agentPermissionMode}
             mcpBridgeStatus={mcpBridgeStatus}
-            onSelectCli={setSelectedCliId}
+            onSelectCli={selectCliAndEnsureEnabled}
             onSelectAgentModel={setSelectedAgentModel}
             onSelectAgentEffort={setSelectedAgentEffort}
             onChangeAgentPermissionMode={setAgentPermissionMode}
@@ -5618,6 +6233,7 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
       {showCreate ? (
         <ProjectDialog
           busy={projectCreateBusy}
+          coverDraft={projectCoverDraft}
           icon={projectIconInput}
           imageRatio={projectImageRatioInput}
           mode="create"
@@ -5640,6 +6256,7 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
           onClose={closeCreateProjectModal}
           onCloseTasteDrawer={() => setCreateTasteDrawerOpen(false)}
           onCloseSkillDrawer={() => setProjectSkillDrawerOpen(false)}
+          onCoverDraftChange={setProjectCoverDraft}
           onIconChange={setProjectIconInput}
           onImageRatioChange={setProjectImageRatioInput}
           onNameChange={setProjectNameInput}
@@ -5659,6 +6276,7 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
       {editingProject ? (
         <ProjectDialog
           busy={projectEditBusy}
+          coverDraft={projectCoverDraft}
           icon={projectIconInput}
           imageRatio={projectImageRatioInput}
           mode="edit"
@@ -5683,10 +6301,12 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
               setEditingProject(null);
               setCreateTasteDrawerOpen(false);
               setProjectSkillDrawerOpen(false);
+              setProjectCoverDraft(emptyProjectCoverDraft);
             }
           }}
           onCloseTasteDrawer={() => setCreateTasteDrawerOpen(false)}
           onCloseSkillDrawer={() => setProjectSkillDrawerOpen(false)}
+          onCoverDraftChange={setProjectCoverDraft}
           onIconChange={setProjectIconInput}
           onImageRatioChange={setProjectImageRatioInput}
           onNameChange={setProjectNameInput}
@@ -5717,6 +6337,12 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
           localCliAgents={visibleLocalCliAgents}
           localCliScanBusy={localCliScanBusy}
           selectedCliId={selectedCliId}
+          enabledCliProviders={enabledCliProviders}
+          onToggleCliProvider={toggleCliProviderInPicker}
+          agentPermissionMode={agentPermissionMode}
+          onChangeAgentPermissionMode={setAgentPermissionMode}
+          scrollAnchor={accountAuthScrollAnchor}
+          onConsumeScrollAnchor={() => setAccountAuthScrollAnchor(null)}
           interfaceLanguage={interfaceLanguage}
           appearanceMode={appearanceMode}
           hyperframesVideoResolution={hyperframesVideoResolution}
@@ -5743,7 +6369,7 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
           onOpenExternal={openExternalUrl}
           onRefreshSelectedCliStatus={() => void testSelectedCliStatus()}
           onRefreshLocalCliAgents={() => void refreshLocalCliAgents()}
-          onSelectCli={setSelectedCliId}
+          onSelectCli={selectCliAndEnsureEnabled}
           onInterfaceLanguageChange={setInterfaceLanguage}
           onAppearanceModeChange={setAppearanceMode}
           onHyperframesVideoResolutionChange={setHyperframesVideoResolution}
@@ -5775,6 +6401,7 @@ function ProjectsScreen({
   onOpenDesktopDownload,
   onArchiveProject,
   onEditProject,
+  onUploadProjectCover,
   onOpenProject,
   onOpenTemplates,
   onOpenTrash,
@@ -5790,6 +6417,7 @@ function ProjectsScreen({
   onOpenDesktopDownload: () => void;
   onArchiveProject: (project: ProjectSummary) => void;
   onEditProject: (project: ProjectSummary) => void;
+  onUploadProjectCover: (project: ProjectSummary) => void;
   onOpenProject: (project: ProjectSummary) => void;
   onOpenTemplates: () => void;
   onOpenTrash: () => void;
@@ -5930,6 +6558,7 @@ function ProjectsScreen({
                 key={project.id}
                 onArchiveProject={onArchiveProject}
                 onEditProject={onEditProject}
+                onUploadProjectCover={onUploadProjectCover}
                 onOpenProject={onOpenProject}
                 onTrashProject={onTrashProject}
                 onUnarchiveProject={onUnarchiveProject}
@@ -5982,6 +6611,7 @@ function ProjectsScreen({
                       key={project.id}
                       onArchiveProject={onArchiveProject}
                       onEditProject={onEditProject}
+                      onUploadProjectCover={onUploadProjectCover}
                       onOpenProject={onOpenProject}
                       onTrashProject={onTrashProject}
                       onUnarchiveProject={onUnarchiveProject}
@@ -7075,11 +7705,66 @@ function TemplateEditorScreen({
   );
 }
 
+function renderCustomCoverMedia(
+  url: string,
+  ratio: ProjectCoverRatio | null | undefined,
+  variant: "card" | "list" | "dialog",
+  onError?: () => void
+) {
+  const resolvedRatio = normalizeProjectCoverRatio(ratio ?? "16:9");
+  if (resolvedRatio === "16:9") {
+    return (
+      <img
+        className={
+          variant === "list"
+            ? "project-list-thumb-media project-custom-cover-full"
+            : "project-card-cover-media project-custom-cover-full"
+        }
+        data-cover-ratio="16:9"
+        src={url}
+        alt=""
+        loading="lazy"
+        onError={onError}
+      />
+    );
+  }
+  const aspectRatioCss =
+    projectCoverRatioOptions.find((opt) => opt.value === resolvedRatio)?.aspectRatio ?? "16 / 9";
+  return (
+    <div
+      className={cn("project-custom-cover-stage", `is-${variant}`)}
+      data-cover-ratio={resolvedRatio}
+    >
+      <img
+        className="project-custom-cover-ambient"
+        src={url}
+        alt=""
+        aria-hidden="true"
+        loading="lazy"
+      />
+      <div
+        className="project-custom-cover-framed"
+        data-cover-ratio={resolvedRatio}
+        style={{ aspectRatio: aspectRatioCss }}
+      >
+        <img
+          className="project-custom-cover-framed-img"
+          src={url}
+          alt=""
+          loading="lazy"
+          onError={onError}
+        />
+      </div>
+    </div>
+  );
+}
+
 function ProjectCard({
   isArchived,
   project,
   onArchiveProject,
   onEditProject,
+  onUploadProjectCover,
   onOpenProject,
   onTrashProject,
   onUnarchiveProject
@@ -7088,6 +7773,7 @@ function ProjectCard({
   project: ProjectSummary;
   onArchiveProject: (project: ProjectSummary) => void;
   onEditProject: (project: ProjectSummary) => void;
+  onUploadProjectCover: (project: ProjectSummary) => void;
   onOpenProject: (project: ProjectSummary) => void;
   onTrashProject: (project: ProjectSummary) => void;
   onUnarchiveProject: (project: ProjectSummary) => void;
@@ -7157,7 +7843,9 @@ function ProjectCard({
       {tutorialProject ? <span className="project-tutorial-badge">{t("project.tutorialBadge")}</span> : null}
       <Button className="project-card-open" variant="ghost" onPress={() => onOpenProject(project)}>
         <div className={cn("folder-preview", hasVisualCover ? "folder-preview-media" : "folder-preview-slate")}>
-          {coverPreview?.kind === "video-first-frame" ? (
+          {coverPreview?.kind === "custom-cover" && !coverImageFailed ? (
+            renderCustomCoverMedia(coverPreview.url, coverPreview.ratio, "card", () => setCoverImageFailed(true))
+          ) : coverPreview?.kind === "video-first-frame" ? (
             <>
               {coverPreview.isRemoteVideo || coverImageFailed ? (
                 <video
@@ -7250,6 +7938,17 @@ function ProjectCard({
                 <Pencil aria-hidden="true" />
                 <span>{t("project.editProject")}</span>
               </Button>
+              <Button
+                className="project-card-actions-menu-item"
+                variant="ghost"
+                onPress={() => {
+                  setActionsOpen(false);
+                  onUploadProjectCover(project);
+                }}
+              >
+                <Image aria-hidden="true" />
+                <span>{t(project.coverImageUrl ? "project.quickChangeCover" : "project.quickUploadCover")}</span>
+              </Button>
               <Button className="project-card-actions-menu-item" variant="ghost" onPress={toggleProjectArchive}>
                 {isArchived ? <ArchiveRestore aria-hidden="true" /> : <Archive aria-hidden="true" />}
                 <span>{t(isArchived ? "project.unarchiveProject" : "project.archiveProject")}</span>
@@ -7272,6 +7971,7 @@ function ProjectListRow({
   project,
   onArchiveProject,
   onEditProject,
+  onUploadProjectCover,
   onOpenProject,
   onTrashProject,
   onUnarchiveProject
@@ -7280,6 +7980,7 @@ function ProjectListRow({
   project: ProjectSummary;
   onArchiveProject: (project: ProjectSummary) => void;
   onEditProject: (project: ProjectSummary) => void;
+  onUploadProjectCover: (project: ProjectSummary) => void;
   onOpenProject: (project: ProjectSummary) => void;
   onTrashProject: (project: ProjectSummary) => void;
   onUnarchiveProject: (project: ProjectSummary) => void;
@@ -7350,7 +8051,9 @@ function ProjectListRow({
       <Button className="project-list-row-main" variant="ghost" onPress={() => onOpenProject(project)}>
         <span className="project-list-name-cell" role="cell">
           <span className={cn("project-list-thumb", hasVisualCover ? "has-media" : "is-slate")}>
-            {coverPreview?.kind === "video-first-frame" ? (
+            {coverPreview?.kind === "custom-cover" && !coverImageFailed ? (
+              renderCustomCoverMedia(coverPreview.url, coverPreview.ratio, "list", () => setCoverImageFailed(true))
+            ) : coverPreview?.kind === "video-first-frame" ? (
               coverPreview.isRemoteVideo || coverImageFailed ? (
                 <video
                   className="project-list-thumb-media"
@@ -7459,6 +8162,17 @@ function ProjectListRow({
                   <Button className="project-card-actions-menu-item" variant="ghost" onPress={openProjectForEditing}>
                     <Pencil aria-hidden="true" />
                     <span>{t("project.editProject")}</span>
+                  </Button>
+                  <Button
+                    className="project-card-actions-menu-item"
+                    variant="ghost"
+                    onPress={() => {
+                      setActionsOpen(false);
+                      onUploadProjectCover(project);
+                    }}
+                  >
+                    <Image aria-hidden="true" />
+                    <span>{t(project.coverImageUrl ? "project.quickChangeCover" : "project.quickUploadCover")}</span>
                   </Button>
                   <Button className="project-card-actions-menu-item" variant="ghost" onPress={toggleProjectArchive}>
                     {isArchived ? <ArchiveRestore aria-hidden="true" /> : <Archive aria-hidden="true" />}
@@ -9778,8 +10492,162 @@ function CustomTasteEditorModal({
   );
 }
 
+function ProjectCoverUploadField({
+  disabled = false,
+  draft,
+  onChange
+}: {
+  disabled?: boolean;
+  draft: ProjectCoverDraft;
+  onChange: (next: ProjectCoverDraft) => void;
+}) {
+  const { t } = useI18n();
+  const [dragActive, setDragActive] = useState(false);
+
+  async function pickCoverFromDialog() {
+    if (disabled) return;
+    const picked = await window.mkboard.chooseProjectCoverFile();
+    if (!picked) return;
+    onChange({
+      previewUrl: picked.previewDataUrl,
+      sourcePath: picked.filePath ?? null,
+      dataUrl: picked.filePath ? null : picked.previewDataUrl,
+      ratio: picked.suggestedRatio,
+      cleared: false
+    });
+  }
+
+  async function importDroppedOrPastedFiles(fileList: FileList | File[]) {
+    if (disabled) return;
+    const files = Array.from(fileList).filter((file) => file.type.startsWith("image/") || /\.(png|jpe?g|webp|gif|avif)$/iu.test(file.name));
+    const first = files[0];
+    if (!first) return;
+    const resolvedPaths = window.mkboard.resolveDroppedFilePaths([first]);
+    const picked = await readImageFileAsCoverPick(first, resolvedPaths[0] ?? null);
+    onChange({
+      previewUrl: picked.previewDataUrl,
+      sourcePath: picked.filePath ?? null,
+      dataUrl: picked.filePath ? null : picked.previewDataUrl,
+      ratio: picked.suggestedRatio,
+      cleared: false
+    });
+  }
+
+  return (
+    <div
+      className="project-cover-upload-field"
+      onPaste={(event) => {
+        const items = Array.from(event.clipboardData?.items ?? []);
+        const imageFiles = items
+          .filter((item) => item.type.startsWith("image/"))
+          .map((item) => item.getAsFile())
+          .filter((file): file is File => Boolean(file));
+        if (imageFiles.length > 0) {
+          event.preventDefault();
+          void importDroppedOrPastedFiles(imageFiles);
+        }
+      }}
+    >
+      <div className="project-cover-upload-row">
+        <button
+          type="button"
+          disabled={disabled}
+          className={cn(
+            "project-cover-dropzone",
+            draft.previewUrl && "has-cover",
+            dragActive && "is-dragover"
+          )}
+          onClick={() => void pickCoverFromDialog()}
+          onDragOver={(event) => {
+            event.preventDefault();
+            if (!disabled) setDragActive(true);
+          }}
+          onDragLeave={() => setDragActive(false)}
+          onDrop={(event) => {
+            event.preventDefault();
+            setDragActive(false);
+            if (event.dataTransfer?.files?.length) {
+              void importDroppedOrPastedFiles(event.dataTransfer.files);
+            }
+          }}
+        >
+          {draft.previewUrl ? (
+            renderCustomCoverMedia(draft.previewUrl, draft.ratio, "dialog")
+          ) : (
+            <span className="project-cover-dropzone-empty">
+              <UploadCloud aria-hidden="true" />
+              <span>{t("project.coverDropHint")}</span>
+            </span>
+          )}
+        </button>
+
+        <div className="project-cover-controls">
+          <div className="project-cover-controls-head">
+            <span className="project-aspect-ratio-label">{t("project.coverImage")}</span>
+            <div className="project-cover-action-pills">
+              <button
+                type="button"
+                className="project-cover-mini-btn"
+                disabled={disabled}
+                onClick={() => void pickCoverFromDialog()}
+              >
+                <Image aria-hidden="true" />
+                <span>{t(draft.previewUrl ? "project.coverChange" : "project.coverUpload")}</span>
+              </button>
+              {draft.previewUrl ? (
+                <button
+                  type="button"
+                  className="project-cover-mini-btn is-danger"
+                  disabled={disabled}
+                  onClick={() =>
+                    onChange({
+                      previewUrl: null,
+                      sourcePath: null,
+                      dataUrl: null,
+                      ratio: draft.ratio,
+                      cleared: true
+                    })
+                  }
+                >
+                  <Trash2 aria-hidden="true" />
+                  <span>{t("project.coverRemove")}</span>
+                </button>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="project-cover-ratio-pills" role="radiogroup" aria-label={t("project.coverRatio")}>
+            {projectCoverRatioOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                role="radio"
+                aria-checked={draft.ratio === option.value}
+                disabled={disabled}
+                className={cn("project-cover-ratio-pill", draft.ratio === option.value && "selected")}
+                onClick={() =>
+                  onChange({
+                    ...draft,
+                    ratio: option.value
+                  })
+                }
+              >
+                <AspectRatioIcon ratio={option.value} />
+                <span>{option.label}</span>
+              </button>
+            ))}
+          </div>
+
+          <p className="project-cover-hint">{t("project.coverOverrideHint")}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ProjectDialog({
   busy = false,
+  coverDraft,
   defaultTasteId,
   mode,
   name,
@@ -9800,6 +10668,7 @@ function ProjectDialog({
   tasteDrawerOpen,
   ready,
   onClose,
+  onCoverDraftChange,
   onNameChange,
   onIconChange,
   onImageRatioChange,
@@ -9815,6 +10684,7 @@ function ProjectDialog({
   onSubmit
 }: {
   busy?: boolean;
+  coverDraft: ProjectCoverDraft;
   defaultTasteId: string;
   mode: ProjectDialogMode;
   name: string;
@@ -9835,6 +10705,7 @@ function ProjectDialog({
   tasteDrawerOpen: boolean;
   ready: boolean;
   onClose: () => void;
+  onCoverDraftChange: (next: ProjectCoverDraft) => void;
   onNameChange: (value: string) => void;
   onIconChange: (value: string) => void;
   onImageRatioChange: (value: ImageRatio) => void;
@@ -9861,6 +10732,7 @@ function ProjectDialog({
         value={name}
         onChange={(event) => onNameChange(event.target.value)}
       />
+      <ProjectCoverUploadField disabled={busy} draft={coverDraft} onChange={onCoverDraftChange} />
       <div className="create-project-field-grid">
         <SelectField
           className="project-dialog-choice-field"
@@ -10465,6 +11337,12 @@ function CodexAuthorizationDialog({
   localCliAgents,
   localCliScanBusy,
   selectedCliId,
+  enabledCliProviders,
+  onToggleCliProvider,
+  agentPermissionMode,
+  onChangeAgentPermissionMode,
+  scrollAnchor,
+  onConsumeScrollAnchor,
   interfaceLanguage,
   appearanceMode,
   hyperframesVideoResolution,
@@ -10504,6 +11382,12 @@ function CodexAuthorizationDialog({
   localCliAgents: LocalCliAgent[];
   localCliScanBusy: boolean;
   selectedCliId: AgentCliId;
+  enabledCliProviders: Readonly<Record<string, boolean>>;
+  onToggleCliProvider: (cliId: string, nextEnabled: boolean) => void;
+  agentPermissionMode: AgentPermissionMode;
+  onChangeAgentPermissionMode: (mode: AgentPermissionMode) => void;
+  scrollAnchor?: "mcp" | null;
+  onConsumeScrollAnchor?: () => void;
   byokSettings: ByokSettingsSnapshot | null;
   companionStatus: CompanionServerStatus | null;
   byokNotice: string;
@@ -10539,14 +11423,20 @@ function CodexAuthorizationDialog({
   onElevenLabsStatusChange: (status: ElevenLabsStatus | null) => void;
   onElevenLabsDefaultVoiceChange: (voiceId: string, voiceName: string) => void;
 }) {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
+  const isEn = locale === "en";
   const [activeSection, setActiveSection] = useState<SettingsSectionId>(initialSection);
   const [activeAgentCliId, setActiveAgentCliId] = useState<AgentCliId>(selectedCliId);
+  const mcpGroupRef = useRef<HTMLElement | null>(null);
   const selectedCli = localCliAgents.find((agent) => agent.id === selectedCliId) || localCliAgents.find((agent) => agent.id === "codex");
   const selectedIsCodex = selectedCli?.id === "codex";
   const selectedConnectionState = selectedIsCodex ? codexStatus.state : selectedCli?.connectionState;
   const selectedConnected = selectedConnectionState === "connected";
   const agentCliCards = localCliAgents.filter((agent) => !isDependencyCliAgent(agent));
+  const installedAgentCards = agentCliCards.filter((agent) => agent.installed);
+  const enabledInstalledAgentCards = installedAgentCards.filter((agent) =>
+    isCliProviderEnabled(agent.id, enabledCliProviders)
+  );
   const versionActionIsDownload = Boolean(desktopVersionCheck?.updateAvailable && desktopVersionCheck.downloadUrl);
   const versionActionLabel = desktopVersionCheckBusy
     ? t("settings.about.updateChecking")
@@ -10573,6 +11463,15 @@ function CodexAuthorizationDialog({
   useEffect(() => {
     setActiveAgentCliId(selectedCliId);
   }, [selectedCliId]);
+
+  useEffect(() => {
+    if (activeSection !== "runtime" || scrollAnchor !== "mcp") return;
+    const raf = window.requestAnimationFrame(() => {
+      mcpGroupRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      onConsumeScrollAnchor?.();
+    });
+    return () => window.cancelAnimationFrame(raf);
+  }, [activeSection, onConsumeScrollAnchor, scrollAnchor]);
 
   return (
     <div className="prototype-modal-backdrop">
@@ -10610,6 +11509,13 @@ function CodexAuthorizationDialog({
                     <div className="local-cli-group-head">
                       <div className="local-cli-group-title">
                         <span>{t("settings.runtime.agentCliGroup")}</span>
+                        {installedAgentCards.length > 0 ? (
+                          <span className="local-cli-picker-count-pill">
+                            {isEn
+                              ? `Shown in picker ${enabledInstalledAgentCards.length} / ${installedAgentCards.length}`
+                              : `选择器显示 ${enabledInstalledAgentCards.length} / ${installedAgentCards.length}`}
+                          </span>
+                        ) : null}
                       </div>
                       <div className="local-cli-actions">
                         <button className="local-cli-action" type="button" onClick={() => onOpenExternal(LOCAL_CLI_GUIDE_URL)}>
@@ -10627,23 +11533,82 @@ function CodexAuthorizationDialog({
                       </div>
                     </div>
                     <div className="local-cli-grid" aria-label={t("settings.runtime.agentCliGroup")}>
-                      {agentCliCards.map((agent) => (
-                        <LocalCliCard
-                          agent={agent}
-                          codexStatus={codexStatus}
-                          key={agent.id}
-                          selected={agent.installed && agent.id === activeAgentCliId}
-                          onSelect={() => {
-                            if (!isAgentCliId(agent.id) || !agent.installed) return;
-                            setActiveAgentCliId(agent.id);
-                            onSelectCli(agent.id);
-                          }}
-                        />
-                      ))}
+                      {agentCliCards.map((agent) => {
+                        const enabledInPicker = agent.installed && isCliProviderEnabled(agent.id, enabledCliProviders);
+                        const isSoleEnabledInstalled =
+                          enabledInPicker && enabledInstalledAgentCards.length <= 1;
+                        return (
+                          <LocalCliCard
+                            agent={agent}
+                            codexStatus={codexStatus}
+                            key={agent.id}
+                            selected={enabledInPicker && agent.id === activeAgentCliId}
+                            enabledInPicker={enabledInPicker}
+                            cannotDisableInPicker={isSoleEnabledInstalled}
+                            onTogglePickerEnabled={
+                              agent.installed
+                                ? (nextEnabled) => onToggleCliProvider(agent.id, nextEnabled)
+                                : undefined
+                            }
+                            onSelect={() => {
+                              if (!isAgentCliId(agent.id) || !agent.installed || !enabledInPicker) return;
+                              setActiveAgentCliId(agent.id);
+                              onSelectCli(agent.id);
+                            }}
+                          />
+                        );
+                      })}
                     </div>
                   </div>
 
                   {cliTestResult ? <CliTestFeedback result={cliTestResult} /> : null}
+
+                  <section className="local-cli-group" aria-labelledby="agent-permission-group-title">
+                    <h2 className="local-cli-group-title" id="agent-permission-group-title">
+                      <span>{isEn ? "Execution Permission" : "执行权限"}</span>
+                    </h2>
+                    <div className="video-settings-card">
+                      <div className="video-setting-row">
+                        <span className="video-setting-copy">
+                          <span className="video-setting-icon" aria-hidden="true">
+                            <ShieldCheck />
+                          </span>
+                          <span>
+                            <strong>{isEn ? "Agent Execution Mode" : "Agent 执行模式"}</strong>
+                            <small>
+                              {agentPermissionMode === "auto-apply"
+                                ? isEn
+                                  ? "Auto-apply: Storyboard edits & media generation execute immediately"
+                                  : "自动执行：修改分镜与生图生视频操作直接执行"
+                                : isEn
+                                  ? "Supervised: Ask before deleting shots or regenerating media"
+                                  : "需确认：删除分镜或重新生成媒体前先请求确认"}
+                            </small>
+                          </span>
+                        </span>
+                        <div className="t3-settings-segmented" role="radiogroup" aria-label={isEn ? "Agent Execution Mode" : "Agent 执行模式"}>
+                          <button
+                            type="button"
+                            role="radio"
+                            aria-checked={agentPermissionMode === "supervised"}
+                            className={cn("t3-settings-segment", agentPermissionMode === "supervised" && "active")}
+                            onClick={() => onChangeAgentPermissionMode("supervised")}
+                          >
+                            {isEn ? "Supervised" : "需确认"}
+                          </button>
+                          <button
+                            type="button"
+                            role="radio"
+                            aria-checked={agentPermissionMode === "auto-apply"}
+                            className={cn("t3-settings-segment", agentPermissionMode === "auto-apply" && "active")}
+                            onClick={() => onChangeAgentPermissionMode("auto-apply")}
+                          >
+                            {isEn ? "Auto-apply" : "自动执行"}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
 
                   <section className="local-cli-group onboarding-settings-hyperframes-group-target" aria-labelledby="video-settings-title">
                     <span className="onboarding-floating-anchor onboarding-settings-hyperframes-anchor" aria-hidden="true" />
@@ -10671,7 +11636,7 @@ function CodexAuthorizationDialog({
                     </div>
                   </section>
 
-                  <section className="local-cli-group" aria-labelledby="mcp-runtime-group-title">
+                  <section className="local-cli-group" ref={mcpGroupRef} aria-labelledby="mcp-runtime-group-title">
                     <h2 className="local-cli-group-title" id="mcp-runtime-group-title">
                       <span>{t("settings.runtime.mcpGroup")}</span>
                     </h2>
@@ -12357,16 +13322,23 @@ function LocalCliCard({
   agent,
   codexStatus,
   selected,
+  enabledInPicker = true,
+  cannotDisableInPicker = false,
+  onTogglePickerEnabled,
   onSelect,
   interactive = true
 }: {
   agent: LocalCliAgent;
   codexStatus: CodexCliStatus;
   selected: boolean;
+  enabledInPicker?: boolean;
+  cannotDisableInPicker?: boolean;
+  onTogglePickerEnabled?: (nextEnabled: boolean) => void;
   onSelect?: () => void;
   interactive?: boolean;
 }) {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
+  const isEn = locale === "en";
   const isCodex = agent.id === "codex";
   const connectionState = isCodex ? codexStatus.state : agent.connectionState;
   const installedLabel = isCodex && codexStatus.path ? codexStatus.version || agent.version || t("common.installed") : agent.version || t("common.installed");
@@ -12375,19 +13347,37 @@ function LocalCliCard({
   const connectionLabel = localizeLocalCliConnectionLabel(agent, connectionState, selected, t);
   const normalizedId = normalizeBrandAgentId(agent.id);
   const cleanVersion = formatCleanCliVersion(installedLabel);
-  const selectable = interactive && agent.installed;
+  const hiddenInPicker = agent.installed && !enabledInPicker;
+  const selectable = interactive && agent.installed && enabledInPicker;
   const handleKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
     if (!selectable || !onSelect) return;
+    if (event.target !== event.currentTarget) return;
     if (event.key !== "Enter" && event.key !== " ") return;
     event.preventDefault();
     onSelect();
   };
 
+  const subtitleText = !agent.installed
+    ? t("common.notInstalled")
+    : hiddenInPicker
+      ? isEn
+        ? `Hidden · ${connectionLabel || installedLabel}`
+        : `已隐藏 · ${connectionLabel || installedLabel}`
+      : connectionLabel || installedLabel;
+
   return (
     <article
       aria-disabled={interactive && !agent.installed ? true : undefined}
-      className={cn("local-cli-card", `local-cli-card-${normalizedId}`, statusClass, authClass, !interactive && "readonly", interactive && !agent.installed && "disabled")}
-      role={interactive ? "button" : "group"}
+      className={cn(
+        "local-cli-card",
+        `local-cli-card-${normalizedId}`,
+        statusClass,
+        authClass,
+        hiddenInPicker && "hidden-in-picker",
+        !interactive && "readonly",
+        interactive && !agent.installed && "disabled"
+      )}
+      role={selectable ? "button" : "group"}
       tabIndex={selectable ? 0 : undefined}
       onClick={selectable ? onSelect : undefined}
       onKeyDown={handleKeyDown}
@@ -12400,12 +13390,49 @@ function LocalCliCard({
           <strong>{agent.name}</strong>
           {agent.installed && cleanVersion ? <span className="local-cli-version-pill">{cleanVersion}</span> : null}
         </span>
-        <small className="local-cli-status-text">
-          {agent.installed ? connectionLabel || installedLabel : t("common.notInstalled")}
-        </small>
+        <small className="local-cli-status-text">{subtitleText}</small>
       </span>
-      <span className="local-cli-status-end" aria-hidden="true">
-        <span className="local-cli-dot" />
+      <span className="local-cli-status-end">
+        {agent.installed && onTogglePickerEnabled ? (
+          <button
+            type="button"
+            role="switch"
+            aria-checked={enabledInPicker}
+            aria-label={
+              enabledInPicker
+                ? isEn
+                  ? `Hide ${agent.name} from model picker`
+                  : `从模型选择器中隐藏 ${agent.name}`
+                : isEn
+                  ? `Show ${agent.name} in model picker`
+                  : `在模型选择器中显示 ${agent.name}`
+            }
+            disabled={cannotDisableInPicker && enabledInPicker}
+            title={
+              cannotDisableInPicker && enabledInPicker
+                ? isEn
+                  ? "Keep at least one agent enabled in the picker"
+                  : "至少保留 1 个在模型选择器中显示的 Agent"
+                : enabledInPicker
+                  ? isEn
+                    ? "Shown in model picker (click to hide)"
+                    : "已在模型选择器中显示（点击隐藏）"
+                  : isEn
+                    ? "Hidden from model picker (click to show)"
+                    : "已从模型选择器隐藏（点击启用显示）"
+            }
+            className={cn("local-cli-switch", enabledInPicker && "checked")}
+            onClick={(event) => {
+              event.stopPropagation();
+              if (cannotDisableInPicker && enabledInPicker) return;
+              onTogglePickerEnabled(!enabledInPicker);
+            }}
+          >
+            <span className="local-cli-switch-thumb" aria-hidden="true" />
+          </button>
+        ) : (
+          <span className="local-cli-dot" aria-hidden="true" />
+        )}
       </span>
     </article>
   );
@@ -12668,9 +13695,182 @@ function ProjectDownloadControl({
   );
 }
 
+function WorkspaceProjectTitleWithCover({
+  projectName,
+  projectCoverUrl,
+  projectCoverRatio,
+  editable,
+  onUpdateCover,
+  onEditProject
+}: {
+  projectName: string;
+  projectCoverUrl: string | null;
+  projectCoverRatio: ProjectCoverRatio;
+  editable: boolean;
+  onUpdateCover: (patch: Omit<UpdateProjectCoverInput, "projectId" | "interfaceLanguage">) => Promise<void>;
+  onEditProject: () => void;
+}) {
+  const { t } = useI18n();
+  const [coverFailed, setCoverFailed] = useState(false);
+
+  useEffect(() => {
+    setCoverFailed(false);
+  }, [projectCoverUrl]);
+
+  const showBannerCover = Boolean(projectCoverUrl && !coverFailed);
+
+  return (
+    <div className={cn("project-title", showBannerCover && "has-cover-thumb")}>
+      {showBannerCover && projectCoverUrl ? (
+        <WorkspaceBannerCoverControl
+          coverUrl={projectCoverUrl}
+          coverRatio={projectCoverRatio}
+          editable={editable}
+          onUpdateCover={onUpdateCover}
+          onImageError={() => setCoverFailed(true)}
+        />
+      ) : null}
+      <h1 title={projectName}>{projectName}</h1>
+      <button className="project-title-edit-button" type="button" aria-label={t("workspace.editProject")} onClick={onEditProject}>
+        <Pencil aria-hidden="true" />
+      </button>
+    </div>
+  );
+}
+
+function WorkspaceBannerCoverControl({
+  coverUrl,
+  coverRatio,
+  editable,
+  onUpdateCover,
+  onImageError
+}: {
+  coverUrl: string;
+  coverRatio: ProjectCoverRatio;
+  editable: boolean;
+  onUpdateCover: (patch: Omit<UpdateProjectCoverInput, "projectId" | "interfaceLanguage">) => Promise<void>;
+  onImageError: () => void;
+}) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const resolvedRatio = normalizeProjectCoverRatio(coverRatio);
+
+  async function handleSelectRatio(nextRatio: ProjectCoverRatio) {
+    if (!editable || busy || nextRatio === resolvedRatio) return;
+    setBusy(true);
+    try {
+      await onUpdateCover({ coverImageRatio: nextRatio });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleReplaceCover() {
+    if (!editable || busy) return;
+    const picked = await window.mkboard.chooseProjectCoverFile();
+    if (!picked) return;
+    setBusy(true);
+    try {
+      await onUpdateCover({
+        coverImageSourcePath: picked.filePath ?? null,
+        coverImageDataUrl: picked.filePath ? null : picked.previewDataUrl,
+        coverImageRatio: picked.suggestedRatio
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleRemoveCover() {
+    if (!editable || busy) return;
+    setBusy(true);
+    try {
+      setOpen(false);
+      await onUpdateCover({ clearCoverImage: true });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Popover isOpen={open} onOpenChange={setOpen}>
+      <Popover.Trigger>
+        <button
+          type="button"
+          className={cn("workspace-banner-cover-trigger", open && "is-open")}
+          data-cover-ratio={resolvedRatio}
+          aria-label={t("workspace.coverPreview")}
+          title={`${t("workspace.coverPreview")} (${resolvedRatio})`}
+        >
+          <img
+            className="workspace-banner-cover-thumb"
+            src={coverUrl}
+            alt=""
+            onError={onImageError}
+          />
+        </button>
+      </Popover.Trigger>
+      <Popover.Content className="workspace-banner-cover-popover" isNonModal offset={8} placement="bottom start">
+        <Popover.Dialog>
+          <div className="workspace-banner-cover-card" aria-label={t("workspace.coverPreview")}>
+            <div className="workspace-banner-cover-stage">
+              {renderCustomCoverMedia(coverUrl, resolvedRatio, "dialog", onImageError)}
+            </div>
+            {editable ? (
+              <>
+                <div className="workspace-banner-cover-ratios" role="radiogroup" aria-label={t("project.coverRatio")}>
+                  {projectCoverRatioOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={resolvedRatio === option.value}
+                      disabled={busy}
+                      className={cn("project-cover-ratio-pill", resolvedRatio === option.value && "selected")}
+                      onClick={() => void handleSelectRatio(option.value)}
+                    >
+                      <AspectRatioIcon ratio={option.value} />
+                      <span>{option.label}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="workspace-banner-cover-actions">
+                  <button
+                    type="button"
+                    className="project-cover-mini-btn"
+                    disabled={busy}
+                    onClick={() => void handleReplaceCover()}
+                  >
+                    <Image aria-hidden="true" />
+                    <span>{t("project.coverChange")}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="project-cover-mini-btn is-danger"
+                    disabled={busy}
+                    onClick={() => void handleRemoveCover()}
+                  >
+                    <Trash2 aria-hidden="true" />
+                    <span>{t("project.coverRemove")}</span>
+                  </button>
+                </div>
+              </>
+            ) : null}
+          </div>
+        </Popover.Dialog>
+      </Popover.Content>
+    </Popover>
+  );
+}
+
 function WorkspaceScreen({
   projectId,
   projectName,
+  projectCoverUrl,
+  projectCoverRatio,
+  isTutorialProject = false,
+  onUpdateProjectCover,
   tab,
   setTab,
   agentConversations,
@@ -12767,6 +13967,10 @@ function WorkspaceScreen({
 }: {
   projectId: string;
   projectName: string;
+  projectCoverUrl: string | null;
+  projectCoverRatio: ProjectCoverRatio;
+  isTutorialProject?: boolean;
+  onUpdateProjectCover: (patch: Omit<UpdateProjectCoverInput, "projectId" | "interfaceLanguage">) => Promise<void>;
   tab: WorkspaceTab;
   setTab: (tab: WorkspaceTab) => void;
   agentConversations: AgentConversation[];
@@ -12791,7 +13995,7 @@ function WorkspaceScreen({
   onSelectAgentModel: (model: string) => void;
   onSelectAgentEffort: (effort: AgentEffortLevel) => void;
   onChangeAgentPermissionMode: (mode: AgentPermissionMode) => void;
-  onOpenRuntimeSettings: () => void;
+  onOpenRuntimeSettings: (focusTarget?: "mcp") => void;
   onConnectSelectedCli: () => void;
   onCreateAgentConversation: () => void;
   onOpenAgentConversation: (conversationId: string) => void;
@@ -12863,24 +14067,111 @@ function WorkspaceScreen({
 }) {
   const { t } = useI18n();
   const [presentationIndex, setPresentationIndex] = useState<number | null>(null);
-  const [lastPresentationFrameId, setLastPresentationFrameId] = useState<string | null>(null);
+  const [shotCursor, setShotCursor] = useState<{ frameId: string | null; shotIndex: number } | null>(() =>
+    readProjectShotCursor(projectId)
+  );
+  const shotCursorRef = useRef<{ frameId: string | null; shotIndex: number } | null>(shotCursor);
+  const pendingFollowCreatedRowsRef = useRef<{ projectId: string; beforeIds: Set<string> } | null>(null);
+  const restoredStoryboardVisitRef = useRef("");
   const [agentSidebarVisible, setAgentSidebarVisible] = useState(true);
   const [agentSidebarWidth, setAgentSidebarWidth] = useState(AGENT_SIDEBAR_DEFAULT_WIDTH);
   const shouldUseAgentSidebar = tab === "script" || tab === "storyboard" || tab === "assets";
   const isAgentSidebarCollapsed = shouldUseAgentSidebar && !agentSidebarVisible;
   const presentationFrames = useMemo(() => getPresentationFrames(rows, assets), [assets, rows]);
 
+  function rememberActiveShot(frameId: string | null, explicitIndex?: number) {
+    if (!projectId) return;
+    const rowMatchIndex = frameId ? rows.findIndex((row) => row.id === frameId) : -1;
+    const resolvedShotIndex =
+      rowMatchIndex >= 0
+        ? rowMatchIndex
+        : explicitIndex !== undefined
+          ? Math.max(0, explicitIndex)
+          : shotCursorRef.current?.shotIndex ?? 0;
+    const nextCursor = {
+      frameId,
+      shotIndex: Math.max(0, resolvedShotIndex)
+    };
+    const prev = shotCursorRef.current;
+    shotCursorRef.current = nextCursor;
+    writeProjectShotCursor(projectId, nextCursor);
+    if (!prev || prev.frameId !== nextCursor.frameId || prev.shotIndex !== nextCursor.shotIndex) {
+      setShotCursor(nextCursor);
+    }
+  }
+
+  function syncFocusedStoryboardRowIfAny() {
+    const focusedRowId = findDomFocusedStoryboardRowId();
+    if (focusedRowId) {
+      rememberActiveShot(focusedRowId);
+    }
+  }
+
   useEffect(() => {
     setPresentationIndex(null);
-    setLastPresentationFrameId(null);
+    const savedCursor = readProjectShotCursor(projectId);
+    shotCursorRef.current = savedCursor;
+    setShotCursor(savedCursor);
+    pendingFollowCreatedRowsRef.current = null;
+    restoredStoryboardVisitRef.current = "";
   }, [projectId]);
 
+  // Follow newly inserted / created / duplicated storyboard rows automatically so Present jumps to the new shot.
+  useEffect(() => {
+    const pending = pendingFollowCreatedRowsRef.current;
+    if (!pending || pending.projectId !== projectId || rows.length === 0) return;
+    const createdRowIndex = rows.findIndex((row) => !pending.beforeIds.has(row.id));
+    if (createdRowIndex >= 0) {
+      pendingFollowCreatedRowsRef.current = null;
+      rememberActiveShot(rows[createdRowIndex].id, createdRowIndex);
+    }
+  }, [projectId, rows]);
+
+  // Keep shotIndex synced when an existing anchored row shifts index due to reordering or insertion/deletion above it.
+  useEffect(() => {
+    const current = shotCursorRef.current;
+    if (!current?.frameId || rows.length === 0) return;
+    const movedIndex = rows.findIndex((row) => row.id === current.frameId);
+    if (movedIndex >= 0 && movedIndex !== current.shotIndex) {
+      rememberActiveShot(current.frameId, movedIndex);
+    }
+  }, [projectId, rows]);
+
+  // Restore scroll position to the remembered/active shot when entering the Storyboard tab for a project.
+  useEffect(() => {
+    if (tab !== "storyboard") {
+      restoredStoryboardVisitRef.current = "";
+      return;
+    }
+    if (!projectId || rows.length === 0) return;
+    const visitKey = `${projectId}:storyboard`;
+    if (restoredStoryboardVisitRef.current === visitKey) return;
+    restoredStoryboardVisitRef.current = visitKey;
+    const cursor = shotCursorRef.current;
+    if (!cursor) return;
+    const targetIndex = resolveShotCursorIndex(rows, cursor);
+    const targetRow = rows[targetIndex];
+    if (targetRow && targetIndex > 0) {
+      scrollNearestStoryboardRowsIntoView([targetRow.id], { behavior: "auto", onlyIfOffscreen: true });
+    }
+  }, [projectId, rows, tab]);
+
+  const resolvedTargetPresentationIndex = useMemo(
+    () => resolveShotCursorIndex(presentationFrames, shotCursor),
+    [presentationFrames, shotCursor]
+  );
+  const targetPresentationFrame =
+    presentationFrames.length > 0 ? presentationFrames[resolvedTargetPresentationIndex] ?? null : null;
+  const activeStoryboardRowId = shotCursor && targetPresentationFrame ? targetPresentationFrame.id : null;
+
   function openPresentation() {
-    const nextIndex = lastPresentationFrameId ? presentationFrames.findIndex((frame) => frame.id === lastPresentationFrameId) : -1;
-    const resolvedIndex = nextIndex >= 0 ? nextIndex : 0;
+    syncFocusedStoryboardRowIfAny();
+    const resolvedIndex = resolveShotCursorIndex(presentationFrames, shotCursorRef.current);
     setPresentationIndex(resolvedIndex);
     const nextFrame = presentationFrames[resolvedIndex];
-    if (nextFrame) setLastPresentationFrameId(nextFrame.id);
+    if (nextFrame) {
+      rememberActiveShot(nextFrame.id, resolvedIndex);
+    }
     onPresentationOpenChange(true);
   }
 
@@ -12893,20 +14184,29 @@ function WorkspaceScreen({
     setPresentationIndex(nextIndex);
     if (nextIndex === null) return;
 
-    const nextFrame = presentationFrames[nextIndex];
-    if (nextFrame) setLastPresentationFrameId(nextFrame.id);
+    const safeNextIndex =
+      presentationFrames.length > 0 ? Math.min(Math.max(nextIndex, 0), presentationFrames.length - 1) : 0;
+    const nextFrame = presentationFrames[safeNextIndex];
+    if (nextFrame) {
+      rememberActiveShot(nextFrame.id, safeNextIndex);
+    }
   }
 
   function closePresentation() {
-    const currentFrameId =
+    const safeClosingIndex =
       presentationIndex !== null && presentationFrames.length > 0
-        ? presentationFrames[Math.min(Math.max(presentationIndex, 0), presentationFrames.length - 1)]?.id
-        : lastPresentationFrameId;
+        ? Math.min(Math.max(presentationIndex, 0), presentationFrames.length - 1)
+        : resolveShotCursorIndex(presentationFrames, shotCursorRef.current);
+    const currentFrame = presentationFrames[safeClosingIndex] ?? null;
 
-    updatePresentationIndex(null);
+    setPresentationIndex(null);
     onPresentationOpenChange(false);
-    if (currentFrameId) setLastPresentationFrameId(currentFrameId);
-    if (tab === "storyboard" && currentFrameId) scrollNearestStoryboardRowsIntoView([currentFrameId]);
+    if (currentFrame) {
+      rememberActiveShot(currentFrame.id, safeClosingIndex);
+      if (tab === "storyboard") {
+        scrollNearestStoryboardRowsIntoView([currentFrame.id], { behavior: "smooth", onlyIfOffscreen: true });
+      }
+    }
   }
 
   function startAgentSidebarResize(event: React.PointerEvent<HTMLButtonElement>) {
@@ -12948,19 +14248,36 @@ function WorkspaceScreen({
           <button className="workspace-back-button" type="button" aria-label={t("workspace.backToProjects")} onClick={onBackToProjects}>
             <ArrowLeft aria-hidden="true" />
           </button>
-          <div className="project-title">
-            <h1>{projectName}</h1>
-            <button className="project-title-edit-button" type="button" aria-label={t("workspace.editProject")} onClick={onEditProject}>
-              <Pencil aria-hidden="true" />
-            </button>
-          </div>
+          <WorkspaceProjectTitleWithCover
+            projectName={projectName}
+            projectCoverUrl={projectCoverUrl}
+            projectCoverRatio={projectCoverRatio}
+            editable={!isTutorialProject}
+            onUpdateCover={onUpdateProjectCover}
+            onEditProject={onEditProject}
+          />
         </div>
         <WorkspaceTabs value={tab} onChange={setTab} />
         <div className="workspace-header-actions">
-          <button className="workspace-demo-trigger" type="button" aria-label={t("workspace.demoProject")} onClick={openPresentation}>
+          <button
+            className="workspace-demo-trigger"
+            type="button"
+            aria-label={t("workspace.demoProject")}
+            title={
+              shotCursor && targetPresentationFrame
+                ? `${t("workspace.demo")} · ${t("presentation.shotTitle", { shot: targetPresentationFrame.shot })}`
+                : t("workspace.demoProject")
+            }
+            onPointerDown={syncFocusedStoryboardRowIfAny}
+            onClick={openPresentation}
+          >
             <Monitor aria-hidden="true" />
-            {t("workspace.demo")}
-            <ChevronDown aria-hidden="true" />
+            <span>{t("workspace.demo")}</span>
+            {shotCursor && targetPresentationFrame ? (
+              <span className="workspace-demo-shot-badge">#{targetPresentationFrame.shot}</span>
+            ) : (
+              <ChevronDown aria-hidden="true" />
+            )}
           </button>
           <ProjectDownloadControl assets={assets} onOpenSettings={onOpenSettings} projectId={projectId} rows={rows} />
         </div>
@@ -12983,11 +14300,13 @@ function WorkspaceScreen({
           ) : null}
           {tab === "storyboard" ? (
             <StoryboardPanel
+              activeRowId={activeStoryboardRowId}
               assets={assets}
               columns={columns}
               imageRatio={imageRatio}
               projectId={projectId}
               rows={rows}
+              onActivateRow={(rowId) => rememberActiveShot(rowId)}
               skills={skills}
               skillsError={skillsError}
             skillsLoading={skillsLoading}
@@ -13002,9 +14321,15 @@ function WorkspaceScreen({
             storyboardVideoGeneratingRowIds={storyboardVideoGeneratingRowIds}
             storyboardImageGenerationTasks={storyboardImageGenerationTasks}
             storyboardVideoGenerationTasks={storyboardVideoGenerationTasks}
-              onCreateStoryboards={onCreateStoryboards}
+              onCreateStoryboards={async (count) => {
+                pendingFollowCreatedRowsRef.current = { projectId, beforeIds: new Set(rows.map((row) => row.id)) };
+                await onCreateStoryboards(count);
+              }}
               onDeleteStoryboards={onDeleteStoryboards}
-              onDuplicateStoryboards={onDuplicateStoryboards}
+              onDuplicateStoryboards={async (rowIds) => {
+                pendingFollowCreatedRowsRef.current = { projectId, beforeIds: new Set(rows.map((row) => row.id)) };
+                await onDuplicateStoryboards(rowIds);
+              }}
               onGenerateStoryboardImages={(mode) => {
                 setAgentSidebarVisible(true);
                 onGenerateStoryboardImages(mode);
@@ -13036,15 +14361,37 @@ function WorkspaceScreen({
               onStoryboardSkillChange={onStoryboardSkillChange}
               onLoadTastes={onLoadTastes}
               onProjectTasteChange={onProjectTasteChange}
-              onImportClipboardImageAsShotMedia={onImportClipboardImageAsShotMedia}
-              onImportShotMediaPaths={onImportShotMediaPaths}
-              onInsertStoryboard={onInsertStoryboard}
-              onChooseShotMedia={onChooseShotMedia}
+              onImportClipboardImageAsShotMedia={(rowId) => {
+                rememberActiveShot(rowId);
+                onImportClipboardImageAsShotMedia(rowId);
+              }}
+              onImportShotMediaPaths={(rowId, filePaths) => {
+                rememberActiveShot(rowId);
+                onImportShotMediaPaths(rowId, filePaths);
+              }}
+              onInsertStoryboard={async (rowId, placement) => {
+                rememberActiveShot(rowId);
+                pendingFollowCreatedRowsRef.current = { projectId, beforeIds: new Set(rows.map((row) => row.id)) };
+                await onInsertStoryboard(rowId, placement);
+              }}
+              onChooseShotMedia={(rowId) => {
+                rememberActiveShot(rowId);
+                onChooseShotMedia(rowId);
+              }}
               suppressEmptyGenerateAction={suppressStoryboardEmptyGenerateAction}
-              onReorderRows={onReorderRows}
+              onReorderRows={(sourceRowId, targetRowId) => {
+                rememberActiveShot(sourceRowId);
+                onReorderRows(sourceRowId, targetRowId);
+              }}
               onSaveColumns={onSaveColumns}
-              onUpdateCell={onUpdateCell}
-              onUpdateShotMedia={onUpdateShotMedia}
+              onUpdateCell={(rowId, field, value) => {
+                rememberActiveShot(rowId);
+                return onUpdateCell(rowId, field, value);
+              }}
+              onUpdateShotMedia={(rowId, assetIds) => {
+                rememberActiveShot(rowId);
+                onUpdateShotMedia(rowId, assetIds);
+              }}
             />
           ) : null}
           {tab === "assets" ? (
@@ -13317,6 +14664,7 @@ function ScriptPanel({
 }
 
 function StoryboardPanel({
+  activeRowId,
   assets,
   columns,
   rows,
@@ -13359,9 +14707,11 @@ function StoryboardPanel({
   suppressEmptyGenerateAction,
   onReorderRows,
   onSaveColumns,
+  onActivateRow,
   onUpdateCell,
   onUpdateShotMedia
 }: {
+  activeRowId: string | null;
   assets: ProjectAsset[];
   columns: StoryboardColumn[];
   rows: StoryboardRow[];
@@ -13404,6 +14754,7 @@ function StoryboardPanel({
   suppressEmptyGenerateAction: boolean;
   onReorderRows: (sourceRowId: string, targetRowId: string) => void;
   onSaveColumns: (columns: StoryboardColumn[]) => void;
+  onActivateRow: (rowId: string) => void;
   onUpdateCell: UpdateStoryboardCellHandler;
   onUpdateShotMedia: (rowId: string, assetIds: string[]) => void;
 }) {
@@ -13785,7 +15136,15 @@ function StoryboardPanel({
 
   function toggleRowSelection(rowId: string) {
     if (storyboardParsing) return;
-    setSelectedRowIds((currentIds) => (currentIds.includes(rowId) ? currentIds.filter((id) => id !== rowId) : [...currentIds, rowId]));
+    setSelectedRowIds((currentIds) => {
+      const nextIds = currentIds.includes(rowId) ? currentIds.filter((id) => id !== rowId) : [...currentIds, rowId];
+      if (nextIds.includes(rowId)) {
+        onActivateRow(rowId);
+      } else if (nextIds.length > 0) {
+        onActivateRow(nextIds[nextIds.length - 1]);
+      }
+      return nextIds;
+    });
   }
 
   function selectEmptyImageRows() {
@@ -14334,6 +15693,7 @@ function StoryboardPanel({
             ) : (
               <StoryboardTable
                 activeColumnMenuId={activeColumnMenuId}
+                activeRowId={activeRowId}
                 assets={assets}
                 columnDraftTitle={columnDraftTitle}
                 columnDraftType={columnDraftType}
@@ -14384,6 +15744,7 @@ function StoryboardPanel({
                 onSaveColumnEdit={saveColumnEdit}
                 onStartEditingColumn={startEditingColumn}
                 onToggleAllRows={toggleAllRows}
+                onActivateRow={onActivateRow}
                 onToggleRowSelection={toggleRowSelection}
                 onUpdateCell={onUpdateCell}
                 onUpdateShotMedia={onUpdateShotMedia}
@@ -14545,15 +15906,10 @@ function StoryboardAssetDrawer({
                 >
                   <span className="storyboard-asset-picker-media">
                     {asset.kind === "video" ? (
-                      <video
+                      <StaticVideoPosterThumb
                         src={asset.previewUrl}
-                        poster={asset.posterUrl ?? undefined}
-                        muted
-                        playsInline
-                        preload="metadata"
-                        onLoadedMetadata={(event) =>
-                          updateAssetDurationLabel(asset.id, event.currentTarget.duration, event.currentTarget.videoWidth, event.currentTarget.videoHeight)
-                        }
+                        poster={asset.posterUrl}
+                        onMetadata={(meta) => updateAssetDurationLabel(asset.id, meta.duration, meta.videoWidth, meta.videoHeight)}
                       />
                     ) : (
                       <img
@@ -14677,15 +16033,10 @@ function StoryboardPromptAssetDrawer({
                 >
                   <span className="storyboard-asset-picker-media">
                     {kind === "video" ? (
-                      <video
+                      <StaticVideoPosterThumb
                         src={asset.previewUrl}
-                        poster={asset.posterUrl ?? undefined}
-                        muted
-                        playsInline
-                        preload="metadata"
-                        onLoadedMetadata={(event) =>
-                          updateAssetDurationLabel(asset.id, event.currentTarget.duration, event.currentTarget.videoWidth, event.currentTarget.videoHeight)
-                        }
+                        poster={asset.posterUrl}
+                        onMetadata={(meta) => updateAssetDurationLabel(asset.id, meta.duration, meta.videoWidth, meta.videoHeight)}
                       />
                     ) : (
                       <img
@@ -14990,6 +16341,7 @@ function ColumnSettingRow({
 
 function StoryboardTable({
   activeColumnMenuId,
+  activeRowId,
   assets,
   columnDraftTitle,
   columnDraftType,
@@ -15040,11 +16392,13 @@ function StoryboardTable({
   onSaveColumnEdit,
   onStartEditingColumn,
   onToggleAllRows,
+  onActivateRow,
   onToggleRowSelection,
   onUpdateCell,
   onUpdateShotMedia
 }: {
   activeColumnMenuId: StoryboardColumnId | null;
+  activeRowId: string | null;
   assets: ProjectAsset[];
   columnDraftTitle: string;
   columnDraftType: StoryboardColumnType;
@@ -15095,6 +16449,7 @@ function StoryboardTable({
   onSaveColumnEdit: (columnId: StoryboardColumnId) => void;
   onStartEditingColumn: (column: StoryboardColumn) => void;
   onToggleAllRows: () => void;
+  onActivateRow: (rowId: string) => void;
   onToggleRowSelection: (rowId: string) => void;
   onUpdateCell: UpdateStoryboardCellHandler;
   onUpdateShotMedia: (rowId: string, assetIds: string[]) => void;
@@ -15246,8 +16601,12 @@ function StoryboardTable({
                 className={cn("storyboard-row", index % 2 === 1 && "soft", draggingRowId === row.id && "dragging", selectionVisible && "selection-visible", rowSelected && "selected")}
                 role="row"
                 data-storyboard-row-id={row.id}
+                data-active-shot={activeRowId === row.id ? "true" : undefined}
                 key={row.id}
                 aria-describedby={dragDescriptionId}
+                onPointerDownCapture={() => onActivateRow(row.id)}
+                onFocusCapture={() => onActivateRow(row.id)}
+                onInputCapture={() => onActivateRow(row.id)}
                 onDragOver={(event) => {
                   if (readOnly) return;
                   event.preventDefault();
@@ -16556,15 +17915,11 @@ function StoryboardPromptCell({
             onClick={() => setPreviewIndex(assetPreviewIndex >= 0 ? assetPreviewIndex : 0)}
           >
             {asset.kind === "video" ? (
-              <video
+              <StaticVideoPosterThumb
                 src={asset.previewUrl}
-                poster={asset.posterUrl ?? undefined}
-                muted
-                playsInline
-                preload="metadata"
-                onLoadedMetadata={(event) =>
-                  updateAssetDurationLabel(asset.id, event.currentTarget.duration, event.currentTarget.videoWidth, event.currentTarget.videoHeight)
-                }
+                poster={asset.posterUrl}
+                alt={asset.name}
+                onMetadata={(meta) => updateAssetDurationLabel(asset.id, meta.duration, meta.videoWidth, meta.videoHeight)}
               />
             ) : (
               <img
@@ -17071,16 +18426,12 @@ function StoryboardImageCell({
               >
                 {asset.kind === "video" ? (
                   <>
-                    <video
+                    <StaticVideoPosterThumb
                       src={asset.previewUrl}
-                      poster={asset.posterUrl ?? undefined}
-                      muted
-                      playsInline
-                      preload="metadata"
+                      poster={asset.posterUrl}
+                      alt={asset.name}
                       draggable={false}
-                      onLoadedMetadata={(event) =>
-                        updateAssetDurationLabel(asset.id, event.currentTarget.duration, event.currentTarget.videoWidth, event.currentTarget.videoHeight)
-                      }
+                      onMetadata={(meta) => updateAssetDurationLabel(asset.id, meta.duration, meta.videoWidth, meta.videoHeight)}
                     />
                     <span className="storyboard-media-play" aria-hidden="true">
                       <Play />
@@ -17210,6 +18561,23 @@ function StoryboardMediaPreviewDialog({
   const isOpen = currentIndex !== null && currentIndex >= 0 && currentIndex < assets.length;
   const currentAsset = isOpen ? assets[currentIndex] : null;
   const hasMultipleAssets = assets.length > 1;
+  const stageVideoAssets = useMemo(() => {
+    if (!isOpen || currentIndex === null || assets.length === 0) return [];
+    const candidateIndices = new Set<number>([currentIndex]);
+    if (hasMultipleAssets) {
+      candidateIndices.add((currentIndex + 1) % assets.length);
+      candidateIndices.add((currentIndex - 1 + assets.length) % assets.length);
+    }
+    const seenIds = new Set<string>();
+    return Array.from(candidateIndices)
+      .sort((a, b) => a - b)
+      .map((index) => assets[index])
+      .filter((asset): asset is ProjectAsset => {
+        if (!asset || asset.kind !== "video" || seenIds.has(asset.id)) return false;
+        seenIds.add(asset.id);
+        return true;
+      });
+  }, [assets, currentIndex, hasMultipleAssets, isOpen]);
 
   function showPrevious() {
     if (currentIndex === null || assets.length === 0) return;
@@ -17288,11 +18656,21 @@ function StoryboardMediaPreviewDialog({
             </button>
           ) : null}
           <div className={cn("storyboard-media-preview-frame", currentAsset.kind === "video" && "video-frame")}>
-            {currentAsset.kind === "video" ? (
-              <video src={currentAsset.previewUrl} poster={currentAsset.posterUrl ?? undefined} controls playsInline preload="metadata" />
-            ) : (
+            {stageVideoAssets.map((videoAsset) => {
+              const isCurrentVideo = currentAsset.kind === "video" && currentAsset.id === videoAsset.id;
+              return (
+                <StageControlsVideo
+                  key={videoAsset.id}
+                  prewarm={!isCurrentVideo}
+                  src={videoAsset.previewUrl}
+                  preload="auto"
+                  autoPlay={isCurrentVideo}
+                />
+              );
+            })}
+            {currentAsset.kind !== "video" ? (
               <img src={currentAsset.previewUrl} alt={currentAsset.name} onContextMenu={(event) => void openCurrentImageContextMenu(event)} />
-            )}
+            ) : null}
           </div>
           {hasMultipleAssets ? (
             <button className="storyboard-media-preview-nav next" type="button" aria-label={t("storyboard.nextMedia")} onClick={showNext}>
@@ -17311,7 +18689,7 @@ function StoryboardMediaPreviewDialog({
                 key={asset.id}
                 onClick={() => onIndexChange(assetIndex)}
               >
-                {asset.kind === "video" ? <video src={asset.previewUrl} poster={asset.posterUrl ?? undefined} muted playsInline preload="metadata" /> : <img src={asset.previewUrl} alt="" loading="lazy" />}
+                {asset.kind === "video" ? <StaticVideoPosterThumb src={asset.previewUrl} poster={asset.posterUrl} /> : <img src={asset.previewUrl} alt="" loading="lazy" />}
               </button>
             ))}
           </footer>
@@ -17347,10 +18725,26 @@ function StoryboardPresentationDialog({
   const dialogRef = useRef<HTMLElement | null>(null);
   const stageVideoRef = useRef<HTMLVideoElement | null>(null);
   const [stageSize, setStageSize] = useState({ width: 0, height: 0 });
-  const { speechState, speechError, speak, stopSpeech, setSpeechPlaybackRate } = useElevenLabsSpeaker();
+  const {
+    speechState,
+    speechError,
+    speak,
+    pauseSpeech,
+    stopSpeech,
+    seekSpeech,
+    getPausedSpeechOffset,
+    hasPreparedSpeech,
+    setSpeechPlaybackRate
+  } = useElevenLabsSpeaker();
   const [isAutoPlaying, setIsAutoPlaying] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(readStoredPresentationPlaybackRate);
   const autoPlayRunRef = useRef(0);
+  const resumeCurrentShotOnAutoPlayRef = useRef(false);
+  const userSeekedVideoRef = useRef(false);
+  const programmaticPlayPendingRef = useRef(0);
+  const programmaticPausePendingRef = useRef(0);
+  const programmaticSeekPendingRef = useRef(0);
+  const scrubAutoPlayRecoveryRef = useRef<{ wasAutoPlaying: boolean; seeked: boolean; pausedAt: number } | null>(null);
 
   function cyclePlaybackRate() {
     const currentIndex = presentationPlaybackRates.indexOf(playbackRate as (typeof presentationPlaybackRates)[number]);
@@ -17363,49 +18757,105 @@ function StoryboardPresentationDialog({
     }
   }
 
-  function startStageVideoForAutoPlay(muted: boolean) {
+  function isStageVideoAtEnd(video: HTMLVideoElement | null): boolean {
+    if (!video) return false;
+    if (video.ended) return true;
+    return Number.isFinite(video.duration) && video.duration > 0 && video.currentTime >= video.duration - 0.08;
+  }
+
+  function startOrResumeStageVideo(options: { muted: boolean; resetToStart?: boolean }) {
     const video = stageVideoRef.current;
     if (!video) return;
-    try {
-      video.currentTime = 0;
-    } catch {
-      // Seeking can fail before metadata loads; playback still starts from the beginning.
+    if (options.resetToStart || isStageVideoAtEnd(video)) {
+      if (video.currentTime > 0.01) {
+        programmaticSeekPendingRef.current += 1;
+        try {
+          video.currentTime = 0;
+        } catch {
+          programmaticSeekPendingRef.current = Math.max(0, programmaticSeekPendingRef.current - 1);
+        }
+      }
     }
-    video.muted = muted;
+    video.muted = options.muted;
     video.playbackRate = playbackRate;
-    void video.play().catch(() => {});
-  }
-
-  function pauseStageVideo() {
-    const video = stageVideoRef.current;
-    if (!video) return;
-    try {
-      video.pause();
-      video.muted = false;
-    } catch {
-      // A detached video element can throw on pause; nothing to restore then.
+    if (video.paused) {
+      programmaticPlayPendingRef.current += 1;
+      void video.play().catch(() => {
+        programmaticPlayPendingRef.current = Math.max(0, programmaticPlayPendingRef.current - 1);
+      });
     }
   }
 
-  function waitForStageVideoToEnd(): Promise<void> {
+  function pauseStageVideo(options: { keepMuted?: boolean } = {}) {
+    const video = stageVideoRef.current;
+    if (!video) return;
+    try {
+      if (!video.paused) {
+        programmaticPausePendingRef.current += 1;
+        video.pause();
+      }
+      if (!options.keepMuted) {
+        video.muted = false;
+      }
+    } catch {
+      programmaticPausePendingRef.current = 0;
+    }
+  }
+
+  function waitForStageVideoToEnd(): Promise<{ completed: boolean }> {
     const video = stageVideoRef.current;
     if (!video) {
       return new Promise((resolveDelay) => {
-        window.setTimeout(resolveDelay, PRESENTATION_AUTO_PLAY_FALLBACK_MS);
+        window.setTimeout(() => resolveDelay({ completed: true }), PRESENTATION_AUTO_PLAY_FALLBACK_MS);
       });
     }
-    if (video.ended) return Promise.resolve();
+    if (video.ended) return Promise.resolve({ completed: true });
     return new Promise((resolvePlayback) => {
-      const finish = () => resolvePlayback();
-      video.addEventListener("ended", finish, { once: true });
-      video.addEventListener("error", finish, { once: true });
+      let settled = false;
+      const cleanup = () => {
+        video.removeEventListener("ended", onEnded);
+        video.removeEventListener("error", onError);
+        video.removeEventListener("pause", onPause);
+      };
+      const finish = (completed: boolean) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        resolvePlayback({ completed });
+      };
+      const onEnded = () => finish(true);
+      const onError = () => finish(true);
+      const onPause = () => {
+        if (video.ended || isStageVideoAtEnd(video)) {
+          finish(true);
+          return;
+        }
+        if (video.seeking) return;
+        finish(false);
+      };
+      video.addEventListener("ended", onEnded);
+      video.addEventListener("error", onError);
+      video.addEventListener("pause", onPause);
     });
   }
+
   const isOpen = currentIndex !== null;
   const hasFrames = frames.length > 0;
   const safeIndex = hasFrames && currentIndex !== null ? Math.min(currentIndex, frames.length - 1) : 0;
   const currentFrame = hasFrames ? frames[safeIndex] : null;
   const hasMultipleFrames = frames.length > 1;
+  const stageVideoFrames = useMemo(() => {
+    if (!isOpen || !hasFrames) return [];
+    const candidateIndices = new Set<number>([safeIndex]);
+    if (hasMultipleFrames) {
+      candidateIndices.add((safeIndex + 1) % frames.length);
+      candidateIndices.add((safeIndex - 1 + frames.length) % frames.length);
+    }
+    return Array.from(candidateIndices)
+      .sort((a, b) => a - b)
+      .map((frameIndex) => frames[frameIndex])
+      .filter((frame): frame is PresentationFrame & { asset: ProjectAsset } => Boolean(frame && frame.asset?.kind === "video"));
+  }, [frames, hasFrames, hasMultipleFrames, isOpen, safeIndex]);
   const presentationFrameSize = fitPresentationFrame(stageSize, imageRatio);
   const presentationFrameStyle = presentationFrameSize
     ? ({
@@ -17414,37 +18864,100 @@ function StoryboardPresentationDialog({
       } satisfies React.CSSProperties)
     : undefined;
 
+  function resolveCurrentShotSpeechOffset(frame: PresentationFrame): number {
+    const video = stageVideoRef.current;
+    const pausedSpeechOffset =
+      speechVoiceId && frame.speechText ? getPausedSpeechOffset(speechVoiceId, frame.speechText) : null;
+    if (video && userSeekedVideoRef.current && !isStageVideoAtEnd(video)) {
+      return Math.max(0, video.currentTime);
+    }
+    if (pausedSpeechOffset !== null) {
+      return pausedSpeechOffset;
+    }
+    if (video && !isStageVideoAtEnd(video) && video.currentTime > 0.05) {
+      return Math.max(0, video.currentTime);
+    }
+    return 0;
+  }
+
   function showPrevious() {
     if (!hasMultipleFrames) return;
-    if (!isAutoPlaying) stopSpeech();
+    resumeCurrentShotOnAutoPlayRef.current = false;
+    stopSpeech();
     onIndexChange((safeIndex - 1 + frames.length) % frames.length);
   }
 
   function showNext() {
     if (!hasMultipleFrames) return;
-    if (!isAutoPlaying) stopSpeech();
+    resumeCurrentShotOnAutoPlayRef.current = false;
+    stopSpeech();
     onIndexChange((safeIndex + 1) % frames.length);
   }
 
-  function stopAutoPlay() {
+  function pausePlaybackInPlace() {
+    autoPlayRunRef.current += 1;
+    resumeCurrentShotOnAutoPlayRef.current = false;
     setIsAutoPlaying(false);
-    stopSpeech();
+    pauseSpeech();
     pauseStageVideo();
   }
 
   function toggleAutoPlay() {
     if (isAutoPlaying) {
-      stopAutoPlay();
+      pausePlaybackInPlace();
       return;
     }
     if (!hasFrames) return;
-    stopSpeech();
+    pauseSpeech();
+    resumeCurrentShotOnAutoPlayRef.current = true;
     setIsAutoPlaying(true);
+  }
+
+  function playCurrentShotWithNarration(frame: PresentationFrame) {
+    if (!speechVoiceId || !frame.speechText) {
+      if (frame.asset?.kind === "video") {
+        startOrResumeStageVideo({ muted: false, resetToStart: false });
+      }
+      return;
+    }
+    const frameHasVideo = frame.asset?.kind === "video";
+    const startOffset = resolveCurrentShotSpeechOffset(frame);
+    const shouldResetVideo = frameHasVideo && isStageVideoAtEnd(stageVideoRef.current) && startOffset === 0;
+    userSeekedVideoRef.current = false;
+
+    let loadingHoldTimer = 0;
+    if (frameHasVideo && !hasPreparedSpeech(speechVoiceId, frame.speechText)) {
+      loadingHoldTimer = window.setTimeout(() => {
+        loadingHoldTimer = 0;
+        pauseStageVideo({ keepMuted: true });
+      }, 120);
+    }
+
+    void speak(speechVoiceId, frame.speechText, {
+      startOffsetSeconds: startOffset,
+      onPlaybackStart: () => {
+        if (loadingHoldTimer) {
+          window.clearTimeout(loadingHoldTimer);
+          loadingHoldTimer = 0;
+        }
+        if (frameHasVideo) {
+          startOrResumeStageVideo({ muted: true, resetToStart: shouldResetVideo });
+        }
+      }
+    }).then((result) => {
+      if (loadingHoldTimer) {
+        window.clearTimeout(loadingHoldTimer);
+        loadingHoldTimer = 0;
+      }
+      if (result.errorCode && frameHasVideo) {
+        startOrResumeStageVideo({ muted: false, resetToStart: false });
+      }
+    });
   }
 
   function toggleFrameSpeech() {
     if (speechState !== "idle" || isAutoPlaying) {
-      stopAutoPlay();
+      pausePlaybackInPlace();
       return;
     }
     if (!speechVoiceId) {
@@ -17452,8 +18965,73 @@ function StoryboardPresentationDialog({
       onOpenVoiceSettings();
       return;
     }
-    if (!currentFrame?.speechText) return;
-    void speak(speechVoiceId, currentFrame.speechText);
+    if (!currentFrame) return;
+    if (!currentFrame.speechText) {
+      if (currentFrame.asset?.kind === "video") {
+        startOrResumeStageVideo({ muted: false, resetToStart: false });
+      }
+      return;
+    }
+    playCurrentShotWithNarration(currentFrame);
+  }
+
+  function handleStageVideoPlay(video: HTMLVideoElement) {
+    if (programmaticPlayPendingRef.current > 0) {
+      programmaticPlayPendingRef.current -= 1;
+      return;
+    }
+    video.playbackRate = playbackRate;
+    const recovery = scrubAutoPlayRecoveryRef.current;
+    scrubAutoPlayRecoveryRef.current = null;
+    if (recovery?.wasAutoPlaying && recovery.seeked && Date.now() - recovery.pausedAt < 4000) {
+      resumeCurrentShotOnAutoPlayRef.current = true;
+      setIsAutoPlaying(true);
+      return;
+    }
+    if (!currentFrame || isAutoPlaying) return;
+    if (speechVoiceId && currentFrame.speechText && speechState === "idle") {
+      video.muted = true;
+      playCurrentShotWithNarration(currentFrame);
+    }
+  }
+
+  function handleStageVideoPause(video: HTMLVideoElement) {
+    if (programmaticPausePendingRef.current > 0) {
+      programmaticPausePendingRef.current -= 1;
+      return;
+    }
+    if (video.ended || isStageVideoAtEnd(video)) return;
+    scrubAutoPlayRecoveryRef.current = {
+      wasAutoPlaying: isAutoPlaying,
+      seeked: video.seeking,
+      pausedAt: Date.now()
+    };
+    if (isAutoPlaying) {
+      autoPlayRunRef.current += 1;
+      resumeCurrentShotOnAutoPlayRef.current = false;
+      setIsAutoPlaying(false);
+    }
+    if (speechState !== "idle") {
+      pauseSpeech();
+    }
+  }
+
+  function handleStageVideoSeeked(video: HTMLVideoElement) {
+    if (programmaticSeekPendingRef.current > 0) {
+      programmaticSeekPendingRef.current -= 1;
+      return;
+    }
+    userSeekedVideoRef.current = true;
+    if (scrubAutoPlayRecoveryRef.current) {
+      scrubAutoPlayRecoveryRef.current.seeked = true;
+      scrubAutoPlayRecoveryRef.current.pausedAt = Date.now();
+    }
+    if (!currentFrame || !speechVoiceId || !currentFrame.speechText) return;
+    const seekedLive = seekSpeech(speechVoiceId, currentFrame.speechText, video.currentTime);
+    if (!seekedLive && !video.paused && speechState === "idle" && !isAutoPlaying && !isStageVideoAtEnd(video)) {
+      video.muted = true;
+      playCurrentShotWithNarration(currentFrame);
+    }
   }
 
   useEffect(() => {
@@ -17462,10 +19040,30 @@ function StoryboardPresentationDialog({
       return;
     }
     autoPlayRunRef.current += 1;
+    resumeCurrentShotOnAutoPlayRef.current = false;
+    userSeekedVideoRef.current = false;
+    scrubAutoPlayRecoveryRef.current = null;
+    programmaticPlayPendingRef.current = 0;
+    programmaticPausePendingRef.current = 0;
+    programmaticSeekPendingRef.current = 0;
     setIsAutoPlaying(false);
     stopSpeech();
     pauseStageVideo();
   }, [isOpen]);
+
+  // Reset shot-scoped flags and auto-play the stage video when entering/switching shots in preview mode.
+  useEffect(() => {
+    programmaticPlayPendingRef.current = 0;
+    programmaticPausePendingRef.current = 0;
+    programmaticSeekPendingRef.current = 0;
+    userSeekedVideoRef.current = false;
+    scrubAutoPlayRecoveryRef.current = null;
+    if (!isOpen || !currentFrame) return;
+    if (isAutoPlaying) return;
+    if (currentFrame.asset?.kind === "video") {
+      startOrResumeStageVideo({ muted: false, resetToStart: true });
+    }
+  }, [currentFrame?.id, isOpen]);
 
   useEffect(() => {
     setSpeechPlaybackRate(playbackRate);
@@ -17478,6 +19076,8 @@ function StoryboardPresentationDialog({
     const runId = ++autoPlayRunRef.current;
     let cancelled = false;
     let fallbackTimer = 0;
+    const resumeCurrentShot = resumeCurrentShotOnAutoPlayRef.current;
+    resumeCurrentShotOnAutoPlayRef.current = false;
 
     async function playCurrentFrame() {
       const frame = currentFrame;
@@ -17491,18 +19091,47 @@ function StoryboardPresentationDialog({
       }
       const frameHasVideo = frame.asset?.kind === "video";
       if (frame.speechText && speechVoiceId) {
-        // Narration leads; a video frame plays muted underneath it.
-        if (frameHasVideo) startStageVideoForAutoPlay(true);
-        const result = await speak(speechVoiceId, frame.speechText);
+        const startOffset = resumeCurrentShot ? resolveCurrentShotSpeechOffset(frame) : 0;
+        const resetVideo = !resumeCurrentShot || (isStageVideoAtEnd(stageVideoRef.current) && startOffset === 0);
+        userSeekedVideoRef.current = false;
+        let loadingHoldTimer = 0;
+        if (frameHasVideo && !hasPreparedSpeech(speechVoiceId, frame.speechText)) {
+          loadingHoldTimer = window.setTimeout(() => {
+            loadingHoldTimer = 0;
+            if (!cancelled && autoPlayRunRef.current === runId) {
+              pauseStageVideo({ keepMuted: true });
+            }
+          }, 120);
+        }
+        const result = await speak(speechVoiceId, frame.speechText, {
+          startOffsetSeconds: startOffset,
+          onPlaybackStart: () => {
+            if (loadingHoldTimer) {
+              window.clearTimeout(loadingHoldTimer);
+              loadingHoldTimer = 0;
+            }
+            if (!cancelled && autoPlayRunRef.current === runId && frameHasVideo) {
+              startOrResumeStageVideo({ muted: true, resetToStart: resetVideo });
+            }
+          }
+        });
+        if (loadingHoldTimer) {
+          window.clearTimeout(loadingHoldTimer);
+          loadingHoldTimer = 0;
+        }
         if (cancelled || autoPlayRunRef.current !== runId) return;
         if (!result.completed) {
           setIsAutoPlaying(false);
           return;
         }
       } else if (frameHasVideo) {
-        startStageVideoForAutoPlay(false);
-        await waitForStageVideoToEnd();
+        startOrResumeStageVideo({ muted: false, resetToStart: !resumeCurrentShot });
+        const videoResult = await waitForStageVideoToEnd();
         if (cancelled || autoPlayRunRef.current !== runId) return;
+        if (!videoResult.completed) {
+          setIsAutoPlaying(false);
+          return;
+        }
       } else {
         await new Promise((resolveDelay) => {
           fallbackTimer = window.setTimeout(resolveDelay, PRESENTATION_AUTO_PLAY_FALLBACK_MS / playbackRate);
@@ -17528,19 +19157,26 @@ function StoryboardPresentationDialog({
     onIndexChange(frames.length - 1);
   }, [currentIndex, frames.length, isOpen, onIndexChange]);
 
+  const wasPresentationOpenRef = useRef(false);
+
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      wasPresentationOpenRef.current = false;
+      return;
+    }
+    const justOpened = !wasPresentationOpenRef.current;
+    wasPresentationOpenRef.current = true;
     const card = activeCardRef.current;
     const strip = card?.parentElement;
     if (!card || !strip) return;
     const stripRect = strip.getBoundingClientRect();
     const cardRect = card.getBoundingClientRect();
     if (cardRect.left >= stripRect.left && cardRect.right <= stripRect.right) return;
-    // Page the strip instead of nudging: the newly active card becomes the first visible one.
+    // Page the strip instead of nudging: jump immediately on open (e.g. Shot 45), smooth-scroll while paging.
     const stripPaddingLeft = parseFloat(window.getComputedStyle(strip).paddingLeft) || 0;
     strip.scrollTo({
       left: strip.scrollLeft + (cardRect.left - stripRect.left) - stripPaddingLeft,
-      behavior: "smooth"
+      behavior: justOpened ? "auto" : "smooth"
     });
   }, [isOpen, safeIndex]);
 
@@ -17584,6 +19220,18 @@ function StoryboardPresentationDialog({
       if (event.key === "ArrowRight") {
         event.preventDefault();
         showNext();
+      }
+      if (event.key === "Home" && hasMultipleFrames) {
+        event.preventDefault();
+        resumeCurrentShotOnAutoPlayRef.current = false;
+        stopSpeech();
+        onIndexChange(0);
+      }
+      if (event.key === "End" && hasMultipleFrames) {
+        event.preventDefault();
+        resumeCurrentShotOnAutoPlayRef.current = false;
+        stopSpeech();
+        onIndexChange(frames.length - 1);
       }
       if (event.key === " " || event.key === "Spacebar") {
         const target = event.target as HTMLElement | null;
@@ -17664,17 +19312,22 @@ function StoryboardPresentationDialog({
             data-ratio={imageRatio}
             style={presentationFrameStyle}
           >
-            {currentFrame?.asset?.kind === "video" ? (
-              <video
-                key={currentFrame.id}
-                ref={stageVideoRef}
-                src={currentFrame.asset.previewUrl}
-                poster={currentFrame.asset.posterUrl ?? undefined}
-                controls
-                playsInline
-                preload="auto"
-              />
-            ) : currentFrame?.asset ? (
+            {stageVideoFrames.map((videoFrame) => {
+              const isCurrentVideo = currentFrame?.id === videoFrame.id;
+              return (
+                <StageControlsVideo
+                  key={videoFrame.id}
+                  prewarm={!isCurrentVideo}
+                  videoRef={isCurrentVideo ? stageVideoRef : undefined}
+                  src={videoFrame.asset.previewUrl}
+                  preload="auto"
+                  onVideoPlay={isCurrentVideo ? handleStageVideoPlay : undefined}
+                  onVideoPause={isCurrentVideo ? handleStageVideoPause : undefined}
+                  onVideoSeeked={isCurrentVideo ? handleStageVideoSeeked : undefined}
+                />
+              );
+            })}
+            {currentFrame?.asset?.kind === "video" ? null : currentFrame?.asset ? (
               <img src={currentFrame.asset.previewUrl} alt={currentFrame.asset.name} />
             ) : currentFrame?.sampleSrc ? (
               <img src={currentFrame.sampleSrc} alt={t("storyboard.aRollSample")} />
@@ -17736,13 +19389,15 @@ function StoryboardPresentationDialog({
                 ref={frameIndex === safeIndex ? activeCardRef : undefined}
                 key={frame.id}
                 onClick={() => {
-                  if (!isAutoPlaying) stopSpeech();
+                  if (frameIndex === safeIndex) return;
+                  resumeCurrentShotOnAutoPlayRef.current = false;
+                  stopSpeech();
                   onIndexChange(frameIndex);
                 }}
               >
                 <span className={cn("storyboard-presentation-card-media", frame.sampleSrc && !frame.asset && "has-a-roll-sample")} data-ratio={imageRatio}>
                   {frame.asset?.kind === "video" ? (
-                    <video src={frame.asset.previewUrl} poster={frame.asset.posterUrl ?? undefined} muted playsInline preload="metadata" />
+                    <StaticVideoPosterThumb src={frame.asset.previewUrl} poster={frame.asset.posterUrl} />
                   ) : frame.asset ? (
                     <img src={frame.asset.previewUrl} alt="" loading="lazy" />
                   ) : frame.sampleSrc ? (
@@ -18793,7 +20448,7 @@ function AgentPanel({
   onSelectAgentModel: (model: string) => void;
   onSelectAgentEffort: (effort: AgentEffortLevel) => void;
   onChangeAgentPermissionMode: (mode: AgentPermissionMode) => void;
-  onOpenRuntimeSettings: () => void;
+  onOpenRuntimeSettings: (focusTarget?: "mcp") => void;
   onConnectSelectedCli: () => void;
   onCreateConversation: () => void;
   onOpenConversation: (conversationId: string) => void;
@@ -19019,7 +20674,7 @@ function AgentComposer({
   onSelectAgentModel: (model: string) => void;
   onSelectAgentEffort: (effort: AgentEffortLevel) => void;
   onChangeAgentPermissionMode: (mode: AgentPermissionMode) => void;
-  onOpenRuntimeSettings: () => void;
+  onOpenRuntimeSettings: (focusTarget?: "mcp") => void;
   onChooseAgentImages: () => void;
   onPasteAgentImage: () => void;
   onRemoveAgentImageAttachment: (assetId: string) => void;
@@ -19036,11 +20691,7 @@ function AgentComposer({
   const modelSearchInputRef = useRef<HTMLInputElement>(null);
   const composerTextAreaRef = useRef<HTMLTextAreaElement>(null);
   const selectableAgents = useMemo(
-    () =>
-      localCliAgents
-        .filter((agent) => !isDependencyCliAgent(agent))
-        .slice()
-        .sort((a, b) => Number(b.installed) - Number(a.installed)),
+    () => localCliAgents.filter((agent) => !isDependencyCliAgent(agent) && agent.installed),
     [localCliAgents]
   );
   const activeAgentObj = selectableAgents.find((agent) => agent.id === selectedCliId);
@@ -19234,40 +20885,46 @@ function AgentComposer({
             {agentMenuOpen ? (
               <div className="composer-popover t3-model-picker-popover" role="dialog" aria-label="Agent & Model Picker">
                 <div className="t3-picker-body">
-                  <div className="t3-picker-rail" role="tablist" aria-label={isEn ? "Providers" : "CLI 提供方"}>
-                    {selectableAgents.map((agent) => {
-                      const isBrowsing = (browsedAgentObj?.id ?? selectedCliId) === agent.id && !trimmedModelQuery;
-                      return (
-                        <button
-                          key={agent.id}
-                          type="button"
-                          role="tab"
-                          aria-selected={isBrowsing}
-                          aria-label={agent.name}
-                          title={
-                            agent.installed
-                              ? agent.name
-                              : `${agent.name} · ${isEn ? "Not installed" : "未安装"}`
-                          }
-                          className={cn(
-                            "t3-picker-rail-btn",
-                            isBrowsing && "active",
-                            !agent.installed && "uninstalled"
-                          )}
-                          onClick={() => {
-                            setModelSearchQuery("");
-                            setBrowsingCliId(agent.id);
-                            if (agent.installed && isAgentCliId(agent.id) && agent.id !== selectedCliId) {
-                              onSelectCli(agent.id);
-                              onSelectAgentModel("default");
-                            }
-                          }}
-                        >
-                          <AgentBrandGlyph agentId={agent.id} name={agent.name} size={17} variant="inline" />
-                        </button>
-                      );
-                    })}
-                  </div>
+                  {selectableAgents.length > 0 ? (
+                    <div className="t3-picker-rail" role="tablist" aria-label={isEn ? "Providers" : "CLI 提供方"}>
+                      {selectableAgents.map((agent) => {
+                        const isBrowsing = (browsedAgentObj?.id ?? selectedCliId) === agent.id && !trimmedModelQuery;
+                        return (
+                          <button
+                            key={agent.id}
+                            type="button"
+                            role="tab"
+                            aria-selected={isBrowsing}
+                            aria-label={agent.name}
+                            title={agent.name}
+                            className={cn("t3-picker-rail-btn", isBrowsing && "active")}
+                            onClick={() => {
+                              setModelSearchQuery("");
+                              setBrowsingCliId(agent.id);
+                              if (isAgentCliId(agent.id) && agent.id !== selectedCliId) {
+                                onSelectCli(agent.id);
+                                onSelectAgentModel("default");
+                              }
+                            }}
+                          >
+                            <AgentBrandGlyph agentId={agent.id} name={agent.name} size={17} variant="inline" />
+                          </button>
+                        );
+                      })}
+                      <button
+                        type="button"
+                        className="t3-picker-rail-btn t3-picker-rail-add"
+                        aria-label={isEn ? "Configure visible CLI providers" : "自定义显示哪些本地 Agent"}
+                        title={isEn ? "Configure which CLI providers are shown" : "自定义显示哪些本地 Agent"}
+                        onClick={() => {
+                          setAgentMenuOpen(false);
+                          onOpenRuntimeSettings();
+                        }}
+                      >
+                        <Plus size={14} aria-hidden="true" />
+                      </button>
+                    </div>
+                  ) : null}
 
                   <div className="t3-picker-main">
                     <div className="t3-picker-search-row">
@@ -19300,12 +20957,16 @@ function AgentComposer({
                     </div>
 
                     <div className="t3-picker-model-list" role="listbox" aria-label={isEn ? "Models" : "模型列表"}>
-                      {!trimmedModelQuery && browsedAgentObj && !browsedAgentObj.installed ? (
+                      {selectableAgents.length === 0 ? (
                         <div className="t3-picker-empty-state">
                           <p>
-                            {isEn
-                              ? `${browsedAgentObj.name} is not installed on this machine.`
-                              : `本机尚未安装 ${browsedAgentObj.name}`}
+                            {selectedCliStatusBusy
+                              ? isEn
+                                ? "Scanning installed CLI providers…"
+                                : "正在检测本机已安装的 CLI…"
+                              : isEn
+                                ? "No local CLI providers enabled yet."
+                                : "尚未配置可用的本地 CLI"}
                           </p>
                           <button
                             type="button"
@@ -19315,7 +20976,7 @@ function AgentComposer({
                               onOpenRuntimeSettings();
                             }}
                           >
-                            {isEn ? "Open provider setup" : "前往安装与配置"}
+                            {isEn ? "Configure providers" : "前往配置连接"}
                           </button>
                         </div>
                       ) : filteredModelEntries.length === 0 ? (
@@ -19365,7 +21026,6 @@ function AgentComposer({
                 <div className="t3-picker-footer">
                   {browsedSupportsEffort ? (
                     <div className="t3-effort-group">
-                      <span className="t3-effort-caption">{isEn ? "Effort" : "推理"}</span>
                       <div
                         className="t3-effort-segmented"
                         role="radiogroup"
@@ -19391,50 +21051,73 @@ function AgentComposer({
                     </span>
                   )}
 
-                  <button
-                    type="button"
-                    className="t3-picker-settings-btn"
-                    title={isEn ? "Configure CLI & API Keys" : "管理 CLI 与本地 API Key"}
-                    onClick={() => {
-                      setAgentMenuOpen(false);
-                      onOpenRuntimeSettings();
-                    }}
-                  >
-                    <Settings size={12.5} aria-hidden="true" />
-                    <span>{isEn ? "Setup" : "配置"}</span>
-                  </button>
+                  <div className="t3-picker-footer-actions">
+                    <button
+                      type="button"
+                      className={cn("t3-picker-meta-pill", agentPermissionMode === "auto-apply" && "mode-auto")}
+                      onClick={() =>
+                        onChangeAgentPermissionMode(agentPermissionMode === "supervised" ? "auto-apply" : "supervised")
+                      }
+                      title={
+                        agentPermissionMode === "auto-apply"
+                          ? isEn
+                            ? "Auto-apply: Agent operations execute immediately (click to switch to Supervised)"
+                            : "自动执行：修改与生图生视频直接执行（点击切换为需确认）"
+                          : isEn
+                            ? "Supervised: Destructive & media operations ask before running (click to switch to Auto-apply)"
+                            : "需确认：删除分镜与重新生成媒体前先确认（点击切换为自动执行）"
+                      }
+                    >
+                      <ShieldCheck size={12} aria-hidden="true" />
+                      <span>
+                        {agentPermissionMode === "auto-apply"
+                          ? isEn
+                            ? "Auto"
+                            : "自动执行"
+                          : isEn
+                            ? "Ask"
+                            : "需确认"}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="t3-picker-meta-pill"
+                      title={
+                        mcpOnline
+                          ? isEn
+                            ? "MkBoard MCP Server Online (click to configure)"
+                            : "MkBoard MCP 服务已就绪（点击管理）"
+                          : isEn
+                            ? "Configure MkBoard MCP Bridge"
+                            : "配置 MkBoard MCP 桥接服务"
+                      }
+                      onClick={() => {
+                        setAgentMenuOpen(false);
+                        onOpenRuntimeSettings("mcp");
+                      }}
+                    >
+                      <span className={cn("composer-pill-dot", mcpOnline && "online")} aria-hidden="true" />
+                      <span>MCP</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="t3-picker-icon-btn"
+                      aria-label={isEn ? "Configure CLI & Providers" : "管理本机 CLI 与模型"}
+                      title={isEn ? "Configure CLI providers & API Keys" : "本机 CLI 配置连接"}
+                      onClick={() => {
+                        setAgentMenuOpen(false);
+                        onOpenRuntimeSettings();
+                      }}
+                    >
+                      <Settings size={13} aria-hidden="true" />
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : null}
           </div>
-
-          <button
-            className={cn("composer-pill", agentPermissionMode === "auto-apply" && "mode-auto")}
-            type="button"
-            onClick={() => onChangeAgentPermissionMode(agentPermissionMode === "supervised" ? "auto-apply" : "supervised")}
-            title={
-              agentPermissionMode === "auto-apply"
-                ? isEn
-                  ? "Auto-apply: Agent operations execute immediately"
-                  : "自动应用：Agent 修改与生图生视频操作直接执行"
-                : isEn
-                  ? "Supervised: Destructive & media operations ask before running"
-                  : "监督模式：删除分镜与重新生成媒体前先确认"
-            }
-          >
-            <ShieldCheck aria-hidden="true" />
-            <span>{agentPermissionMode === "auto-apply" ? (isEn ? "Auto-apply" : "自动执行") : isEn ? "Supervised" : "需确认"}</span>
-          </button>
-
-          <button
-            className="composer-pill"
-            type="button"
-            onClick={onOpenRuntimeSettings}
-            title={mcpOnline ? "MkBoard MCP Server Ready" : "Configure MkBoard MCP Bridge"}
-          >
-            <span className={cn("composer-pill-dot", mcpOnline && "online")} aria-hidden="true" />
-            <span>MCP</span>
-          </button>
         </div>
 
         <div className="composer-actions">
@@ -21423,6 +23106,349 @@ function formatVideoDurationLabel(duration: number): string | null {
   return hours > 0 ? `${pad(hours)}:${pad(minutes)}:${pad(seconds)}` : `${pad(minutes)}:${pad(seconds)}`;
 }
 
+type CachedVideoMetadata = {
+  duration: number;
+  videoWidth: number;
+  videoHeight: number;
+};
+
+const cachedVideoMetadataByUrl = new Map<string, CachedVideoMetadata>();
+const inflightVideoMetadataProbes = new Map<string, Promise<CachedVideoMetadata | null>>();
+const pendingVideoMetadataTasks: Array<() => void> = [];
+let activeVideoMetadataProbeCount = 0;
+const MAX_CONCURRENT_VIDEO_METADATA_PROBES = 2;
+
+function releaseDetachedVideoElement(video: HTMLVideoElement | null): void {
+  if (!video) return;
+  try {
+    video.pause();
+    video.removeAttribute("src");
+    video.load();
+  } catch {
+    // Ignore cleanup errors on already-disposed media elements.
+  }
+}
+
+function pumpVideoMetadataProbeQueue(): void {
+  while (activeVideoMetadataProbeCount < MAX_CONCURRENT_VIDEO_METADATA_PROBES && pendingVideoMetadataTasks.length > 0) {
+    const next = pendingVideoMetadataTasks.shift();
+    if (!next) break;
+    activeVideoMetadataProbeCount += 1;
+    next();
+  }
+}
+
+function probeVideoMetadataOnce(src: string): Promise<CachedVideoMetadata | null> {
+  const cached = cachedVideoMetadataByUrl.get(src);
+  if (cached) return Promise.resolve(cached);
+  const existing = inflightVideoMetadataProbes.get(src);
+  if (existing) return existing;
+  if (typeof document === "undefined") return Promise.resolve(null);
+
+  const promise = new Promise<CachedVideoMetadata | null>((resolveProbe) => {
+    pendingVideoMetadataTasks.push(() => {
+      const video = document.createElement("video");
+      let settled = false;
+      const finish = (result: CachedVideoMetadata | null) => {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timeoutId);
+        video.onloadedmetadata = null;
+        video.onerror = null;
+        releaseDetachedVideoElement(video);
+        activeVideoMetadataProbeCount = Math.max(0, activeVideoMetadataProbeCount - 1);
+        inflightVideoMetadataProbes.delete(src);
+        if (result) cachedVideoMetadataByUrl.set(src, result);
+        resolveProbe(result);
+        pumpVideoMetadataProbeQueue();
+      };
+      const timeoutId = window.setTimeout(() => finish(null), 5000);
+      video.preload = "metadata";
+      video.muted = true;
+      video.playsInline = true;
+      video.onloadedmetadata = () => {
+        finish({
+          duration: video.duration,
+          videoWidth: video.videoWidth,
+          videoHeight: video.videoHeight
+        });
+      };
+      video.onerror = () => finish(null);
+      video.src = src;
+    });
+    pumpVideoMetadataProbeQueue();
+  });
+
+  inflightVideoMetadataProbes.set(src, promise);
+  return promise;
+}
+
+function StageControlsVideo({
+  src,
+  poster,
+  preload = "auto",
+  autoPlay = false,
+  prewarm = false,
+  videoRef,
+  onVideoPlay,
+  onVideoPause,
+  onVideoSeeked
+}: {
+  src: string;
+  poster?: string;
+  preload?: "auto" | "metadata";
+  autoPlay?: boolean;
+  prewarm?: boolean;
+  videoRef?: React.RefObject<HTMLVideoElement | null>;
+  onVideoPlay?: (video: HTMLVideoElement) => void;
+  onVideoPause?: (video: HTMLVideoElement) => void;
+  onVideoSeeked?: (video: HTMLVideoElement) => void;
+}) {
+  const internalRef = useRef<HTMLVideoElement | null>(null);
+  // Chromium's built-in MediaControlLoadingPanelElement starts a ~1s CSS cooldown
+  // spinner whenever `controls` is attached while readyState === 0.
+  // Deferring `controls` until readyState >= 2 (with a 220ms fallback for slow
+  // remote URLs) keeps local shot switches completely instant and spinner-free.
+  const [controlsReady, setControlsReady] = useState(false);
+
+  const setRefs = (node: HTMLVideoElement | null) => {
+    internalRef.current = node;
+    if (videoRef && !prewarm) {
+      (videoRef as React.MutableRefObject<HTMLVideoElement | null>).current = node;
+    }
+  };
+
+  useLayoutEffect(() => {
+    if (!videoRef || prewarm) return undefined;
+    const node = internalRef.current;
+    (videoRef as React.MutableRefObject<HTMLVideoElement | null>).current = node;
+    return () => {
+      if (videoRef.current === node) {
+        (videoRef as React.MutableRefObject<HTMLVideoElement | null>).current = null;
+      }
+    };
+  }, [prewarm, videoRef]);
+
+  useLayoutEffect(() => {
+    const video = internalRef.current;
+    if (!video) return;
+    if (prewarm) {
+      if (!video.paused) {
+        video.pause();
+      }
+      video.muted = true;
+      if (video.currentTime > 0.001) {
+        try {
+          video.currentTime = 0;
+        } catch {
+          // Ignore when metadata has not loaded yet.
+        }
+      }
+      return;
+    }
+    if (autoPlay) {
+      video.muted = false;
+      if (video.currentTime > 0.01) {
+        try {
+          video.currentTime = 0;
+        } catch {
+          // Ignore when metadata has not loaded yet.
+        }
+      }
+      if (video.paused) {
+        void video.play().catch(() => {});
+      }
+    }
+  }, [autoPlay, prewarm]);
+
+  useLayoutEffect(() => {
+    if (prewarm) {
+      setControlsReady(false);
+      return undefined;
+    }
+    const video = internalRef.current;
+    if (video && video.readyState >= 2) {
+      setControlsReady(true);
+      return undefined;
+    }
+    setControlsReady(false);
+    const fallbackTimer = window.setTimeout(() => {
+      setControlsReady(true);
+    }, 220);
+    return () => {
+      window.clearTimeout(fallbackTimer);
+    };
+  }, [src, poster, prewarm]);
+
+  const pointerDownStateRef = useRef<{ paused: boolean; x: number; y: number } | null>(null);
+
+  useEffect(() => {
+    const mountedVideo = internalRef.current;
+    return () => {
+      releaseDetachedVideoElement(mountedVideo);
+    };
+  }, []);
+
+  const markReady = () => {
+    if (!prewarm && !controlsReady) setControlsReady(true);
+  };
+
+  return (
+    <video
+      ref={setRefs}
+      className={cn("stage-controls-video", prewarm && "is-prewarm")}
+      src={src}
+      poster={poster}
+      controls={!prewarm && controlsReady}
+      autoPlay={!prewarm && autoPlay}
+      tabIndex={prewarm ? -1 : undefined}
+      aria-hidden={prewarm ? "true" : undefined}
+      playsInline
+      preload={preload}
+      onLoadedData={markReady}
+      onCanPlay={markReady}
+      onPlay={(event) => {
+        if (prewarm) return;
+        markReady();
+        onVideoPlay?.(event.currentTarget);
+      }}
+      onPause={(event) => {
+        if (prewarm) return;
+        onVideoPause?.(event.currentTarget);
+      }}
+      onSeeked={(event) => {
+        if (prewarm) return;
+        onVideoSeeked?.(event.currentTarget);
+      }}
+      onError={markReady}
+      onPointerDown={(event) => {
+        if (prewarm) return;
+        const video = internalRef.current;
+        if (!video || event.button !== 0) return;
+        pointerDownStateRef.current = {
+          paused: video.paused,
+          x: event.clientX,
+          y: event.clientY
+        };
+      }}
+      onClick={(event) => {
+        if (prewarm) return;
+        const video = internalRef.current;
+        const down = pointerDownStateRef.current;
+        pointerDownStateRef.current = null;
+        if (!video) return;
+        if (!controlsReady) {
+          setControlsReady(true);
+          if (video.paused) {
+            void video.play().catch(() => {});
+          } else {
+            video.pause();
+          }
+          return;
+        }
+        if (event.defaultPrevented) return;
+        if (down && Math.hypot(event.clientX - down.x, event.clientY - down.y) > 6) return;
+        const rect = video.getBoundingClientRect();
+        // Leave the bottom native media control bar (~52px) exclusively to Chromium's shadow-DOM controls.
+        if (rect.height > 96 && event.clientY > rect.bottom - 52) return;
+        // If Chromium didn't already toggle paused state on this click, toggle play/pause directly on the video frame.
+        if (!down || video.paused === down.paused) {
+          if (video.paused) {
+            void video.play().catch(() => {});
+          } else {
+            video.pause();
+          }
+        }
+      }}
+    />
+  );
+}
+
+function StaticVideoPosterThumb({
+  src,
+  poster,
+  alt = "",
+  draggable,
+  onMetadata,
+  onLoadedMetadata
+}: {
+  src: string;
+  poster?: string | null;
+  alt?: string;
+  draggable?: boolean;
+  onMetadata?: (meta: CachedVideoMetadata) => void;
+  onLoadedMetadata?: (event: React.SyntheticEvent<HTMLVideoElement>) => void;
+}) {
+  const [posterFailed, setPosterFailed] = useState(false);
+  const fallbackVideoRef = useRef<HTMLVideoElement | null>(null);
+  const metadataCallbackRef = useRef(onMetadata);
+  metadataCallbackRef.current = onMetadata;
+
+  useEffect(() => {
+    setPosterFailed(false);
+  }, [poster, src]);
+
+  const useStaticPoster = Boolean(poster) && !posterFailed;
+
+  useEffect(() => {
+    if (!useStaticPoster || !metadataCallbackRef.current) return undefined;
+    const cached = cachedVideoMetadataByUrl.get(src);
+    if (cached) {
+      metadataCallbackRef.current(cached);
+      return undefined;
+    }
+    let cancelled = false;
+    void probeVideoMetadataOnce(src).then((meta) => {
+      if (!cancelled && meta) metadataCallbackRef.current?.(meta);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [src, useStaticPoster]);
+
+  useEffect(() => {
+    if (useStaticPoster) return undefined;
+    return () => {
+      releaseDetachedVideoElement(fallbackVideoRef.current);
+    };
+  }, [useStaticPoster]);
+
+  if (useStaticPoster && poster) {
+    return (
+      <img
+        src={poster}
+        alt={alt}
+        draggable={draggable}
+        loading="lazy"
+        decoding="async"
+        onError={() => setPosterFailed(true)}
+      />
+    );
+  }
+
+  return (
+    <video
+      ref={fallbackVideoRef}
+      src={src}
+      poster={poster ?? undefined}
+      muted
+      playsInline
+      preload="metadata"
+      draggable={draggable}
+      onLoadedMetadata={(event) => {
+        const meta = {
+          duration: event.currentTarget.duration,
+          videoWidth: event.currentTarget.videoWidth,
+          videoHeight: event.currentTarget.videoHeight
+        };
+        cachedVideoMetadataByUrl.set(src, meta);
+        metadataCallbackRef.current?.(meta);
+        onLoadedMetadata?.(event);
+      }}
+    />
+  );
+}
+
 function renderAssetPreview(
   asset: ProjectAsset,
   options: {
@@ -21434,7 +23460,26 @@ function renderAssetPreview(
     return <img src={asset.previewUrl} alt={asset.name} loading="lazy" onLoad={options.onImageMetadata} />;
   }
   if (asset.kind === "video") {
-    return <video src={asset.previewUrl} poster={asset.posterUrl ?? undefined} muted playsInline preload="metadata" onLoadedMetadata={options.onVideoMetadata} />;
+    return (
+      <StaticVideoPosterThumb
+        src={asset.previewUrl}
+        poster={asset.posterUrl}
+        alt={asset.name}
+        onMetadata={
+          options.onVideoMetadata
+            ? (meta) =>
+                options.onVideoMetadata?.({
+                  currentTarget: {
+                    duration: meta.duration,
+                    videoWidth: meta.videoWidth,
+                    videoHeight: meta.videoHeight
+                  }
+                } as unknown as React.SyntheticEvent<HTMLVideoElement>)
+            : undefined
+        }
+        onLoadedMetadata={options.onVideoMetadata}
+      />
+    );
   }
   if (asset.kind === "audio") {
     return (

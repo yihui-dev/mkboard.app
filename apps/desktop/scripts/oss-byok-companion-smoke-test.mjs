@@ -1,6 +1,6 @@
 import { MkboardStore } from "../src/main/database.ts";
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -243,6 +243,43 @@ test("ProjectSummary coverPreview uses first B-Roll storyboard image and upgrade
     assert.match(summary?.coverPreview?.url ?? "", /firstFrame=1/u);
     assert.ok(summary?.coverPreview?.videoUrl);
     assert.equal(summary?.videoCount, 1);
+
+    // 4. Upload custom cover image (3:4) -> overrides B-Roll video on Home and populates Workspace banner coverImageUrl
+    const customCoverPath = join(mediaSourceDir, "custom-cover-3x4.png");
+    writeFileSync(customCoverPath, Buffer.from("89504e470d0a1a0a0000000d49484452", "hex"));
+    const afterUpload = store.updateProjectCover({
+      projectId: pid,
+      coverImageSourcePath: customCoverPath,
+      coverImageRatio: "3:4"
+    });
+    summary = afterUpload.projects.find((p) => p.id === pid);
+    assert.equal(summary?.coverPreview?.kind, "custom-cover");
+    assert.equal(summary?.coverPreview?.ratio, "3:4");
+    assert.equal(summary?.coverPreview?.videoUrl, undefined);
+    assert.ok(afterUpload.detail.project.coverImageUrl);
+    assert.equal(afterUpload.detail.project.coverImageRatio, "3:4");
+    const resolvedDiskCover = store.resolveAssetPreviewPath(`project-cover--${pid}`);
+    assert.ok(resolvedDiskCover && existsSync(resolvedDiskCover));
+
+    // 5. Switch cover ratio (3:4 -> 4:3 -> 16:9) without re-uploading file
+    const afterRatio = store.updateProjectCover({
+      projectId: pid,
+      coverImageRatio: "4:3"
+    });
+    summary = afterRatio.projects.find((p) => p.id === pid);
+    assert.equal(summary?.coverPreview?.kind, "custom-cover");
+    assert.equal(summary?.coverPreview?.ratio, "4:3");
+    assert.equal(afterRatio.detail.project.coverImageRatio, "4:3");
+
+    // 6. Remove custom cover -> restores B-Roll video first-frame preview on Home and clears Workspace banner coverImageUrl
+    const afterClear = store.updateProjectCover({
+      projectId: pid,
+      clearCoverImage: true
+    });
+    summary = afterClear.projects.find((p) => p.id === pid);
+    assert.equal(summary?.coverPreview?.kind, "video-first-frame");
+    assert.equal(afterClear.detail.project.coverImageUrl, null);
+    assert.equal(store.resolveAssetPreviewPath(`project-cover--${pid}`), null);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

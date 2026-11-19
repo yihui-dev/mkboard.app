@@ -3,7 +3,8 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { ElevenLabsService } from "../src/main/elevenlabs.ts";
+import { ByokStore } from "../src/main/byok-store.ts";
+import { defaultElevenLabsModelId, ElevenLabsService } from "../src/main/elevenlabs.ts";
 
 function createFakeCloud() {
   const calls = [];
@@ -14,6 +15,7 @@ function createFakeCloud() {
     release: () => release(),
     cloud: {
       async synthesizeElevenLabsSpeech(input) {
+        assert.equal(input.modelId, "eleven_v4");
         calls.push(input.text);
         await gate;
         return { ok: true, data: { audioBase64: Buffer.from(`audio:${input.text}`).toString("base64"), contentType: "audio/mpeg" } };
@@ -65,6 +67,18 @@ test("a failed voiceover request is not remembered as in progress", async () => 
     assert.deepEqual(service.getSpeechStatus({ voiceId: "voice-1", texts: ["文本"] }), ["missing"]);
     await service.synthesizeSpeech({ text: "文本", voiceId: "voice-1" });
     assert.equal(calls, 2);
+  } finally {
+    rmSync(dataDir, { recursive: true, force: true });
+  }
+});
+
+test("ElevenLabs defaults to eleven_v4 in both ElevenLabsService and ByokStore", () => {
+  assert.equal(defaultElevenLabsModelId, "eleven_v4");
+  const dataDir = mkdtempSync(join(tmpdir(), "mkboard-elevenlabs-model-"));
+  try {
+    const byok = new ByokStore(dataDir);
+    assert.equal(byok.resolveCredentials("elevenlabs").model, "eleven_v4");
+    assert.equal(byok.getProviderStatus("elevenlabs").model, "eleven_v4");
   } finally {
     rmSync(dataDir, { recursive: true, force: true });
   }
