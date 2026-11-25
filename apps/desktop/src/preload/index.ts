@@ -9,6 +9,8 @@ import type {
   ByokProviderId,
   ByokSaveInput,
   ByokVideoProviderId,
+  CloudSyncProgressEvent,
+  CloudSyncSaveInput,
   CompanionAccessMode,
   CreateProjectInput,
   CreateProjectTemplateInput,
@@ -207,6 +209,19 @@ const api: MkboardApi = {
     const listener = (_event: Electron.IpcRendererEvent, payload: McpOpenProjectRequest) => handler(payload);
     ipcRenderer.on("mkboard:mcp-open-project", listener);
     return () => ipcRenderer.removeListener("mkboard:mcp-open-project", listener);
+  },
+  getCloudSyncConfig: () => ipcRenderer.invoke("mkboard:get-cloud-sync-config"),
+  saveCloudSyncConfig: (input: CloudSyncSaveInput) => ipcRenderer.invoke("mkboard:save-cloud-sync-config", input),
+  clearCloudSyncConfig: () => ipcRenderer.invoke("mkboard:clear-cloud-sync-config"),
+  testCloudSyncConnection: (candidate?: { workerUrl?: string; syncToken?: string }) =>
+    ipcRenderer.invoke("mkboard:test-cloud-sync-connection", candidate),
+  syncProjectToCloud: (projectId: string, options?: { speechVoiceId?: string }) =>
+    ipcRenderer.invoke("mkboard:sync-project-to-cloud", projectId, options),
+  deleteProjectFromCloud: (projectId: string) => ipcRenderer.invoke("mkboard:delete-project-from-cloud", projectId),
+  onCloudSyncProgress: (handler: (event: CloudSyncProgressEvent) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, payload: CloudSyncProgressEvent) => handler(payload);
+    ipcRenderer.on("mkboard:cloud-sync-progress", listener);
+    return () => ipcRenderer.removeListener("mkboard:cloud-sync-progress", listener);
   }
 };
 

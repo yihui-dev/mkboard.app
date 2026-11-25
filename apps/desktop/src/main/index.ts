@@ -18,6 +18,7 @@ import {
 import { getCodexCliStatus, scanLocalCliAgents, startClaudeCodeLogin, startCodexCliLogin, testHyperframesDoctor } from "./codex-auth";
 import { findCliAgentDefinition } from "./agent-registry";
 import { assertSafeRemoteMediaUrl, ByokStore } from "./byok-store";
+import { CloudSyncService } from "./cloud-sync";
 import { CompanionServer } from "./companion-server";
 import {
   checkSkillrySkillAccess,
@@ -87,6 +88,8 @@ import type {
   ByokSaveInput,
   ByokVideoProviderId,
   CloudApiResult,
+  CloudSyncProgressEvent,
+  CloudSyncSaveInput,
   CompanionAccessMode,
   CreateProjectInput,
   CreateProjectTemplateInput,
@@ -142,6 +145,8 @@ app.setName("MkBoard");
 let mainWindow: BrowserWindow | null = null;
 let store: MkboardStore;
 let byokStore: ByokStore;
+let cloudSync: CloudSyncService;
+let lastReportedSpeechVoiceId = "";
 let localAiMedia: LocalAiMediaService;
 let companionServer: CompanionServer | null = null;
 let elevenLabs: ElevenLabsService;
@@ -1310,6 +1315,9 @@ async function sendAgentMessageInternal(request: AgentRequest, sender: WebConten
 }
 
 function handleReportActiveView(view: McpActiveViewReport): void {
+  if (typeof view?.speechVoiceId === "string" && view.speechVoiceId.trim()) {
+    lastReportedSpeechVoiceId = view.speechVoiceId.trim();
+  }
   mcpBridge?.reportActiveView({
     projectId: typeof view?.projectId === "string" && view.projectId ? view.projectId : null,
     screen: typeof view?.screen === "string" ? view.screen : undefined,
@@ -1594,6 +1602,18 @@ function registerIpc(): void {
   ipcMain.handle("mkboard:test-byok-provider", (_event, providerId: ByokProviderId, candidateKey?: string) =>
     byokStore.testProvider(providerId, candidateKey)
   );
+  ipcMain.handle("mkboard:get-cloud-sync-config", () => cloudSync.getSnapshot());
+  ipcMain.handle("mkboard:save-cloud-sync-config", (_event, input: CloudSyncSaveInput) => cloudSync.saveConfig(input));
+  ipcMain.handle("mkboard:clear-cloud-sync-config", () => cloudSync.clearConfig());
+  ipcMain.handle("mkboard:test-cloud-sync-connection", (_event, candidate?: { workerUrl?: string; syncToken?: string }) =>
+    cloudSync.testConnection(candidate)
+  );
+  ipcMain.handle("mkboard:sync-project-to-cloud", (_event, projectId: string, options?: { speechVoiceId?: string }) =>
+    cloudSync.syncProject(projectId, options)
+  );
+  ipcMain.handle("mkboard:delete-project-from-cloud", (_event, projectId: string) =>
+    cloudSync.deleteProjectFromCloud(projectId)
+  );
   ipcMain.handle("mkboard:get-companion-status", () => companionServer?.getStatus() ?? null);
   ipcMain.handle("mkboard:set-companion-mode", (_event, mode: CompanionAccessMode, port?: number) =>
     companionServer?.setMode(mode, port) ?? null
@@ -1739,12 +1759,26 @@ function registerIpc(): void {
       typeof inputOrProjectId === "string" ? { projectId: inputOrProjectId, agentCliId: legacyAgentCliId } : inputOrProjectId;
     return runStoryboardParse(input, event.sender);
   });
-  ipcMain.handle("mkboard:create-shots", (_event, projectId: string, count: number) => store.createShots(projectId, count));
-  ipcMain.handle("mkboard:insert-shot", (_event, projectId: string, targetRowId: string, placement: "before" | "after") =>
-    store.insertShot(projectId, targetRowId, placement)
-  );
-  ipcMain.handle("mkboard:duplicate-shots", (_event, projectId: string, rowIds: string[]) => store.duplicateShots(projectId, rowIds));
-  ipcMain.handle("mkboard:delete-shots", (_event, projectId: string, rowIds: string[]) => store.deleteShots(projectId, rowIds));
+  ipcMain.handle("mkboard:create-shots", (_event, projectId: string, count: number) => {
+    const rows = store.createShots(projectId, count);
+    cloudSync?.scheduleAutoSync(projectId);
+    return rows;
+  });
+  ipcMain.handle("mkboard:insert-shot", (_event, projectId: string, targetRowId: string, placement: "before" | "after") => {
+    const rows = store.insertShot(projectId, targetRowId, placement);
+    cloudSync?.scheduleAutoSync(projectId);
+    return rows;
+  });
+  ipcMain.handle("mkboard:duplicate-shots", (_event, projectId: string, rowIds: string[]) => {
+    const rows = store.duplicateShots(projectId, rowIds);
+    cloudSync?.scheduleAutoSync(projectId);
+    return rows;
+  });
+  ipcMain.handle("mkboard:delete-shots", (_event, projectId: string, rowIds: string[]) => {
+    const rows = store.deleteShots(projectId, rowIds);
+    cloudSync?.scheduleAutoSync(projectId);
+    return rows;
+  });
   ipcMain.handle("mkboard:get-shot-media-update", (_event, projectId: string) => store.getShotMediaUpdate(projectId));
   ipcMain.handle("mkboard:choose-shot-media", async (_event, projectId: string, rowId: string) => {
     const options = {
@@ -1763,23 +1797,43 @@ function registerIpc(): void {
     } satisfies Electron.OpenDialogOptions;
     const result = mainWindow ? await dialog.showOpenDialog(mainWindow, options) : await dialog.showOpenDialog(options);
     if (result.canceled) return store.getShotMediaUpdate(projectId);
-    return store.importShotMediaPaths(projectId, rowId, result.filePaths);
+    const updated = await store.importShotMediaPaths(projectId, rowId, result.filePaths);
+    cloudSync?.scheduleAutoSync(projectId);
+    return updated;
   });
-  ipcMain.handle("mkboard:import-shot-media-paths", (_event, projectId: string, rowId: string, filePaths: string[]) =>
-    store.importShotMediaPaths(projectId, rowId, filePaths)
-  );
+  ipcMain.handle("mkboard:import-shot-media-paths", async (_event, projectId: string, rowId: string, filePaths: string[]) => {
+    const updated = await store.importShotMediaPaths(projectId, rowId, filePaths);
+    cloudSync?.scheduleAutoSync(projectId);
+    return updated;
+  });
   ipcMain.handle("mkboard:import-clipboard-image-as-shot-media", (_event, projectId: string, rowId: string) => {
     const image = clipboard.readImage();
     if (image.isEmpty()) return store.getShotMediaUpdate(projectId);
-    return store.importShotMediaBuffer(projectId, rowId, `clipboard-${Date.now()}.png`, image.toPNG());
+    const updated = store.importShotMediaBuffer(projectId, rowId, `clipboard-${Date.now()}.png`, image.toPNG());
+    cloudSync?.scheduleAutoSync(projectId);
+    return updated;
   });
-  ipcMain.handle("mkboard:update-shot", (_event, projectId: string, input: UpdateShotInput) => store.updateShot(projectId, input));
-  ipcMain.handle("mkboard:update-shot-media", (_event, projectId: string, rowId: string, assetIds: string[]) => store.updateShotMedia(projectId, rowId, assetIds));
-  ipcMain.handle("mkboard:reorder-shots", (_event, projectId: string, sourceRowId: string, targetRowId: string) =>
-    store.reorderShots(projectId, sourceRowId, targetRowId)
-  );
+  ipcMain.handle("mkboard:update-shot", (_event, projectId: string, input: UpdateShotInput) => {
+    const rows = store.updateShot(projectId, input);
+    cloudSync?.scheduleAutoSync(projectId);
+    return rows;
+  });
+  ipcMain.handle("mkboard:update-shot-media", (_event, projectId: string, rowId: string, assetIds: string[]) => {
+    const updated = store.updateShotMedia(projectId, rowId, assetIds);
+    cloudSync?.scheduleAutoSync(projectId);
+    return updated;
+  });
+  ipcMain.handle("mkboard:reorder-shots", (_event, projectId: string, sourceRowId: string, targetRowId: string) => {
+    const rows = store.reorderShots(projectId, sourceRowId, targetRowId);
+    cloudSync?.scheduleAutoSync(projectId);
+    return rows;
+  });
   ipcMain.handle("mkboard:save-columns", (_event, projectId: string, columns: StoryboardColumn[]) => store.saveColumns(projectId, columns));
-  ipcMain.handle("mkboard:save-image-ratio", (_event, projectId: string, imageRatio: ImageRatio) => store.saveImageRatio(projectId, imageRatio));
+  ipcMain.handle("mkboard:save-image-ratio", (_event, projectId: string, imageRatio: ImageRatio) => {
+    const ratio = store.saveImageRatio(projectId, imageRatio);
+    cloudSync?.scheduleAutoSync(projectId);
+    return ratio;
+  });
   ipcMain.handle("mkboard:save-storyboard-skill", (_event, projectId: string, skillId: string) => store.saveStoryboardSkill(projectId, skillId));
   ipcMain.handle("mkboard:choose-assets", async (_event, projectId: string) => {
     const options = {
@@ -1822,7 +1876,9 @@ function registerIpc(): void {
     } satisfies Electron.OpenDialogOptions;
     const result = mainWindow ? await dialog.showOpenDialog(mainWindow, options) : await dialog.showOpenDialog(options);
     if (result.canceled || result.filePaths.length === 0) return store.getShotMediaUpdate(projectId);
-    return store.replaceAssetPath(projectId, assetId, result.filePaths[0]);
+    const updated = await store.replaceAssetPath(projectId, assetId, result.filePaths[0]);
+    cloudSync?.scheduleAutoSync(projectId);
+    return updated;
   });
   ipcMain.handle("mkboard:reveal-asset", (_event, projectId: string, assetId: string) => {
     const assetPath = store.getAssetFilePath(projectId, assetId);
@@ -1955,6 +2011,7 @@ function registerIpc(): void {
   );
   ipcMain.handle("mkboard:apply-agent-operations", (_event, projectId: string, operations: AgentOperation[]): ApplyAgentOperationsResult => {
     const appliedOperations = applyConfirmedAgentOperations(store, projectId, operations);
+    cloudSync?.scheduleAutoSync(projectId);
     return {
       project: store.getProject(projectId),
       appliedOperations,
@@ -4212,6 +4269,17 @@ if (singleInstanceLock) {
     byokStore = new ByokStore(dataDir);
     localAiMedia = new LocalAiMediaService(dataDir, byokStore);
     elevenLabs = new ElevenLabsService(dataDir, byokStore);
+    cloudSync = new CloudSyncService({
+      dataDir,
+      store,
+      speech: elevenLabs,
+      getDefaultSpeechVoiceId: () => lastReportedSpeechVoiceId,
+      emitProgress: (event: CloudSyncProgressEvent) => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send("mkboard:cloud-sync-progress", event);
+        }
+      }
+    });
     desktopUpdater = new DesktopUpdater({
       emit: emitDesktopUpdateState,
       hasActiveWork: hasActiveDesktopWork,
@@ -4230,6 +4298,7 @@ if (singleInstanceLock) {
   });
 
   app.on("before-quit", () => {
+    cloudSync?.dispose();
     void companionServer?.stop();
     void mcpBridge?.close();
     for (const controller of activeAgentRuns.values()) controller.abort();

@@ -4,7 +4,9 @@ MkBoard is an open-source (Apache-2.0), local-first AI storyboard studio with ze
 
 ## Workspace Layout
 
-- `apps/desktop`: Electron + React + SQLite desktop application, built-in Web Companion server (`/api/rpc`, `/api/events`, `/mcp`), local BYOK media engine, and stdio/HTTP MCP bridge.
+- `apps/desktop`: Electron + React + SQLite desktop application, built-in Web Companion server (`/api/rpc`, `/api/events`, `/mcp`), local BYOK media engine, Cloudflare R2 cloud sync client, and stdio/HTTP MCP bridge.
+- `apps/mobile`: React Native + Expo mobile storyboard review app (Android/iOS, foldable & landscape split-view support, managed with independent flat `node_modules` for Android Gradle compatibility).
+- `apps/sync-worker`: Self-hosted Cloudflare Worker + R2 storyboard sync service (zero database, sha256 blob dedup, R2 multipart upload, HTTP 206 Range streaming).
 - `apps/web`: Astro public documentation and download site.
 - `packages/`: Shared workspace packages.
 

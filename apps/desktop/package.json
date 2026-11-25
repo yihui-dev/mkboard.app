@@ -1,7 +1,7 @@
 {
   "name": "@mkboard/desktop",
   "private": true,
-  "version": "0.3.2",
+  "version": "0.3.3",
   "type": "module",
   "main": "out/main/index.js",
   "scripts": {
@@ -21,7 +21,8 @@
     "rebuild:native:win": "electron-builder install-app-deps --platform=win32 --arch=x64",
     "typecheck": "pnpm run prepare:runtime-defaults && tsc --noEmit",
     "lint": "pnpm run typecheck",
-    "test": "pnpm run typecheck && pnpm run test:desktop-updater && pnpm run test:elevenlabs-speech && pnpm run test:oss-byok-companion",
+    "test": "pnpm run typecheck && pnpm run test:desktop-updater && pnpm run test:elevenlabs-speech && pnpm run test:cloud-sync && pnpm run test:oss-byok-companion",
+    "test:cloud-sync": "node --experimental-strip-types --import ./scripts/register-ts-extension-loader.mjs --test scripts/cloud-sync-smoke-test.mjs",
     "test:agent-operations": "node --experimental-strip-types --import ./scripts/register-ts-extension-loader.mjs --test scripts/agent-operations-smoke-test.mjs",
     "test:dreamina-agent": "node --experimental-strip-types --import ./scripts/register-ts-extension-loader.mjs --test scripts/dreamina-agent-smoke-test.mjs",
     "test:project-export": "node --experimental-strip-types --import ./scripts/register-ts-extension-loader.mjs --test scripts/project-export-smoke-test.mjs",

@@ -72,3 +72,17 @@ Thumbs.db
 manuarora700-playful-template-aceternity-63670b3899e9268b4dc9320888913792cc5c64ed
 
 apps/desktop/release/
+
+# Mobile (Expo / Android)
+apps/mobile/.expo/
+apps/mobile/android/.gradle/
+apps/mobile/android/build/
+apps/mobile/android/app/build/
+apps/mobile/android/local.properties
+apps/mobile/ios/
+apps/mobile/releases/
+*.apk
+*.aab
+*.ipa
+*.keystore
+!apps/mobile/android/app/debug.keystore

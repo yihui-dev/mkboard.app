@@ -1,10 +1,40 @@
 {
-  "updatedAt": "2026-11-20",
+  "updatedAt": "2026-11-25",
   "currentVersions": {
-    "production": "0.3.2",
-    "dev": "0.3.2"
+    "production": "0.3.3",
+    "dev": "0.3.3"
   },
   "releases": [
+    {
+      "version": "0.3.3",
+      "date": "2026-11-25",
+      "title": {
+        "zh": "演示暂停稳定性修复与 Cloudflare R2 手机端分镜同步",
+        "en": "Presentation Pause Reliability Fix & Cloudflare R2 Mobile Storyboard Sync"
+      },
+      "summary": {
+        "zh": "彻底修复分镜演示开启自动播放时点击暂停后自动跳回播放、空格键双触发及配音加载期暂停竞态问题；新增 Cloudflare R2 增量云同步，支持在移动端扫码同步审片。",
+        "en": "Fixed presentation playback immediately resuming after clicking pause, Spacebar focus double-toggling, and TTS loading pause races; added incremental Cloudflare R2 storyboard & voiceover sync for mobile review."
+      },
+      "sections": [
+        {
+          "title": {
+            "zh": "更新亮点",
+            "en": "Highlights"
+          },
+          "items": [
+            {
+              "zh": "修复演示模式点击画面暂停后被浏览器原生单击计时器反向触发继续播放的问题，统一空格键与配音加载期的暂停行为",
+              "en": "Fixed presentation stage video resuming ~300ms after click-to-pause, unified Spacebar pause/resume handling, and guarded in-flight TTS callbacks after user pause"
+            },
+            {
+              "zh": "新增 Cloudflare R2 分镜增量云同步（自托管零密钥绑定），一键同步画面与旁白至手机端审片",
+              "en": "Added self-hosted Cloudflare R2 incremental storyboard & voiceover sync with QR pairing for mobile review"
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "0.3.2",
       "date": "2026-11-20",

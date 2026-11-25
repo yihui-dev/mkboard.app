@@ -1264,6 +1264,61 @@ export type McpOpenProjectRequest = {
   tab: WorkspaceTab;
 };
 
+export type CloudSyncProjectRecord = {
+  syncedAt: string;
+  revision: number;
+  shotCount: number;
+  uploadedBlobs: number;
+};
+
+export type CloudSyncConfigSnapshot = {
+  configured: boolean;
+  source: "stored" | "env" | "none";
+  workerUrl: string;
+  maskedToken: string | null;
+  autoSync: boolean;
+  pairingUri: string | null;
+  qrSvg: string | null;
+  lastSyncedByProject: Record<string, CloudSyncProjectRecord>;
+};
+
+export type CloudSyncSaveInput = {
+  workerUrl: string;
+  syncToken?: string;
+  autoSync?: boolean;
+};
+
+export type CloudSyncTestResult = {
+  ok: boolean;
+  message: string;
+  projectCount?: number;
+};
+
+export type CloudSyncProgressEvent = {
+  projectId: string;
+  status: "idle" | "scanning" | "uploading" | "finalizing" | "synced" | "error";
+  current?: number;
+  total?: number;
+  message?: string;
+  syncedAt?: string;
+  revision?: number;
+};
+
+export type CloudSyncProjectResult =
+  | {
+      ok: true;
+      projectId: string;
+      revision: number;
+      syncedAt: string;
+      shotCount: number;
+      uploadedBlobs: number;
+      reusedBlobs: number;
+    }
+  | {
+      ok: false;
+      error: string;
+    };
+
 export type MkboardApi = {
   getCodexStatus(): Promise<CodexCliStatus>;
   connectCodex(): Promise<CodexCliStatus>;
@@ -1386,6 +1441,13 @@ export type MkboardApi = {
   reportActiveView(view: McpActiveViewReport): void;
   onProjectChangedExternally(handler: (event: ProjectChangedExternallyEvent) => void): () => void;
   onMcpOpenProjectRequest(handler: (request: McpOpenProjectRequest) => void): () => void;
+  getCloudSyncConfig(): Promise<CloudSyncConfigSnapshot>;
+  saveCloudSyncConfig(input: CloudSyncSaveInput): Promise<CloudSyncConfigSnapshot>;
+  clearCloudSyncConfig(): Promise<CloudSyncConfigSnapshot>;
+  testCloudSyncConnection(candidate?: { workerUrl?: string; syncToken?: string }): Promise<CloudSyncTestResult>;
+  syncProjectToCloud(projectId: string, options?: { speechVoiceId?: string }): Promise<CloudSyncProjectResult>;
+  deleteProjectFromCloud(projectId: string): Promise<{ ok: boolean; error?: string }>;
+  onCloudSyncProgress(handler: (event: CloudSyncProgressEvent) => void): () => void;
 };
 
 export const initialScriptRichText = `

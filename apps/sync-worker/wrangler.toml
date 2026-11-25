@@ -1,0 +1,13 @@
+name = "mkboard-sync"
+main = "src/index.ts"
+compatibility_date = "2026-06-10"
+
+[[r2_buckets]]
+binding = "SYNC_BUCKET"
+bucket_name = "mkboard-sync"
+
+# Configure the secret before deploying:
+#   wrangler secret put SYNC_TOKEN
+# Optional: set CORS_ORIGIN in [vars] if you want to restrict web origins (default "*").
+[vars]
+CORS_ORIGIN = "*"

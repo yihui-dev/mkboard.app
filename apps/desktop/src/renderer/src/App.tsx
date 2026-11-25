@@ -122,6 +122,8 @@ import {
 import type * as React from "react";
 import { AlertDialog, Button, Input, ListBox, ListBoxItem, Popover, Select as HeroSelect, Tab, Tabs, TextArea } from "@heroui/react";
 import { createTranslator, languageOptions, type I18nKey, type InterfaceLanguage, type Translator } from "./i18n";
+import { CloudSyncSettingsPanel } from "./components/CloudSyncSettingsPanel";
+import { WorkspaceCloudSyncButton } from "./components/WorkspaceCloudSyncButton";
 import {
   inferAgentMediaGenerationPlaceholder,
   type AgentMediaGenerationPlaceholder
@@ -284,7 +286,7 @@ type ConfirmationDialogStatus = "default" | "accent" | "success" | "warning" | "
 type ConfirmationDialogConfirmVariant = "primary" | "danger";
 type SelectOption = { value: string; label: string; icon?: React.ReactNode };
 type ProjectMarkOptionDefinition = { value: string; labelKey: I18nKey; Icon: React.ComponentType<{ className?: string }> };
-type SettingsSectionId = "runtime" | "profile" | "preferences" | "voice" | "about";
+type SettingsSectionId = "runtime" | "profile" | "preferences" | "voice" | "sync" | "about";
 type AppearanceMode = "system" | "light" | "dark";
 type AssetDropNotice = { kind: "default" } | { kind: "imported"; count: number } | { kind: "missing-local-path" } | { kind: "duplicates-skipped" } | { kind: "import-failed" };
 type CliTestResult = {
@@ -686,6 +688,7 @@ const settingsSections: Array<{ id: SettingsSectionId; labelKey: I18nKey; icon: 
   { id: "profile", labelKey: "settings.section.profile", icon: <KeyRound aria-hidden="true" /> },
   { id: "preferences", labelKey: "settings.section.preferences", icon: <Eye aria-hidden="true" /> },
   { id: "voice", labelKey: "settings.section.voice", icon: <AudioLines aria-hidden="true" /> },
+  { id: "sync", labelKey: "settings.section.sync", icon: <UploadCloud aria-hidden="true" /> },
   { id: "about", labelKey: "settings.section.about", icon: <HelpCircle aria-hidden="true" /> }
 ];
 
@@ -6215,6 +6218,7 @@ export default function App({ initialPath = "/" }: { initialPath?: string }) {
             onPresentationOpenChange={handleWorkspacePresentationOpenChange}
             speechVoiceId={elevenLabsStatus?.configured ? elevenLabsDefaultVoiceId : ""}
             onOpenVoiceSettings={() => openAccountAuthAtSection("voice")}
+            onOpenSyncSettings={() => openAccountAuthAtSection("sync")}
           />
         )}
       </main>
@@ -11698,6 +11702,8 @@ function CodexAuthorizationDialog({
               />
             ) : null}
 
+            {activeSection === "sync" ? <CloudSyncSettingsPanel isEn={isEn} /> : null}
+
             {activeSection === "about" ? (
               <section className="settings-static-section" aria-labelledby="account-auth-title">
                 <header className="execution-settings-header">
@@ -13963,7 +13969,8 @@ function WorkspaceScreen({
   presentationRequestId,
   onPresentationOpenChange,
   speechVoiceId,
-  onOpenVoiceSettings
+  onOpenVoiceSettings,
+  onOpenSyncSettings
 }: {
   projectId: string;
   projectName: string;
@@ -14064,8 +14071,9 @@ function WorkspaceScreen({
   onPresentationOpenChange: (isOpen: boolean) => void;
   speechVoiceId: string;
   onOpenVoiceSettings: () => void;
+  onOpenSyncSettings: () => void;
 }) {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
   const [presentationIndex, setPresentationIndex] = useState<number | null>(null);
   const [shotCursor, setShotCursor] = useState<{ frameId: string | null; shotIndex: number } | null>(() =>
     readProjectShotCursor(projectId)
@@ -14279,6 +14287,14 @@ function WorkspaceScreen({
               <ChevronDown aria-hidden="true" />
             )}
           </button>
+          {!isTutorialProject ? (
+            <WorkspaceCloudSyncButton
+              projectId={projectId}
+              speechVoiceId={speechVoiceId}
+              isEn={locale === "en"}
+              onOpenSyncSettings={onOpenSyncSettings}
+            />
+          ) : null}
           <ProjectDownloadControl assets={assets} onOpenSettings={onOpenSettings} projectId={projectId} rows={rows} />
         </div>
         {shouldUseAgentSidebar ? (
@@ -18739,6 +18755,7 @@ function StoryboardPresentationDialog({
   const [isAutoPlaying, setIsAutoPlaying] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(readStoredPresentationPlaybackRate);
   const autoPlayRunRef = useRef(0);
+  const narrationRunRef = useRef(0);
   const resumeCurrentShotOnAutoPlayRef = useRef(false);
   const userSeekedVideoRef = useRef(false);
   const programmaticPlayPendingRef = useRef(0);
@@ -18882,6 +18899,7 @@ function StoryboardPresentationDialog({
 
   function showPrevious() {
     if (!hasMultipleFrames) return;
+    narrationRunRef.current += 1;
     resumeCurrentShotOnAutoPlayRef.current = false;
     stopSpeech();
     onIndexChange((safeIndex - 1 + frames.length) % frames.length);
@@ -18889,6 +18907,7 @@ function StoryboardPresentationDialog({
 
   function showNext() {
     if (!hasMultipleFrames) return;
+    narrationRunRef.current += 1;
     resumeCurrentShotOnAutoPlayRef.current = false;
     stopSpeech();
     onIndexChange((safeIndex + 1) % frames.length);
@@ -18896,7 +18915,9 @@ function StoryboardPresentationDialog({
 
   function pausePlaybackInPlace() {
     autoPlayRunRef.current += 1;
+    narrationRunRef.current += 1;
     resumeCurrentShotOnAutoPlayRef.current = false;
+    scrubAutoPlayRecoveryRef.current = null;
     setIsAutoPlaying(false);
     pauseSpeech();
     pauseStageVideo();
@@ -18908,6 +18929,7 @@ function StoryboardPresentationDialog({
       return;
     }
     if (!hasFrames) return;
+    narrationRunRef.current += 1;
     pauseSpeech();
     resumeCurrentShotOnAutoPlayRef.current = true;
     setIsAutoPlaying(true);
@@ -18920,6 +18942,7 @@ function StoryboardPresentationDialog({
       }
       return;
     }
+    const narrationRunId = ++narrationRunRef.current;
     const frameHasVideo = frame.asset?.kind === "video";
     const startOffset = resolveCurrentShotSpeechOffset(frame);
     const shouldResetVideo = frameHasVideo && isStageVideoAtEnd(stageVideoRef.current) && startOffset === 0;
@@ -18929,6 +18952,7 @@ function StoryboardPresentationDialog({
     if (frameHasVideo && !hasPreparedSpeech(speechVoiceId, frame.speechText)) {
       loadingHoldTimer = window.setTimeout(() => {
         loadingHoldTimer = 0;
+        if (narrationRunRef.current !== narrationRunId) return;
         pauseStageVideo({ keepMuted: true });
       }, 120);
     }
@@ -18940,6 +18964,7 @@ function StoryboardPresentationDialog({
           window.clearTimeout(loadingHoldTimer);
           loadingHoldTimer = 0;
         }
+        if (narrationRunRef.current !== narrationRunId) return;
         if (frameHasVideo) {
           startOrResumeStageVideo({ muted: true, resetToStart: shouldResetVideo });
         }
@@ -18949,6 +18974,7 @@ function StoryboardPresentationDialog({
         window.clearTimeout(loadingHoldTimer);
         loadingHoldTimer = 0;
       }
+      if (narrationRunRef.current !== narrationRunId) return;
       if (result.errorCode && frameHasVideo) {
         startOrResumeStageVideo({ muted: false, resetToStart: false });
       }
@@ -19006,14 +19032,13 @@ function StoryboardPresentationDialog({
       seeked: video.seeking,
       pausedAt: Date.now()
     };
+    autoPlayRunRef.current += 1;
+    narrationRunRef.current += 1;
+    resumeCurrentShotOnAutoPlayRef.current = false;
     if (isAutoPlaying) {
-      autoPlayRunRef.current += 1;
-      resumeCurrentShotOnAutoPlayRef.current = false;
       setIsAutoPlaying(false);
     }
-    if (speechState !== "idle") {
-      pauseSpeech();
-    }
+    pauseSpeech();
   }
 
   function handleStageVideoSeeked(video: HTMLVideoElement) {
@@ -19022,7 +19047,7 @@ function StoryboardPresentationDialog({
       return;
     }
     userSeekedVideoRef.current = true;
-    if (scrubAutoPlayRecoveryRef.current) {
+    if (scrubAutoPlayRecoveryRef.current && Date.now() - scrubAutoPlayRecoveryRef.current.pausedAt < 250) {
       scrubAutoPlayRecoveryRef.current.seeked = true;
       scrubAutoPlayRecoveryRef.current.pausedAt = Date.now();
     }
@@ -19040,6 +19065,7 @@ function StoryboardPresentationDialog({
       return;
     }
     autoPlayRunRef.current += 1;
+    narrationRunRef.current += 1;
     resumeCurrentShotOnAutoPlayRef.current = false;
     userSeekedVideoRef.current = false;
     scrubAutoPlayRecoveryRef.current = null;
@@ -19053,6 +19079,7 @@ function StoryboardPresentationDialog({
 
   // Reset shot-scoped flags and auto-play the stage video when entering/switching shots in preview mode.
   useEffect(() => {
+    narrationRunRef.current += 1;
     programmaticPlayPendingRef.current = 0;
     programmaticPausePendingRef.current = 0;
     programmaticSeekPendingRef.current = 0;
@@ -19223,27 +19250,44 @@ function StoryboardPresentationDialog({
       }
       if (event.key === "Home" && hasMultipleFrames) {
         event.preventDefault();
+        narrationRunRef.current += 1;
         resumeCurrentShotOnAutoPlayRef.current = false;
         stopSpeech();
         onIndexChange(0);
       }
       if (event.key === "End" && hasMultipleFrames) {
         event.preventDefault();
+        narrationRunRef.current += 1;
         resumeCurrentShotOnAutoPlayRef.current = false;
         stopSpeech();
         onIndexChange(frames.length - 1);
       }
       if (event.key === " " || event.key === "Spacebar") {
         const target = event.target as HTMLElement | null;
-        if (target && (target.tagName === "BUTTON" || target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
+        if (
+          target &&
+          (target.tagName === "VIDEO" ||
+            target.tagName === "AUDIO" ||
+            target.tagName === "BUTTON" ||
+            target.tagName === "INPUT" ||
+            target.tagName === "TEXTAREA" ||
+            target.isContentEditable)
+        ) {
+          return;
+        }
         event.preventDefault();
-        toggleAutoPlay();
+        const stageVideoPlaying = Boolean(stageVideoRef.current && !stageVideoRef.current.paused && !stageVideoRef.current.ended);
+        if (isAutoPlaying || speechState !== "idle" || stageVideoPlaying) {
+          pausePlaybackInPlace();
+        } else {
+          toggleAutoPlay();
+        }
       }
     }
 
     window.addEventListener("keydown", handlePresentationKeyDown);
     return () => window.removeEventListener("keydown", handlePresentationKeyDown);
-  }, [frames.length, isAutoPlaying, isOpen, onClose, safeIndex]);
+  }, [frames.length, isAutoPlaying, isOpen, onClose, safeIndex, speechState]);
 
   if (!isOpen || typeof document === "undefined") return null;
 
@@ -23280,8 +23324,6 @@ function StageControlsVideo({
     };
   }, [src, poster, prewarm]);
 
-  const pointerDownStateRef = useRef<{ paused: boolean; x: number; y: number } | null>(null);
-
   useEffect(() => {
     const mountedVideo = internalRef.current;
     return () => {
@@ -23321,43 +23363,16 @@ function StageControlsVideo({
         onVideoSeeked?.(event.currentTarget);
       }}
       onError={markReady}
-      onPointerDown={(event) => {
-        if (prewarm) return;
-        const video = internalRef.current;
-        if (!video || event.button !== 0) return;
-        pointerDownStateRef.current = {
-          paused: video.paused,
-          x: event.clientX,
-          y: event.clientY
-        };
-      }}
       onClick={(event) => {
-        if (prewarm) return;
+        if (prewarm || controlsReady) return;
         const video = internalRef.current;
-        const down = pointerDownStateRef.current;
-        pointerDownStateRef.current = null;
         if (!video) return;
-        if (!controlsReady) {
-          setControlsReady(true);
-          if (video.paused) {
-            void video.play().catch(() => {});
-          } else {
-            video.pause();
-          }
-          return;
-        }
-        if (event.defaultPrevented) return;
-        if (down && Math.hypot(event.clientX - down.x, event.clientY - down.y) > 6) return;
-        const rect = video.getBoundingClientRect();
-        // Leave the bottom native media control bar (~52px) exclusively to Chromium's shadow-DOM controls.
-        if (rect.height > 96 && event.clientY > rect.bottom - 52) return;
-        // If Chromium didn't already toggle paused state on this click, toggle play/pause directly on the video frame.
-        if (!down || video.paused === down.paused) {
-          if (video.paused) {
-            void video.play().catch(() => {});
-          } else {
-            video.pause();
-          }
+        event.preventDefault();
+        setControlsReady(true);
+        if (video.paused) {
+          void video.play().catch(() => {});
+        } else {
+          video.pause();
         }
       }}
     />

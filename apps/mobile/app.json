@@ -1,0 +1,53 @@
+{
+  "expo": {
+    "name": "MkBoard",
+    "slug": "mkboard-mobile",
+    "version": "0.2.0",
+    "scheme": "mkboard-sync",
+    "orientation": "default",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#111317",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#111317"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.mkboard.mobile",
+      "buildNumber": "2",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "允许 MkBoard 使用相机扫描桌面端同步二维码"
+      }
+    },
+    "android": {
+      "package": "app.mkboard.mobile",
+      "versionCode": 2,
+      "backgroundColor": "#111317",
+      "adaptiveIcon": {
+        "backgroundColor": "#111318",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": [
+        "android.permission.INTERNET",
+        "android.permission.CAMERA"
+      ],
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      "expo-video",
+      "expo-audio",
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "允许 MkBoard 使用相机扫描桌面端同步二维码"
+        }
+      ]
+    ]
+  }
+}

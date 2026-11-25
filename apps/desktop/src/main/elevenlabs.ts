@@ -133,6 +133,21 @@ export class ElevenLabsService {
     });
   }
 
+  getCachedSpeechFilePath(voiceId: string, rawText: string): string | null {
+    const cleanVoiceId = voiceId.trim();
+    const text = rawText.trim();
+    if (!cleanVoiceId || !text) return null;
+    const cacheKey = speechCacheKey(cleanVoiceId, text, this.resolveModelId());
+    const cachedPath = join(this.speechCacheDir, `${cacheKey}.mp3`);
+    if (!existsSync(cachedPath)) return null;
+    try {
+      const size = statSync(cachedPath).size;
+      return size > 0 && size <= maxSpeechAudioBytes ? cachedPath : null;
+    } catch {
+      return null;
+    }
+  }
+
   async synthesizeSpeechAudio(
     input: ElevenLabsSpeechInput
   ): Promise<{ ok: true; audio: Buffer; contentType: string; cached: boolean } | { ok: false; error: ElevenLabsErrorCode; message?: string }> {
